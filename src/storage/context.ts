@@ -7,16 +7,37 @@ export type PolitiClawStorage = {
   kv: Kv;
 };
 
+export type PluginConfigSnapshot = {
+  apiKeys?: {
+    apiDataGov?: string;
+    geocodio?: string;
+    openStates?: string;
+    legiscan?: string;
+    openSecrets?: string;
+    followTheMoney?: string;
+    voteSmart?: string;
+    democracyWorks?: string;
+    cicero?: string;
+    ballotReady?: string;
+  };
+};
+
 let storage: PolitiClawStorage | null = null;
 let resolveStateDir: (() => string) | null = null;
+let resolvePluginConfig: (() => PluginConfigSnapshot) | null = null;
 
 /**
- * Called once from `register(api)` with the SDK's state-dir resolver.
- * We don't open the DB eagerly — we wait until the first tool call so plugin
- * boot stays cheap and test harnesses can override with `setStorageForTests`.
+ * Called once from `register(api)` with the SDK's state-dir resolver and a
+ * plugin-config accessor. We don't open the DB eagerly — we wait until the
+ * first tool call so plugin boot stays cheap and test harnesses can override
+ * with `setStorageForTests` / `setPluginConfigForTests`.
  */
-export function configureStorage(resolver: () => string): void {
-  resolveStateDir = resolver;
+export function configureStorage(
+  stateDirResolver: () => string,
+  pluginConfigResolver: () => PluginConfigSnapshot = () => ({}),
+): void {
+  resolveStateDir = stateDirResolver;
+  resolvePluginConfig = pluginConfigResolver;
 }
 
 export function getStorage(): PolitiClawStorage {
@@ -30,11 +51,28 @@ export function getStorage(): PolitiClawStorage {
   return storage;
 }
 
+export function getStateDir(): string {
+  if (!resolveStateDir) {
+    throw new Error("politiclaw storage: configureStorage() was not called");
+  }
+  return resolveStateDir();
+}
+
+export function getPluginConfig(): PluginConfigSnapshot {
+  if (!resolvePluginConfig) return {};
+  return resolvePluginConfig();
+}
+
 export function setStorageForTests(next: PolitiClawStorage | null): void {
   storage = next;
+}
+
+export function setPluginConfigForTests(cfg: PluginConfigSnapshot | null): void {
+  resolvePluginConfig = cfg ? () => cfg : null;
 }
 
 export function resetStorageConfigForTests(): void {
   storage = null;
   resolveStateDir = null;
+  resolvePluginConfig = null;
 }

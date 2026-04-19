@@ -1,0 +1,49 @@
+- name:
+    official_full: Alex Padilla
+  id:
+    bioguide: P000145
+  terms:
+    - type: rep
+      start: '2013-01-03'
+      end: '2015-01-03'
+      state: CA
+      district: 7
+      party: Democrat
+    - type: sen
+      start: '2021-01-20'
+      end: '2029-01-03'
+      state: CA
+      party: Democrat
+- name:
+    first: Adam
+    last: Schiff
+  id:
+    bioguide: S001150
+  terms:
+    - type: sen
+      start: '2025-01-03'
+      end: '2031-01-03'
+      state: CA
+      party: Democrat
+- name:
+    official_full: Nancy Pelosi
+  id:
+    bioguide: P000197
+  terms:
+    - type: rep
+      start: '2025-01-03'
+      end: '2027-01-03'
+      state: CA
+      district: 11
+      party: Democrat
+- name:
+    official_full: Retired Person
+  id:
+    bioguide: R000000
+  terms:
+    - type: rep
+      start: '2019-01-03'
+      end: '2021-01-03'
+      state: CA
+      district: 11
+      party: Independent

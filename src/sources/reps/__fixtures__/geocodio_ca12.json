@@ -1,0 +1,37 @@
+{
+  "_fixture_note": "Dated 2026-04-18. Trimmed Geocodio v1.7 response for a San Francisco address (CA-11). Shape: results[].fields.congressional_districts[].current_legislators[]. Only fields the adapter reads are populated.",
+  "results": [
+    {
+      "fields": {
+        "congressional_districts": [
+          {
+            "name": "Congressional District 11",
+            "district_number": 11,
+            "congress_number": 118,
+            "state_abbreviation": "CA",
+            "current_legislators": [
+              {
+                "type": "senator",
+                "bio": { "first_name": "Alex", "last_name": "Padilla", "party": "Democrat" },
+                "contact": { "url": "https://www.padilla.senate.gov", "phone": "202-224-3553" },
+                "references": { "bioguide_id": "P000145" }
+              },
+              {
+                "type": "senator",
+                "bio": { "first_name": "Laphonza", "last_name": "Butler", "party": "Democrat" },
+                "contact": { "url": "https://www.butler.senate.gov", "phone": "202-224-3841" },
+                "references": { "bioguide_id": "B001320" }
+              },
+              {
+                "type": "representative",
+                "bio": { "first_name": "Nancy", "last_name": "Pelosi", "party": "Democrat" },
+                "contact": { "url": "https://pelosi.house.gov", "phone": "202-225-4965" },
+                "references": { "bioguide_id": "P000197" }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

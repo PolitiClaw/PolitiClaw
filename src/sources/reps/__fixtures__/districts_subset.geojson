@@ -1,0 +1,43 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "STATEFP": "06",
+        "CD119FP": "11"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-123, 37],
+            [-122, 37],
+            [-122, 38],
+            [-123, 38],
+            [-123, 37]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "STATEFP": "06",
+        "CD119FP": "12"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-122, 37],
+            [-121, 37],
+            [-121, 38],
+            [-122, 38],
+            [-122, 37]
+          ]
+        ]
+      }
+    }
+  ]
+}

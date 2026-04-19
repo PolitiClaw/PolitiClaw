@@ -6,8 +6,11 @@ import {
   resetStorageConfigForTests,
 } from "../storage/context.js";
 import {
+  deleteIssueStanceTool,
   getPreferencesTool,
+  listIssueStancesTool,
   recordStanceSignalTool,
+  setIssueStanceTool,
   setPreferencesTool,
   listStanceSignals,
 } from "./preferences.js";
@@ -67,6 +70,103 @@ describe("get_preferences tool", () => {
     expect((result.details as { preferences: { address: string } }).preferences.address).toBe(
       "123 Main",
     );
+  });
+});
+
+describe("set_issue_stance tool", () => {
+  it("normalizes the issue slug and persists the row", async () => {
+    const db = withMemoryStorage();
+    const result = await setIssueStanceTool.execute!(
+      "call-1",
+      { issue: "Affordable Housing", stance: "support", weight: 4 },
+      undefined,
+      undefined,
+    );
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    expect(text).toContain("affordable-housing");
+    expect(text).toContain("weight 4");
+    const rows = db
+      .prepare("SELECT issue, stance, weight FROM issue_stances")
+      .all() as Array<{ issue: string; stance: string; weight: number }>;
+    expect(rows).toEqual([{ issue: "affordable-housing", stance: "support", weight: 4 }]);
+  });
+
+  it("overwrites on repeated set with the same issue", async () => {
+    const db = withMemoryStorage();
+    await setIssueStanceTool.execute!(
+      "call-1",
+      { issue: "climate", stance: "support", weight: 5 },
+      undefined,
+      undefined,
+    );
+    await setIssueStanceTool.execute!(
+      "call-2",
+      { issue: "climate", stance: "oppose", weight: 2 },
+      undefined,
+      undefined,
+    );
+    const rows = db
+      .prepare("SELECT stance, weight FROM issue_stances WHERE issue = 'climate'")
+      .all() as Array<{ stance: string; weight: number }>;
+    expect(rows).toEqual([{ stance: "oppose", weight: 2 }]);
+  });
+});
+
+describe("list_issue_stances tool", () => {
+  it("reports an empty list with actionable guidance", async () => {
+    withMemoryStorage();
+    const result = await listIssueStancesTool.execute!("call-1", {}, undefined, undefined);
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    expect(text).toContain("No issue stances set");
+    expect(text).toContain("politiclaw_set_issue_stance");
+  });
+
+  it("renders declared stances weight-desc", async () => {
+    withMemoryStorage();
+    await setIssueStanceTool.execute!(
+      "call-1",
+      { issue: "climate", stance: "support", weight: 5 },
+      undefined,
+      undefined,
+    );
+    await setIssueStanceTool.execute!(
+      "call-2",
+      { issue: "housing", stance: "support", weight: 3 },
+      undefined,
+      undefined,
+    );
+    const result = await listIssueStancesTool.execute!("call-3", {}, undefined, undefined);
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    expect(text.indexOf("climate")).toBeLessThan(text.indexOf("housing"));
+  });
+});
+
+describe("delete_issue_stance tool", () => {
+  it("reports deleted = true when a row existed, false otherwise", async () => {
+    withMemoryStorage();
+    await setIssueStanceTool.execute!(
+      "call-1",
+      { issue: "climate", stance: "support", weight: 5 },
+      undefined,
+      undefined,
+    );
+    const ok = await deleteIssueStanceTool.execute!(
+      "call-2",
+      { issue: "climate" },
+      undefined,
+      undefined,
+    );
+    expect((ok.details as { deleted: boolean }).deleted).toBe(true);
+
+    const miss = await deleteIssueStanceTool.execute!(
+      "call-3",
+      { issue: "climate" },
+      undefined,
+      undefined,
+    );
+    expect((miss.details as { deleted: boolean }).deleted).toBe(false);
+    const missText = (miss.content[0] as { type: "text"; text: string }).text;
+    expect(missText).toContain("No issue stance found");
   });
 });
 

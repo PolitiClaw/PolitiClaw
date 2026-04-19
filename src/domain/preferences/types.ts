@@ -29,3 +29,22 @@ export const StanceSignalSchema = z
   });
 
 export type StanceSignal = z.infer<typeof StanceSignalSchema>;
+
+/**
+ * User-declared position on a policy issue. Drives bill alignment scoring
+ * (Phase 3b) and rep scoring (Phase 5). Distinct from {@link StanceSignal},
+ * which is a single interaction event.
+ */
+export const IssueStanceSchema = z.object({
+  issue: z
+    .string()
+    .trim()
+    .min(1, "issue is required")
+    .transform((value) => value.toLowerCase().replace(/\s+/g, "-")),
+  stance: z.enum(["support", "oppose", "neutral"]),
+  weight: z.number().int().min(1).max(5).default(3),
+});
+
+export type IssueStance = z.infer<typeof IssueStanceSchema>;
+
+export type IssueStanceRow = IssueStance & { updatedAt: number };

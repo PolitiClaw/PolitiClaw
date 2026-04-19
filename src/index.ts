@@ -5,8 +5,15 @@ import { politiclawTools as preferencesTools } from "./tools/preferences.js";
 import { repsTools } from "./tools/reps.js";
 import { shapefileTools } from "./tools/downloadShapefiles.js";
 import { billsTools } from "./tools/bills.js";
+import { scoringTools } from "./tools/scoring.js";
 
-const allTools = [...preferencesTools, ...repsTools, ...shapefileTools, ...billsTools];
+const allTools = [
+  ...preferencesTools,
+  ...repsTools,
+  ...shapefileTools,
+  ...billsTools,
+  ...scoringTools,
+];
 
 export default definePluginEntry({
   id: "politiclaw",

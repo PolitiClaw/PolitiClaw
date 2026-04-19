@@ -1,14 +1,17 @@
 import type { PolitiClawDb } from "../../storage/sqlite.js";
 import {
+  IssueStanceSchema,
   PreferencesSchema,
   StanceSignalSchema,
+  type IssueStance,
+  type IssueStanceRow,
   type Preferences,
   type PreferencesRow,
   type StanceSignal,
 } from "./types.js";
 
-export { PreferencesSchema, StanceSignalSchema };
-export type { Preferences, PreferencesRow, StanceSignal };
+export { IssueStanceSchema, PreferencesSchema, StanceSignalSchema };
+export type { IssueStance, IssueStanceRow, Preferences, PreferencesRow, StanceSignal };
 
 export function getPreferences(db: PolitiClawDb): PreferencesRow | null {
   const row = db
@@ -82,6 +85,45 @@ export type StanceSignalRow = {
   source: string;
   createdAt: number;
 };
+
+export function upsertIssueStance(db: PolitiClawDb, input: IssueStance): IssueStanceRow {
+  const parsed = IssueStanceSchema.parse(input);
+  const now = Date.now();
+  db.prepare(
+    `INSERT INTO issue_stances (issue, stance, weight, updated_at)
+     VALUES (@issue, @stance, @weight, @updated_at)
+     ON CONFLICT(issue) DO UPDATE SET
+       stance     = excluded.stance,
+       weight     = excluded.weight,
+       updated_at = excluded.updated_at`,
+  ).run({
+    issue: parsed.issue,
+    stance: parsed.stance,
+    weight: parsed.weight,
+    updated_at: now,
+  });
+  return { ...parsed, updatedAt: now };
+}
+
+export function listIssueStances(db: PolitiClawDb): IssueStanceRow[] {
+  const rows = db
+    .prepare(
+      `SELECT issue, stance, weight, updated_at FROM issue_stances ORDER BY weight DESC, issue ASC`,
+    )
+    .all() as Array<{ issue: string; stance: string; weight: number; updated_at: number }>;
+  return rows.map((row) => ({
+    issue: row.issue,
+    stance: row.stance as IssueStance["stance"],
+    weight: row.weight,
+    updatedAt: row.updated_at,
+  }));
+}
+
+export function deleteIssueStance(db: PolitiClawDb, issue: string): boolean {
+  const normalized = issue.trim().toLowerCase().replace(/\s+/g, "-");
+  const result = db.prepare(`DELETE FROM issue_stances WHERE issue = ?`).run(normalized);
+  return result.changes > 0;
+}
 
 export function listStanceSignals(db: PolitiClawDb, limit = 100): StanceSignalRow[] {
   const rows = db

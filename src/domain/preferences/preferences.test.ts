@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { openMemoryDb } from "../../storage/sqlite.js";
 import {
+  deleteIssueStance,
   getPreferences,
+  IssueStanceSchema,
+  listIssueStances,
   listStanceSignals,
   recordStanceSignal,
+  upsertIssueStance,
   upsertPreferences,
   PreferencesSchema,
   StanceSignalSchema,
@@ -101,5 +105,68 @@ describe("recordStanceSignal", () => {
     const rows = listStanceSignals(db);
     expect(rows.map((r) => r.direction)).toEqual(["skip", "disagree", "agree"]);
     expect(rows[0]?.billId).toBe("hr-1");
+  });
+});
+
+describe("IssueStanceSchema", () => {
+  it("normalizes the issue slug to lowercase kebab-case", () => {
+    const parsed = IssueStanceSchema.parse({
+      issue: "Affordable Housing",
+      stance: "support",
+      weight: 4,
+    });
+    expect(parsed.issue).toBe("affordable-housing");
+  });
+
+  it("rejects weights outside 1-5", () => {
+    expect(() =>
+      IssueStanceSchema.parse({ issue: "x", stance: "support", weight: 6 }),
+    ).toThrow();
+    expect(() =>
+      IssueStanceSchema.parse({ issue: "x", stance: "support", weight: 0 }),
+    ).toThrow();
+  });
+
+  it("defaults weight to 3 when omitted", () => {
+    const parsed = IssueStanceSchema.parse({ issue: "climate", stance: "support" });
+    expect(parsed.weight).toBe(3);
+  });
+});
+
+describe("upsertIssueStance", () => {
+  it("inserts and updates by issue slug", () => {
+    const db = openMemoryDb();
+    upsertIssueStance(db, { issue: "climate", stance: "support", weight: 5 });
+    upsertIssueStance(db, { issue: "housing", stance: "support", weight: 3 });
+    expect(listIssueStances(db).map((row) => row.issue)).toEqual(["climate", "housing"]);
+
+    upsertIssueStance(db, { issue: "climate", stance: "oppose", weight: 2 });
+    const rows = listIssueStances(db);
+    const climate = rows.find((row) => row.issue === "climate");
+    expect(climate?.stance).toBe("oppose");
+    expect(climate?.weight).toBe(2);
+    expect(rows).toHaveLength(2);
+  });
+
+  it("orders listings by weight descending then issue ascending", () => {
+    const db = openMemoryDb();
+    upsertIssueStance(db, { issue: "zebra", stance: "support", weight: 3 });
+    upsertIssueStance(db, { issue: "apple", stance: "support", weight: 3 });
+    upsertIssueStance(db, { issue: "banana", stance: "support", weight: 5 });
+    expect(listIssueStances(db).map((row) => row.issue)).toEqual([
+      "banana",
+      "apple",
+      "zebra",
+    ]);
+  });
+});
+
+describe("deleteIssueStance", () => {
+  it("removes the row and reports whether a row was deleted", () => {
+    const db = openMemoryDb();
+    upsertIssueStance(db, { issue: "climate", stance: "support", weight: 4 });
+    expect(deleteIssueStance(db, "Climate")).toBe(true);
+    expect(listIssueStances(db)).toHaveLength(0);
+    expect(deleteIssueStance(db, "climate")).toBe(false);
   });
 });

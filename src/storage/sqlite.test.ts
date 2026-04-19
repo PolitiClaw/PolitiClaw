@@ -19,6 +19,8 @@ describe("migrations", () => {
       "bills",
       "bill_alignment",
       "snapshots",
+      "roll_call_votes",
+      "member_votes",
       "schema_version",
     ]) {
       expect(names).toContain(required);
@@ -30,7 +32,7 @@ describe("migrations", () => {
     const versions = db
       .prepare("SELECT version FROM schema_version ORDER BY version")
       .all() as Array<{ version: number }>;
-    expect(versions.map((v) => v.version)).toEqual([1, 2, 3, 4, 5]);
+    expect(versions.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
   it("is idempotent when re-run on an existing db", () => {

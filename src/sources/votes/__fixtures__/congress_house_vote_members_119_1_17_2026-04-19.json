@@ -1,0 +1,22 @@
+{
+  "houseRollCallVoteMemberVotes": {
+    "congress": 119,
+    "sessionNumber": 1,
+    "rollCallNumber": 17,
+    "identifier": 1191202517,
+    "startDate": "2025-01-16T11:00:00-05:00",
+    "voteType": "Yea-and-Nay",
+    "result": "Passed",
+    "voteQuestion": "On Passage",
+    "legislationType": "HR",
+    "legislationNumber": "30",
+    "results": [
+      { "bioguideID": "A000055", "firstName": "Robert", "lastName": "Aderholt", "voteCast": "Yea", "voteParty": "R", "voteState": "AL" },
+      { "bioguideID": "P000197", "firstName": "Nancy", "lastName": "Pelosi", "voteCast": "Nay", "voteParty": "D", "voteState": "CA" },
+      { "bioguideID": "L000551", "firstName": "Barbara", "lastName": "Lee", "voteCast": "Nay", "voteParty": "D", "voteState": "CA" },
+      { "bioguideID": "X000001", "firstName": "Jane", "lastName": "Doe", "voteCast": "Present", "voteParty": "I", "voteState": "VT" },
+      { "bioguideID": "Y000001", "firstName": "John", "lastName": "Roe", "voteCast": "Not Voting", "voteParty": "R", "voteState": "TX" },
+      { "bioguideID": "Z000001", "firstName": "Ignored", "lastName": "Member", "voteCast": "Garbage", "voteParty": "R", "voteState": "TX" }
+    ]
+  }
+}

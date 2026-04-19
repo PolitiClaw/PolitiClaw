@@ -1,0 +1,53 @@
+{
+  "houseRollCallVotes": [
+    {
+      "congress": 119,
+      "sessionNumber": 1,
+      "rollCallNumber": 17,
+      "identifier": 1191202517,
+      "startDate": "2025-01-16T11:00:00-05:00",
+      "updateDate": "2025-04-18T08:44:47-04:00",
+      "voteType": "Yea-and-Nay",
+      "result": "Passed",
+      "legislationType": "HR",
+      "legislationNumber": "30",
+      "legislationUrl": "https://congress.gov/bill/119/house-bill/30",
+      "sourceDataURL": "https://clerk.house.gov/evs/2025/roll017.xml",
+      "url": "https://api.congress.gov/v3/house-vote/119/1/17?format=json"
+    },
+    {
+      "congress": 119,
+      "sessionNumber": 1,
+      "rollCallNumber": 42,
+      "identifier": 1191202542,
+      "startDate": "2025-02-05T14:30:00-05:00",
+      "updateDate": "2025-04-18T08:44:47-04:00",
+      "voteType": "Recorded Vote",
+      "result": "Failed",
+      "legislationType": "HR",
+      "legislationNumber": "1234",
+      "legislationUrl": "https://congress.gov/bill/119/house-bill/1234",
+      "sourceDataURL": "https://clerk.house.gov/evs/2025/roll042.xml",
+      "url": "https://api.congress.gov/v3/house-vote/119/1/42?format=json"
+    },
+    {
+      "congress": 119,
+      "sessionNumber": 1,
+      "rollCallNumber": 88,
+      "identifier": 1191202588,
+      "startDate": "2025-03-11T09:15:00-05:00",
+      "updateDate": "2025-04-18T08:44:47-04:00",
+      "voteType": "Recorded Vote",
+      "result": "Agreed to",
+      "legislationType": "HR",
+      "legislationNumber": "1234",
+      "amendmentType": "HAMDT",
+      "amendmentNumber": "6",
+      "amendmentAuthor": "Tlaib of Michigan Amendment No. 6",
+      "legislationUrl": "https://congress.gov/bill/119/house-bill/1234",
+      "sourceDataURL": "https://clerk.house.gov/evs/2025/roll088.xml",
+      "url": "https://api.congress.gov/v3/house-vote/119/1/88?format=json"
+    }
+  ],
+  "pagination": { "count": 3, "next": null }
+}

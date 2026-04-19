@@ -8,6 +8,7 @@ import { billsTools } from "./tools/bills.js";
 import { scoringTools } from "./tools/scoring.js";
 import { monitoringTools } from "./tools/monitoring.js";
 import { monitoringSetupTools } from "./tools/monitoringSetup.js";
+import { voteIngestTools } from "./tools/voteIngest.js";
 
 const allTools = [
   ...preferencesTools,
@@ -17,6 +18,7 @@ const allTools = [
   ...scoringTools,
   ...monitoringTools,
   ...monitoringSetupTools,
+  ...voteIngestTools,
 ];
 
 export default definePluginEntry({

@@ -1,0 +1,14 @@
+{
+  "houseRollCallVoteMemberVotes": {
+    "congress": 119,
+    "sessionNumber": 1,
+    "rollCallNumber": 42,
+    "voteQuestion": "On Motion to Recommit",
+    "legislationType": "HR",
+    "legislationNumber": "1234",
+    "results": [
+      { "bioguideID": "A000055", "firstName": "Robert", "lastName": "Aderholt", "voteCast": "Yea", "voteParty": "R", "voteState": "AL" },
+      { "bioguideID": "L000551", "firstName": "Barbara", "lastName": "Lee", "voteCast": "Nay", "voteParty": "D", "voteState": "CA" }
+    ]
+  }
+}

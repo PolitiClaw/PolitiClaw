@@ -1,0 +1,17 @@
+{
+  "houseRollCallVote": {
+    "congress": 119,
+    "sessionNumber": 1,
+    "rollCallNumber": 42,
+    "identifier": 1191202542,
+    "startDate": "2025-02-05T14:30:00-05:00",
+    "updateDate": "2025-04-18T08:44:47-04:00",
+    "voteType": "Recorded Vote",
+    "result": "Failed",
+    "voteQuestion": "On Motion to Recommit",
+    "legislationType": "HR",
+    "legislationNumber": "1234",
+    "legislationUrl": "https://congress.gov/bill/119/house-bill/1234",
+    "sourceDataURL": "https://clerk.house.gov/evs/2025/roll042.xml"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "subjects": {
+    "legislativeSubjects": [
+      { "name": "Affordable housing" },
+      { "name": "Housing finance and home ownership" },
+      { "name": "State and local finance" }
+    ],
+    "policyArea": { "name": "Housing and Community Development" }
+  }
+}

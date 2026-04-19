@@ -1,0 +1,50 @@
+{
+  "bills": [
+    {
+      "congress": 119,
+      "number": "1234",
+      "type": "HR",
+      "title": "Clean Housing Investment Act of 2026",
+      "updateDate": "2026-04-15",
+      "updateDateIncludingText": "2026-04-15T14:30:00Z",
+      "originChamber": "House",
+      "originChamberCode": "H",
+      "latestAction": {
+        "actionDate": "2026-04-10",
+        "text": "Referred to the House Committee on Financial Services."
+      },
+      "url": "https://api.congress.gov/v3/bill/119/hr/1234?format=json"
+    },
+    {
+      "congress": 119,
+      "number": "5678",
+      "type": "HR",
+      "title": "Carbon Border Adjustment Act",
+      "updateDate": "2026-04-12",
+      "updateDateIncludingText": "2026-04-12T09:15:00Z",
+      "originChamber": "House",
+      "originChamberCode": "H",
+      "latestAction": {
+        "actionDate": "2026-04-12",
+        "text": "Placed on the Union Calendar, Calendar No. 221."
+      },
+      "url": "https://api.congress.gov/v3/bill/119/hr/5678?format=json"
+    },
+    {
+      "congress": 119,
+      "number": "9012",
+      "type": "HR",
+      "title": "Small Business Tax Simplification Act",
+      "updateDate": "2026-04-09",
+      "latestAction": {
+        "actionDate": "2026-04-08",
+        "text": "Referred to the House Committee on Ways and Means."
+      },
+      "url": "https://api.congress.gov/v3/bill/119/hr/9012?format=json"
+    }
+  ],
+  "pagination": {
+    "count": 3,
+    "next": null
+  }
+}

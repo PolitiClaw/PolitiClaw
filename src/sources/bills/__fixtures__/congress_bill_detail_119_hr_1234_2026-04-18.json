@@ -1,0 +1,38 @@
+{
+  "bill": {
+    "congress": 119,
+    "number": "1234",
+    "type": "HR",
+    "title": "Clean Housing Investment Act of 2026",
+    "originChamber": "House",
+    "originChamberCode": "H",
+    "introducedDate": "2026-01-30",
+    "updateDate": "2026-04-15",
+    "updateDateIncludingText": "2026-04-15T14:30:00Z",
+    "policyArea": { "name": "Housing and Community Development" },
+    "latestAction": {
+      "actionDate": "2026-04-10",
+      "text": "Referred to the House Committee on Financial Services."
+    },
+    "sponsors": [
+      {
+        "bioguideId": "P000197",
+        "fullName": "Rep. Pelosi, Nancy [D-CA-11]",
+        "firstName": "Nancy",
+        "lastName": "Pelosi",
+        "party": "D",
+        "state": "CA",
+        "district": 11,
+        "isByRequest": "N"
+      }
+    ],
+    "subjects": {
+      "count": 3,
+      "url": "https://api.congress.gov/v3/bill/119/hr/1234/subjects?format=json"
+    },
+    "summaries": {
+      "count": 1,
+      "url": "https://api.congress.gov/v3/bill/119/hr/1234/summaries?format=json"
+    }
+  }
+}

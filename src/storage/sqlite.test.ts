@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { openMemoryDb } from "./sqlite.js";
 
 describe("migrations", () => {
-  it("creates the core Phase 1 tables", () => {
+  it("creates the core tables through the latest migration", () => {
     const db = openMemoryDb();
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
@@ -16,6 +16,7 @@ describe("migrations", () => {
       "mute_list",
       "kv_store",
       "reps",
+      "bills",
       "schema_version",
     ]) {
       expect(names).toContain(required);
@@ -27,7 +28,7 @@ describe("migrations", () => {
     const versions = db
       .prepare("SELECT version FROM schema_version ORDER BY version")
       .all() as Array<{ version: number }>;
-    expect(versions.map((v) => v.version)).toEqual([1, 2]);
+    expect(versions.map((v) => v.version)).toEqual([1, 2, 3]);
   });
 
   it("is idempotent when re-run on an existing db", () => {

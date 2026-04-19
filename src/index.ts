@@ -4,8 +4,9 @@ import { configureStorage, type PluginConfigSnapshot } from "./storage/context.j
 import { politiclawTools as preferencesTools } from "./tools/preferences.js";
 import { repsTools } from "./tools/reps.js";
 import { shapefileTools } from "./tools/downloadShapefiles.js";
+import { billsTools } from "./tools/bills.js";
 
-const allTools = [...preferencesTools, ...repsTools, ...shapefileTools];
+const allTools = [...preferencesTools, ...repsTools, ...shapefileTools, ...billsTools];
 
 export default definePluginEntry({
   id: "politiclaw",

@@ -1,0 +1,21 @@
+{
+  "committeeMeeting": {
+    "eventId": "116588",
+    "congress": 119,
+    "chamber": "Senate",
+    "type": "Markup",
+    "title": "Markup of Clean Energy Tax Credit Extension",
+    "date": "2026-04-23T10:30:00Z",
+    "location": { "room": "215", "building": "Dirksen Senate Office Building" },
+    "committees": {
+      "item": [
+        { "name": "Committee on Finance", "systemCode": "ssfi00" }
+      ]
+    },
+    "relatedBills": {
+      "item": [
+        { "congress": 119, "type": "S", "number": "901" }
+      ]
+    }
+  }
+}

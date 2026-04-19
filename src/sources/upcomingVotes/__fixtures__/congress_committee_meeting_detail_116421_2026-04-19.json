@@ -1,0 +1,22 @@
+{
+  "committeeMeeting": {
+    "eventId": "116421",
+    "congress": 119,
+    "chamber": "House",
+    "type": "Hearing",
+    "title": "Financial Services Oversight Hearing on Affordable Housing Act",
+    "date": "2026-04-22T14:00:00Z",
+    "location": { "room": "2128", "building": "Rayburn House Office Building" },
+    "committees": {
+      "item": [
+        { "name": "Committee on Financial Services", "systemCode": "hsba00" }
+      ]
+    },
+    "relatedBills": {
+      "item": [
+        { "congress": 119, "type": "HR", "number": "1234" },
+        { "congress": 119, "type": "HR", "number": "5678" }
+      ]
+    }
+  }
+}

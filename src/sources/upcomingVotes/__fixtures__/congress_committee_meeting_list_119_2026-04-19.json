@@ -1,0 +1,26 @@
+{
+  "committeeMeetings": [
+    {
+      "eventId": "116421",
+      "congress": 119,
+      "chamber": "House",
+      "type": "Hearing",
+      "url": "https://api.congress.gov/v3/committee-meeting/119/house/116421?format=json"
+    },
+    {
+      "eventId": "116588",
+      "congress": 119,
+      "chamber": "Senate",
+      "type": "Markup",
+      "url": "https://api.congress.gov/v3/committee-meeting/119/senate/116588?format=json"
+    },
+    {
+      "eventId": "116600",
+      "congress": 119,
+      "chamber": "House",
+      "type": "Meeting",
+      "url": "https://api.congress.gov/v3/committee-meeting/119/house/116600?format=json"
+    }
+  ],
+  "pagination": { "count": 3, "next": null }
+}

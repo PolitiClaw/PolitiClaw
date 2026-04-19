@@ -1,0 +1,15 @@
+{
+  "committeeMeeting": {
+    "eventId": "116600",
+    "congress": 119,
+    "chamber": "House",
+    "type": "Meeting",
+    "title": "Business Meeting — Rules Committee",
+    "date": "2026-04-24T09:00:00Z",
+    "location": { "room": "H-313", "building": "The Capitol" },
+    "committees": {
+      "item": [{ "name": "Committee on Rules", "systemCode": "hsru00" }]
+    },
+    "relatedBills": { "item": [] }
+  }
+}

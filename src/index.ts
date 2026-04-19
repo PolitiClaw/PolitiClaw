@@ -6,6 +6,7 @@ import { repsTools } from "./tools/reps.js";
 import { shapefileTools } from "./tools/downloadShapefiles.js";
 import { billsTools } from "./tools/bills.js";
 import { scoringTools } from "./tools/scoring.js";
+import { monitoringTools } from "./tools/monitoring.js";
 
 const allTools = [
   ...preferencesTools,
@@ -13,6 +14,7 @@ const allTools = [
   ...shapefileTools,
   ...billsTools,
   ...scoringTools,
+  ...monitoringTools,
 ];
 
 export default definePluginEntry({

@@ -7,6 +7,7 @@ import { shapefileTools } from "./tools/downloadShapefiles.js";
 import { ballotTools } from "./tools/ballot.js";
 import { explainBallotTools } from "./tools/explainBallot.js";
 import { billsTools } from "./tools/bills.js";
+import { letterTools } from "./tools/draftLetter.js";
 import { scoringTools } from "./tools/scoring.js";
 import { repReportTools } from "./tools/repReport.js";
 import { repScoringTools } from "./tools/repScoring.js";
@@ -35,6 +36,7 @@ const allTools = [
   ...voteIngestTools,
   ...researchCandidateTools,
   ...researchChallengersTools,
+  ...letterTools,
 ];
 
 export default definePluginEntry({

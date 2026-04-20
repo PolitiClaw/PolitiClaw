@@ -6,11 +6,25 @@ import {
   ALIGNMENT_DISCLAIMER,
   CONFIDENCE_FLOOR,
   scoreBill,
+  type DirectionForStance,
+  type LlmClient,
   type ScoreBillResult,
 } from "../domain/scoring/index.js";
 import { createBillsResolver } from "../sources/bills/index.js";
 import type { BillRef } from "../sources/bills/types.js";
 import { getPluginConfig, getStorage } from "../storage/context.js";
+
+/**
+ * Test seam: production currently has no LLM transport wired, so by default
+ * `scoreBill` runs without direction classification. Tests inject a fake
+ * client via `setDirectionLlmForTests` to exercise the directional-framing
+ * output without coupling to a real LLM SDK.
+ */
+let directionLlmOverride: LlmClient | null = null;
+
+export function setDirectionLlmForTests(client: LlmClient | null): void {
+  directionLlmOverride = client;
+}
 
 const BILL_TYPES = [
   "HR",
@@ -127,17 +141,44 @@ export function renderScoreBillOutput(result: ScoreBillResult): string {
         )
       : ["  • (no declared-stance matches on this bill)"];
 
+  const directionBlock = result.direction ? renderDirectionSection(result.direction) : [];
+
   return [
     header,
     provenance,
     `Relevance to your stances: ${relevancePct}% (confidence ${confidencePct}%).`,
     "Matches:",
     ...matchLines,
+    ...directionBlock,
     "",
     alignment.rationale,
     "",
     ALIGNMENT_DISCLAIMER,
   ].join("\n");
+}
+
+function renderDirectionSection(direction: readonly DirectionForStance[]): string[] {
+  if (direction.length === 0) return [];
+  const lines: string[] = ["", "Direction against your stances:"];
+  for (const { issue, stance, direction: dir } of direction) {
+    const stanceWord = stance === "support" ? "support" : "opposition";
+    const head = `  • ${issue} (${stanceWord})`;
+    if (dir.kind === "advances" || dir.kind === "obstructs") {
+      const verb = dir.kind === "advances" ? "appears to advance" : "appears to obstruct";
+      lines.push(`${head}: ${verb} — "${dir.quotedText}"`);
+      lines.push(`      Counter-consideration: ${dir.counterConsideration}`);
+    } else if (dir.kind === "mixed") {
+      lines.push(`${head}: mixed signals from bill text.`);
+      if (dir.advancesQuote) lines.push(`      Advances side: "${dir.advancesQuote}"`);
+      if (dir.obstructsQuote) lines.push(`      Obstructs side: "${dir.obstructsQuote}"`);
+      if (!dir.advancesQuote && !dir.obstructsQuote) {
+        lines.push(`      Rationale: ${dir.rationale}`);
+      }
+    } else {
+      lines.push(`${head}: direction unclear — ${dir.rationale}`);
+    }
+  }
+  return lines;
 }
 
 export const scoreBillTool: AnyAgentTool = {
@@ -173,7 +214,10 @@ export const scoreBillTool: AnyAgentTool = {
     const cfg = getPluginConfig();
     const resolver = createBillsResolver({ apiDataGovKey: cfg.apiKeys?.apiDataGov });
 
-    const result = await scoreBill(db, resolver, ref, { refresh: parsed.data.refresh });
+    const result = await scoreBill(db, resolver, ref, {
+      refresh: parsed.data.refresh,
+      llm: directionLlmOverride ?? undefined,
+    });
     return textResult(renderScoreBillOutput(result), result);
   },
 };

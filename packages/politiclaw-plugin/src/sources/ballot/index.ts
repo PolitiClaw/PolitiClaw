@@ -46,8 +46,13 @@ export function createBallotResolver(options: BallotResolverOptions): BallotReso
       if (stateCode) {
         const stateAdapter = adapterByState.get(stateCode);
         if (stateAdapter) {
-          const stateResult = await stateAdapter.fetchVoterInfo(address);
-          if (stateResult.status === "ok") return stateResult;
+          try {
+            const stateResult = await stateAdapter.fetchVoterInfo(address);
+            if (stateResult.status === "ok") return stateResult;
+          } catch {
+            // Graceful fallback: state adapter failures should not block the
+            // Google Civic path.
+          }
         }
       }
 

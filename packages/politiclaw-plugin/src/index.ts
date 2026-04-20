@@ -12,12 +12,14 @@ import { repReportTools } from "./tools/repReport.js";
 import { repScoringTools } from "./tools/repScoring.js";
 import { monitoringTools } from "./tools/monitoring.js";
 import { monitoringSetupTools } from "./tools/monitoringSetup.js";
+import { onboardingTools } from "./tools/onboarding.js";
 import { voteIngestTools } from "./tools/voteIngest.js";
 import { researchCandidateTools } from "./tools/researchCandidate.js";
 import { researchChallengersTools } from "./tools/researchChallengers.js";
 
 const allTools = [
   ...preferencesTools,
+  ...onboardingTools,
   ...repsTools,
   ...shapefileTools,
   ...billsTools,

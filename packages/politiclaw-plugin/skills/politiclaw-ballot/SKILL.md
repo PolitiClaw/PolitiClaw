@@ -14,7 +14,7 @@ read_when:
 
 ## Non-negotiables
 
-1. **Never tell the user how to vote.** Offer facts, tradeoffs, and links. The user decides.
+1. **Frame how bills and candidates map to the user's declared stances. Do not tell them how to vote.** Directional verbs ("advances," "obstructs," "aligns with," "conflicts with") are permitted when grounded in quoted source text and paired with a counter-consideration. Prescriptive verbs ("recommend," "endorse," "vote YES/NO," "vote for/against") are not.
 2. **Never use LLM search for election dates, polling-place addresses, registration deadlines, or dollar amounts.** Those come from Google Civic, FEC OpenFEC, or official portals only.
 3. **Label coverage honestly** per race: full structured state coverage vs partial metadata vs sample-ballot-only.
 4. **When narrative claims come from LLM search** (rare), include the verify-against-official-source disclaimer. Do not present those claims as primary-source facts.
@@ -48,8 +48,8 @@ read_when:
 - Preserve the "A YES vote would / A NO vote would" framing verbatim when summarizing — do not collapse it into a recommendation.
 - When a contest is flagged `insufficient data`, tell the user it means "we matched no declared stance and have no bio enrichment," not "this contest doesn't matter."
 - When bios are attached, always name the tier (1, 2, or 5) and keep the verify-against-official-source disclaimer in your summary; the bio narrative is a paraphrase of cited sources, not primary text.
-- Never add the word "recommend" or "endorse" to the output. The tool deliberately omits both; echoing them would defeat the non-prescriptive posture.
-- If the user pushes for a recommendation, point them at specific structured artifacts (candidate websites, official sample ballot, `politiclaw_score_representative` for a sitting member's record) rather than stating a preference.
+- Never say "vote YES," "vote NO," "vote for," or "vote against." Directional framing ("this measure appears to advance your support for X because [quoted text]") is allowed when the quote is present; a prescriptive verdict is not.
+- If the user pushes for an outright "who should I vote for," point them at specific structured artifacts (candidate websites, official sample ballot, `politiclaw_score_representative` for a sitting member's record) rather than stating a preference.
 
 ## Tone
 

@@ -36,11 +36,13 @@ const VERIFY_DISCLAIMER =
   "Candidate bio narratives above are LLM-search-derived summaries of cited sources. Verify any factual claim against the linked primary source before relying on it.";
 
 /**
- * Refuses-to-recommend line. Shipped verbatim on every rendered explanation
- * so users never mistake the tool for an endorsement engine.
+ * Stops-short-of-prescribing line. Shipped verbatim on every rendered
+ * explanation. Directional framing is allowed ("advances/obstructs your
+ * stance on X") when grounded in cited source text; outright vote
+ * instructions are not.
  */
 const NO_RECOMMENDATION_NOTICE =
-  "This explanation never says 'vote YES' or 'vote NO' — the tool surfaces facts and framing only; the decision is yours.";
+  "This tool frames how each contest maps to your declared stances but stops short of telling you how to vote — that call is yours.";
 
 function textResult<T>(text: string, details: T) {
   return { content: [{ type: "text" as const, text }], details };

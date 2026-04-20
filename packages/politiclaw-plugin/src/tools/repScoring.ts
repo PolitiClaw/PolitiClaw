@@ -201,8 +201,8 @@ export const scoreRepresentativeTool: AnyAgentTool = {
   description:
     "Compute per-issue alignment for a stored representative based on their House roll-call votes, " +
     "your declared issue stances, and your recorded stance signals on specific bills. " +
-    "Deterministic (no LLM) — direction comes exclusively from your explicit signals, never from " +
-    "an LLM guessing whether a bill advances or obstructs a stance. Confidence below the " +
+    "Deterministic (no LLM) — direction for rep scoring comes exclusively from your explicit " +
+    "stance signals on bills, so the rep's record is counted, not narrated. Confidence below the " +
     `${CONFIDENCE_FLOOR} floor renders as "insufficient data". ` +
     "Procedural motions are excluded by default; pass includeProcedural=true " +
     "for the raw tally. Senate votes are not yet ingested, so senators will show " +

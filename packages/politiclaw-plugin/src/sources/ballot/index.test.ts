@@ -32,23 +32,29 @@ describe("createBallotResolver", () => {
       id: "stateSoS.california",
       stateCode: "CA",
       fetchVoterInfo: vi.fn(async () => ({
-        status: "ok",
+        status: "ok" as const,
         adapterId: "stateSoS.california",
-        tier: 2,
+        tier: 2 as const,
         data: fixtureSnapshot(),
         fetchedAt: 100,
       })),
     };
-    const fetcher = vi.fn();
+    const fetcherSpy = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      async json() {
+        return {};
+      },
+    }));
     const resolver = createBallotResolver({
-      fetcher,
+      fetcher: fetcherSpy as unknown as typeof fetch,
       googleCivicApiKey: "fake-google-key",
       stateSoSAdapters: [stateAdapter],
     });
 
     const result = await resolver.voterInfo("1600 Amphitheatre Parkway, 94043, CA");
     expect(stateAdapter.fetchVoterInfo).toHaveBeenCalledTimes(1);
-    expect(fetcher).not.toHaveBeenCalled();
+    expect(fetcherSpy).not.toHaveBeenCalled();
     expect(result.status).toBe("ok");
     if (result.status !== "ok") return;
     expect(result.adapterId).toBe("stateSoS.california");
@@ -59,10 +65,44 @@ describe("createBallotResolver", () => {
       id: "stateSoS.california",
       stateCode: "CA",
       fetchVoterInfo: vi.fn(async () => ({
-        status: "unavailable",
+        status: "unavailable" as const,
         adapterId: "stateSoS.california",
         reason: "not wired",
       })),
+    };
+    const googleFixture = fixtureSnapshot();
+    const fetcher = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      async json() {
+        return {
+          election: googleFixture.election,
+          normalizedInput: googleFixture.normalizedInput,
+          contests: [],
+          pollingLocations: [],
+        };
+      },
+    })) as unknown as typeof fetch;
+    const resolver = createBallotResolver({
+      fetcher,
+      googleCivicApiKey: "fake-google-key",
+      stateSoSAdapters: [stateAdapter],
+    });
+
+    const result = await resolver.voterInfo("1600 Amphitheatre Parkway, 94043, CA");
+    expect(stateAdapter.fetchVoterInfo).toHaveBeenCalledTimes(1);
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    expect(result.adapterId).toBe("googleCivic");
+  });
+
+  it("falls back to Google Civic when state adapter throws", async () => {
+    const stateAdapter: StateSoSBallotAdapter = {
+      id: "stateSoS.california",
+      stateCode: "CA",
+      fetchVoterInfo: vi.fn(async () => {
+        throw new Error("state transport crashed");
+      }),
     };
     const googleFixture = fixtureSnapshot();
     const fetcher = vi.fn(async () => ({
@@ -95,7 +135,7 @@ describe("createBallotResolver", () => {
       id: "stateSoS.california",
       stateCode: "CA",
       fetchVoterInfo: vi.fn(async () => ({
-        status: "unavailable",
+        status: "unavailable" as const,
         adapterId: "stateSoS.california",
         reason: "not wired",
       })),

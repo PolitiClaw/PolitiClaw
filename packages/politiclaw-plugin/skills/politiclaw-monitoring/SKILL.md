@@ -55,12 +55,14 @@ Everything else goes under a terse "also changed" tail.
 
 ## 3. Alignment numbers: how to report them
 
-- **Never invent a "should vote YES/NO" verdict.** The plugin intentionally
-  reports relevance (this bill touches your stances) without direction. If
-  the user asks "would I support this?", say: "I can tell you the bill
-  touches `X, Y`. Your declared stance on `X` is `support`; whether *this*
-  bill advances or obstructs `X` depends on the amendments, which I haven't
-  read."
+- **Never prescribe a "vote YES/NO" verdict.** The plugin may now include
+  *directional framing* ("this bill appears to advance / obstruct your
+  stance on X — because [quoted bill text]"). When a direction is present,
+  quote the cited bill-text basis verbatim and pair it with the
+  counter-consideration the tool returned. When the direction is `unclear`
+  (below the confidence floor, or no text could be quoted), do not invent
+  one — render "direction unclear; the tool could not ground a claim in the
+  bill's own text."
 - If `alignment.belowConfidenceFloor` is true, render "insufficient data".
   Do not quote the raw percentages.
 - If the rationale names specific matched subjects, quote them. If it

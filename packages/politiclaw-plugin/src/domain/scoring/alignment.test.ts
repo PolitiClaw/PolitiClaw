@@ -115,6 +115,7 @@ describe("computeBillAlignment", () => {
 
   it("exposes the alignment disclaimer as an exported constant", () => {
     expect(ALIGNMENT_DISCLAIMER).toContain("informational");
-    expect(ALIGNMENT_DISCLAIMER).toContain("Verify");
+    expect(ALIGNMENT_DISCLAIMER).toContain("verify");
+    expect(ALIGNMENT_DISCLAIMER).toContain("Directional framing");
   });
 });

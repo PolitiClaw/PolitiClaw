@@ -62,9 +62,10 @@ describe("renderExplainMyBallotOutput", () => {
 
   it("always includes the no-recommendation notice and alignment disclaimer", () => {
     const text = renderExplainMyBallotOutput(okResult());
-    expect(text).toContain("vote YES");
-    expect(text).toContain("the decision is yours");
+    expect(text).toContain("stops short of telling you how to vote");
+    expect(text).toContain("that call is yours");
     expect(text).toContain("informational, not independent journalism");
+    expect(text).toContain("Directional framing");
   });
 
   it("appends the verify disclaimer only when bios are rendered", () => {
@@ -173,9 +174,9 @@ describe("renderExplainMyBallotOutput", () => {
       }),
     );
     const lower = text.toLowerCase();
-    expect(lower).not.toMatch(/\brecommend\b/);
-    expect(lower).not.toMatch(/\bendorse\b/);
     expect(lower).not.toMatch(/\byou should vote\b/);
+    expect(lower).not.toMatch(/\bvote (yes|no|for|against)\b/);
+    expect(lower).not.toMatch(/\bwe recommend\b/);
   });
 });
 

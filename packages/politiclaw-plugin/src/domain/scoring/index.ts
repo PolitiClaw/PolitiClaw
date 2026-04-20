@@ -14,6 +14,11 @@ import {
   type StanceMatch,
 } from "./alignment.js";
 import {
+  computeBillDirection,
+  type DirectionForStance,
+  type LlmClient,
+} from "./direction.js";
+import {
   computeRepAlignment,
   type BillEvidence,
   type RepIssueAlignment,
@@ -22,12 +27,14 @@ import {
 export { ALIGNMENT_DISCLAIMER, CONFIDENCE_FLOOR };
 export type { AlignmentResult, StanceMatch };
 export type { RepIssueAlignment };
+export type { DirectionForStance, LlmClient };
 
 export type ScoreBillResult =
   | {
       status: "ok";
       bill: StoredBill;
       alignment: AlignmentResult;
+      direction: DirectionForStance[] | null;
       fromCache: boolean;
       source: { adapterId: string; tier: number };
     }
@@ -36,6 +43,12 @@ export type ScoreBillResult =
 
 export type ScoreBillOptions = {
   refresh?: boolean;
+  /**
+   * When provided, the tool asks the LLM to classify whether the bill
+   * advances or obstructs each declared stance. Without it, the result
+   * preserves today's behavior — alignment only, no direction.
+   */
+  llm?: LlmClient;
 };
 
 export async function scoreBill(
@@ -70,10 +83,16 @@ export async function scoreBill(
   const alignment = computeBillAlignment(detail.bill, stances);
   persistAlignment(db, detail.bill.id, alignment, detail.source);
 
+  let direction: DirectionForStance[] | null = null;
+  if (opts.llm && !alignment.belowConfidenceFloor) {
+    direction = await computeBillDirection(detail.bill, stances, opts.llm);
+  }
+
   return {
     status: "ok",
     bill: detail.bill,
     alignment,
+    direction,
     fromCache: detail.fromCache,
     source: detail.source,
   };
@@ -157,8 +176,10 @@ export type ScoreRepresentativeResult =
  *   - `issue_stances` — what the user cares about.
  *   - `stance_signals` — how the user would have voted on specific bills
  *     (`agree` → Yea; `disagree` → Nay; `skip` is ignored). This is the only
- *     source of direction; we deliberately refuse to have an LLM decide
- *     whether a bill advances or obstructs a stance.
+ *     source of direction for rep scoring; the LLM-sourced directional
+ *     framing from `./direction.ts` is used elsewhere (bill scoring, ballot
+ *     measures) but is deliberately excluded here so the rep's record is
+ *     counted against user-declared signals, not narrated.
  *   - `bill_alignment` (current `stance_snapshot_hash`) — which bills touch
  *     which issues. Bills that have not been scored under the current stance
  *     set are invisible to this function; call `politiclaw_score_bill` or

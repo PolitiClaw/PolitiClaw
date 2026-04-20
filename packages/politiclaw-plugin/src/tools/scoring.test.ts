@@ -11,7 +11,8 @@ import {
   setStorageForTests,
 } from "../storage/context.js";
 import { upsertIssueStance } from "../domain/preferences/index.js";
-import { scoreBillTool } from "./scoring.js";
+import type { LlmClient } from "../domain/scoring/index.js";
+import { scoreBillTool, setDirectionLlmForTests } from "./scoring.js";
 
 const FIXTURES_DIR = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -83,6 +84,7 @@ beforeEach(() => {
 
 afterEach(() => {
   resetStorageConfigForTests();
+  setDirectionLlmForTests(null);
   vi.unstubAllGlobals();
 });
 
@@ -158,6 +160,55 @@ describe("politiclaw_score_bill tool", () => {
 
     expect(text).toContain("unavailable");
     expect(text).toContain("apiDataGov");
+  });
+
+  it("appends a direction section when an LLM client is injected and alignment is above floor", async () => {
+    stubHousingFixtures();
+    setPluginConfigForTests({ apiKeys: { apiDataGov: "k" } });
+    upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });
+    upsertIssueStance(db, { issue: "climate", stance: "support", weight: 3 });
+    upsertIssueStance(db, { issue: "tax-policy", stance: "oppose", weight: 2 });
+
+    const fake: LlmClient = {
+      async reason() {
+        return {
+          kind: "advances",
+          confidence: 0.8,
+          rationale: "bill funds affordable housing construction",
+          quotedText: "Affordable housing",
+          counterConsideration: "Some argue supply-side subsidies raise land prices.",
+        };
+      },
+    };
+    setDirectionLlmForTests(fake);
+
+    const result = await scoreBillTool.execute!(
+      "call-1",
+      { billId: "119-hr-1234" },
+      undefined,
+      undefined,
+    );
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+
+    expect(text).toContain("Direction against your stances:");
+    expect(text).toContain("appears to advance");
+    expect(text).toContain("Counter-consideration:");
+  });
+
+  it("omits the direction section when no LLM client is wired", async () => {
+    stubHousingFixtures();
+    setPluginConfigForTests({ apiKeys: { apiDataGov: "k" } });
+    upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });
+
+    const result = await scoreBillTool.execute!(
+      "call-1",
+      { billId: "119-hr-1234" },
+      undefined,
+      undefined,
+    );
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+
+    expect(text).not.toContain("Direction against your stances:");
   });
 
   it("rejects a malformed billId with actionable feedback", async () => {

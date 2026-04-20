@@ -347,7 +347,7 @@ function buildFraming(
       const direction = match.stance === "support" ? "support" : "opposition";
       lines.push({
         prefix: `Your declared stance (${match.issue}, ${direction}, weight ${match.stanceWeight})`,
-        body: `this measure matched on ${match.matchedText}, but whether YES advances or obstructs that stance depends on the measure's specific text — we do not classify direction from structured data alone.`,
+        body: `this measure matched on ${match.matchedText}. Direction unclear from the published summary alone — read the full measure text (or a paired federal bill, if any) to decide whether a YES advances or obstructs your stance.`,
       });
     }
     return lines;
@@ -369,7 +369,7 @@ function buildFraming(
       const direction = match.stance === "support" ? "support" : "opposition";
       lines.push({
         prefix: `Your declared stance (${match.issue}, ${direction}, weight ${match.stanceWeight})`,
-        body: `this office description matched on ${match.matchedText}. Candidate positions on this issue are not available from structured sources — consult candidate sites or the politiclaw_research_candidate tool for federal finance.`,
+        body: `this office description matched on ${match.matchedText}. Directional framing requires per-candidate source text — consult candidate sites, politiclaw_research_candidate for federal finance, or politiclaw_score_representative for a sitting member's record.`,
       });
     }
     return lines;

@@ -3,12 +3,18 @@ import type { AnyAgentTool } from "openclaw/plugin-sdk";
 import { z } from "zod";
 
 import { ALIGNMENT_DISCLAIMER } from "../domain/scoring/index.js";
+import type { AdapterResult } from "../sources/common/types.js";
 import { createFinanceResolver } from "../sources/finance/index.js";
 import type {
   FederalCandidateFinancialSummary,
   FederalCandidateFinancialTotals,
   FederalCandidateRef,
 } from "../sources/finance/index.js";
+import { createWebSearchResolver } from "../sources/webSearch/index.js";
+import type {
+  BioPayload,
+  WebSearchResolver,
+} from "../sources/webSearch/index.js";
 import { getPluginConfig } from "../storage/context.js";
 
 const ResearchCandidateParams = Type.Object({
@@ -111,9 +117,49 @@ function formatTotalsLine(row: FederalCandidateFinancialTotals): string[] {
   ];
 }
 
+/**
+ * Appended whenever a bio narrative was rendered. The bio narrative itself
+ * is an LLM paraphrase of primary sources even at tier 1/2, so the
+ * verify-against-official-source line ships every time.
+ */
+const BIO_VERIFY_DISCLAIMER =
+  "Bio narrative above is LLM-search-derived and paraphrases the cited sources. Verify any factual claim against the linked primary source before relying on it.";
+
+export function renderCandidateBio(
+  candidateName: string,
+  bioResult: AdapterResult<BioPayload>,
+): string[] {
+  if (bioResult.status !== "ok") {
+    return [
+      `Bio for ${candidateName}: unavailable — ${bioResult.reason}.` +
+        (bioResult.actionable ? ` ${bioResult.actionable}` : ""),
+    ];
+  }
+  const { tier, adapterId, data } = bioResult;
+  const lines: string[] = [
+    `Bio for ${candidateName} — tier ${tier} (${adapterId}):`,
+    `  ${data.narrativeText}`,
+  ];
+  if (data.structured && Object.keys(data.structured).length > 0) {
+    lines.push("  Structured fields:");
+    for (const [key, value] of Object.entries(data.structured)) {
+      lines.push(`    ${key}: ${value}`);
+    }
+  }
+  if (data.citations.length > 0) {
+    lines.push("  Citations:");
+    for (const citation of data.citations) {
+      const prefix = citation.title ? `${citation.title} — ` : "";
+      lines.push(`    - ${prefix}${citation.url}`);
+    }
+  }
+  return lines;
+}
+
 export function renderCandidateSummary(
   summary: FederalCandidateFinancialSummary,
   source: { adapterId: string; tier: number },
+  bioResult?: AdapterResult<BioPayload>,
 ): string {
   const lines: string[] = [
     `Candidate finance summary (FEC — tier ${source.tier}, source ${source.adapterId}):`,
@@ -135,9 +181,21 @@ export function renderCandidateSummary(
   lines.push(
     "Industry rollups, top donors, and independent expenditures require an OpenSecrets key (optional) — this v1 slice surfaces FEC totals only.",
   );
-  lines.push(
-    "Bio, voting record, and position statements are not in this output. Use `politiclaw_score_representative` for a sitting member's record.",
-  );
+
+  if (bioResult) {
+    lines.push("");
+    lines.push(...renderCandidateBio(summary.candidate.name, bioResult));
+  } else {
+    lines.push(
+      "Bio, voting record, and position statements are not in this output. Use `politiclaw_score_representative` for a sitting member's record.",
+    );
+  }
+
+  if (bioResult?.status === "ok") {
+    lines.push("");
+    lines.push(BIO_VERIFY_DISCLAIMER);
+  }
+
   lines.push("");
   lines.push(ALIGNMENT_DISCLAIMER);
 
@@ -171,15 +229,40 @@ export function renderSearchMatches(
   return lines.join("\n");
 }
 
+/**
+ * Test seam: override the web-search resolver used by the tool so specs can
+ * exercise the bio-attached candidateId branch without wiring a global
+ * transport. Production leaves this unset — the tool then builds a fetcher-
+ * less resolver which returns `unavailable` and degrades to FEC-only output.
+ */
+let webSearchResolverOverride: WebSearchResolver | null = null;
+
+export function setWebSearchResolverForTests(
+  next: WebSearchResolver | null,
+): void {
+  webSearchResolverOverride = next;
+}
+
+function officeHintForBio(
+  office: FederalCandidateRef["office"],
+): "H" | "S" | "P" | undefined {
+  if (office === "H" || office === "S" || office === "P") return office;
+  return undefined;
+}
+
 export const researchCandidateTool: AnyAgentTool = {
   name: "politiclaw_research_candidate",
-  label: "Look up FEC candidate finance totals",
+  label: "Look up FEC candidate finance totals + tier-5 bio",
   description:
-    "Research a federal candidate (President, Senate, House) via FEC OpenFEC. " +
-    "Pass `candidateId` (e.g. H8CA12345) for a full per-cycle totals summary, or `name` to search " +
-    "by fuzzy string. Dollar amounts come only from FEC (tier 1) — industry rollups, donor " +
-    "identities, and independent expenditures are intentionally out of scope until an OpenSecrets " +
-    "key lands. Requires plugins.politiclaw.apiKeys.apiDataGov (same key as api.congress.gov).",
+    "Research a federal candidate (President, Senate, House) via FEC OpenFEC plus an " +
+    "optional LLM-search bio. Pass `candidateId` (e.g. H8CA12345) for a full per-cycle totals " +
+    "summary with an attached bio; pass `name` for a fuzzy search that returns up to 5 FEC " +
+    "matches (no bio on the search path — re-run by `candidateId` to pull one). Dollar amounts " +
+    "come only from FEC (tier 1) — industry rollups, donor identities, and independent " +
+    "expenditures are intentionally out of scope until an OpenSecrets key lands. The bio is " +
+    "tier-5 by default and only reaches tier 1/2 when every citation is a primary-government " +
+    "or neutral civic-infrastructure domain. Requires plugins.politiclaw.apiKeys.apiDataGov " +
+    "(same key as api.congress.gov).",
   parameters: ResearchCandidateParams,
   async execute(_toolCallId, rawParams) {
     const parsed = ResearchCandidateInputSchema.safeParse(rawParams);
@@ -195,6 +278,7 @@ export const researchCandidateTool: AnyAgentTool = {
     const resolver = createFinanceResolver({
       apiDataGovKey: configuration.apiKeys?.apiDataGov,
     });
+    const webSearch = webSearchResolverOverride ?? createWebSearchResolver();
 
     if (input.candidateId) {
       const result = await resolver.getCandidateSummary(input.candidateId);
@@ -205,9 +289,22 @@ export const researchCandidateTool: AnyAgentTool = {
           result,
         );
       }
+      const candidate = result.data.candidate;
+      const bioResult = await webSearch.bio({
+        name: candidate.name,
+        category: "candidate.bio",
+        office: officeHintForBio(candidate.office),
+        state: candidate.state,
+        district: candidate.district,
+        context: "federal candidate bio",
+      });
       return textResult(
-        renderCandidateSummary(result.data, { adapterId: result.adapterId, tier: result.tier }),
-        result,
+        renderCandidateSummary(
+          result.data,
+          { adapterId: result.adapterId, tier: result.tier },
+          bioResult,
+        ),
+        { ...result, bio: bioResult },
       );
     }
 

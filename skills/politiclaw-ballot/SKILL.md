@@ -22,7 +22,7 @@ read_when:
 ## Tool posture
 
 - `politiclaw_get_my_ballot` lists logistics and contests from Google Civic when `googleCivic` is configured. Treat candidate rows as identifiers from an aggregator (tier 2), not verified bios.
-- `politiclaw_research_candidate` returns federal finance totals from FEC OpenFEC (tier 1) when `apiDataGov` is configured. Use the `name` mode first to resolve a candidate id; then call with `candidateId` for per-cycle totals. Numbers are FEC-only — no industry rollups, no top donors, and no independent expenditures in this tool.
+- `politiclaw_research_candidate` returns federal finance totals from FEC OpenFEC (tier 1) when `apiDataGov` is configured. Use the `name` mode first to resolve a candidate id; then call with `candidateId` for per-cycle totals plus an attached LLM-search bio when the bio transport is wired. Numbers are FEC-only — no industry rollups, no top donors, and no independent expenditures in this tool. Bios are tier 5 by default and only reach tier 1/2 when every citation is a primary-government or neutral civic-infrastructure domain.
 - `politiclaw_research_challengers` starts from the user's stored reps (not the ballot snapshot — it works without `googleCivic`) and compares every FEC filing in each race side-by-side for a given cycle. Incumbent vs challenger labels come from FEC's `incumbent_challenge` field only — never infer from name matches. Default cycle is the current election cycle; let the user pass `cycle` for historical comparisons.
 - `politiclaw_explain_my_ballot` wraps `get_my_ballot` with deterministic per-contest framing. For measures it renders "A YES vote would / A NO vote would" lines sourced from Google Civic's published subtitle (tier 2 — always tell the user to verify against the full text). For candidate races it enumerates what the race decides and attaches bios via the `webSearch/bios` adapter when wired; bios are tier 5 by default and only reach tier 1/2 when every citation is a primary-government or neutral civic infrastructure domain. The tool never says "vote YES/NO"; mirror that discipline in your own summaries.
 - If additional secretary-of-state feeds or a live web-search transport for `webSearch/bios` are wired in later, keep following this skill.
@@ -32,7 +32,9 @@ read_when:
 - Keep FEC dollar figures intact — never round away or paraphrase them into ranges; the raw numbers are the whole point.
 - When a row shows "no data" for a numeric field, say so honestly. Do not backfill with LLM search.
 - Mention that industry rollups / top donors are intentionally absent in v1 — recommend the user add an OpenSecrets key if they want that context.
-- Always pair finance numbers with the bio gap: this tool does not return voting records or position statements. Point at `politiclaw_score_representative` for a sitting member's record.
+- When a bio is attached, name the tier (1, 2, or 5) and keep the verify-against-official-source disclaimer in your summary. The narrative is a paraphrase of cited sources, not primary text — never restate it as a direct quote.
+- When the bio line reads "unavailable — candidate-bio adapter has no live web-search transport wired yet," the finance summary is still the authoritative answer; point the user at the candidate's official site or `politiclaw_score_representative` for a sitting member's record rather than backfilling a narrative yourself.
+- This tool does not return voting records or position statements, bio attached or not. Point at `politiclaw_score_representative` whenever the user wants a vote record.
 
 ## Citing `research_challengers` output
 

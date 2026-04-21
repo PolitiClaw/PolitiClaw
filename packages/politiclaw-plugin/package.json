@@ -1,5 +1,5 @@
 {
-  "name": "politiclaw",
+  "name": "@politiclaw/plugin",
   "version": "0.0.1",
   "description": "Local-first OpenClaw plugin: a personal political co-pilot for legislation, reps, elections, and action.",
   "type": "module",
@@ -15,7 +15,10 @@
   "openclaw": {
     "extensions": [
       "./src/index.ts"
-    ]
+    ],
+    "install": {
+      "minHostVersion": ">=2026.4.15"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -27,11 +30,13 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "peerDependencies": {
+    "openclaw": ">=2026.4.15"
+  },
   "dependencies": {
     "@turf/boolean-point-in-polygon": "^7.3.5",
     "better-sqlite3": "^11.5.0",
     "js-yaml": "^4.1.1",
-    "openclaw": "*",
     "shapefile": "^0.6.6",
     "zod": "^3.23.0"
   },

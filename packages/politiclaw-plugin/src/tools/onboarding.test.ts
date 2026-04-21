@@ -65,6 +65,8 @@ describe("politiclaw_start_onboarding", () => {
     expect(details.suggestedOpeningPrompts.length).toBeGreaterThan(0);
     expect(details.canonicalIssueSlugs).toContain("climate");
     expect(details.existingStances).toEqual([]);
+    expect(details.persistence.canPersistIssueStances).toBe(false);
+    expect(details.persistence.missingTools).toContain("politiclaw_set_issue_stance");
   });
 
   it("returns quiz handoff with question bank and empty existingStances on first run", async () => {
@@ -88,6 +90,7 @@ describe("politiclaw_start_onboarding", () => {
     expect(details.mode).toBe("quiz");
     expect(details.questions.length).toBeGreaterThanOrEqual(10);
     expect(details.existingStances).toEqual([]);
+    expect(details.persistence.canPersistIssueStances).toBe(false);
   });
 
   it("round-trips existing stances into the quiz handoff (and skips already-answered ones)", async () => {
@@ -114,6 +117,7 @@ describe("politiclaw_start_onboarding", () => {
     expect(details.questions.some((q) => q.canonicalIssueSlug === "climate")).toBe(
       false,
     );
+    expect(details.persistence.warning).toContain("cannot verify");
   });
 
   it("choice-prompt text notes existing stance count when present", async () => {
@@ -125,5 +129,17 @@ describe("politiclaw_start_onboarding", () => {
     const res = await startOnboardingTool.execute!("call-1", {}, undefined, undefined);
     const text = textFrom(res as { content: Array<{ type: string; text: string }> });
     expect(text).toContain("already have 2 declared stance");
+  });
+
+  it("renders a persistence warning in onboarding handoff text", async () => {
+    const res = await startOnboardingTool.execute!(
+      "call-1",
+      { mode: "quiz" },
+      undefined,
+      undefined,
+    );
+    const text = textFrom(res as { content: Array<{ type: string; text: string }> });
+    expect(text).toContain("cannot verify");
+    expect(text).toContain("not persisted from this surface");
   });
 });

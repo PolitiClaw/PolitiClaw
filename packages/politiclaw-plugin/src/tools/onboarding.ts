@@ -29,17 +29,25 @@ type ChoicePrompt = {
   options: Array<{ id: "conversation" | "quiz"; label: string; description: string }>;
 };
 
+type PersistenceStatus = {
+  canPersistIssueStances: boolean;
+  missingTools: readonly string[];
+  warning?: string;
+};
+
 type ConversationHandoff = {
   mode: "conversation";
   suggestedOpeningPrompts: readonly string[];
   canonicalIssueSlugs: readonly string[];
   existingStances: readonly IssueStanceRow[];
+  persistence: PersistenceStatus;
 };
 
 type QuizHandoff = {
   mode: "quiz";
   questions: readonly QuizQuestion[];
   existingStances: readonly IssueStanceRow[];
+  persistence: PersistenceStatus;
 };
 
 export type StartOnboardingResult = ChoicePrompt | ConversationHandoff | QuizHandoff;
@@ -64,8 +72,16 @@ function renderChoicePrompt(existing: readonly IssueStanceRow[]): string {
 }
 
 function renderConversationHandoff(handoff: ConversationHandoff): string {
-  const lines = [
-    "Conversation onboarding ready.",
+  const lines = ["Conversation onboarding ready."];
+  if (!handoff.persistence.canPersistIssueStances) {
+    lines.push(
+      "",
+      handoff.persistence.warning ??
+        "Warning: this runtime cannot persist issue stances right now.",
+      "You can still collect answers here, but do not claim they were saved unless politiclaw_set_issue_stance is actually callable.",
+    );
+  }
+  lines.push(
     "",
     "Suggested opening prompts for the skill to draw from (pick one, don't recite all):",
     ...handoff.suggestedOpeningPrompts.map((prompt) => `  - ${prompt}`),
@@ -73,7 +89,7 @@ function renderConversationHandoff(handoff: ConversationHandoff): string {
     "When the user expresses a position, paraphrase it back before calling politiclaw_set_issue_stance. Map free text to a canonical slug when possible; novel issues are allowed but flag them.",
     "",
     `Canonical slug set: ${handoff.canonicalIssueSlugs.join(", ")}.`,
-  ];
+  );
   if (handoff.existingStances.length > 0) {
     lines.push(
       "",
@@ -87,13 +103,21 @@ function renderConversationHandoff(handoff: ConversationHandoff): string {
 }
 
 function renderQuizHandoff(handoff: QuizHandoff): string {
-  const lines = [
-    `Quiz onboarding ready — ${handoff.questions.length} questions.`,
+  const lines = [`Quiz onboarding ready — ${handoff.questions.length} questions.`];
+  if (!handoff.persistence.canPersistIssueStances) {
+    lines.push(
+      "",
+      handoff.persistence.warning ??
+        "Warning: this runtime cannot persist issue stances right now.",
+      "You can still collect answers here, but do not say they were saved unless politiclaw_set_issue_stance is actually available.",
+    );
+  }
+  lines.push(
     "",
     "Ask them sequentially. For each, present the three answer labels; only ask the weight follow-up after support or oppose. \"No strong view\" does not persist a neutral stance unless the user explicitly asks to record one. After all answers, read back the collected stances before committing with politiclaw_set_issue_stance.",
     "",
     "Questions:",
-  ];
+  );
   for (const q of handoff.questions) {
     lines.push(`  ${q.id} (${q.canonicalIssueSlug}): ${q.prompt}`);
     lines.push(
@@ -115,6 +139,7 @@ function renderQuizHandoff(handoff: QuizHandoff): string {
 export function buildStartOnboardingResult(
   input: { mode?: "conversation" | "quiz" },
   existingStances: readonly IssueStanceRow[],
+  persistence: PersistenceStatus,
 ): StartOnboardingResult {
   if (input.mode === "conversation") {
     return {
@@ -122,6 +147,7 @@ export function buildStartOnboardingResult(
       suggestedOpeningPrompts: SUGGESTED_OPENING_PROMPTS,
       canonicalIssueSlugs: canonicalIssueSlugs(),
       existingStances,
+      persistence,
     };
   }
   if (input.mode === "quiz") {
@@ -133,6 +159,7 @@ export function buildStartOnboardingResult(
       mode: "quiz",
       questions: questions.length > 0 ? questions : QUIZ_QUESTIONS,
       existingStances,
+      persistence,
     };
   }
   return {
@@ -166,6 +193,16 @@ export function renderStartOnboardingOutput(result: StartOnboardingResult): stri
   return renderQuizHandoff(result);
 }
 
+function detectPersistenceStatus(): PersistenceStatus {
+  const missingTools = ["politiclaw_set_issue_stance"];
+  return {
+    canPersistIssueStances: false,
+    missingTools,
+    warning:
+      "This onboarding handoff cannot verify that politiclaw_set_issue_stance is available in the current runtime. If that tool is missing from the effective tool set, answers can be collected here but not persisted from this surface.",
+  };
+}
+
 export const startOnboardingTool: AnyAgentTool = {
   name: "politiclaw_start_onboarding",
   label: "Start PolitiClaw onboarding (conversation or quiz)",
@@ -181,7 +218,8 @@ export const startOnboardingTool: AnyAgentTool = {
     const input = (rawParams ?? {}) as { mode?: "conversation" | "quiz" };
     const { db } = getStorage();
     const existingStances = listIssueStances(db);
-    const result = buildStartOnboardingResult(input, existingStances);
+    const persistence = detectPersistenceStatus();
+    const result = buildStartOnboardingResult(input, existingStances, persistence);
     const text =
       result.mode === "choice"
         ? renderChoicePrompt(existingStances)

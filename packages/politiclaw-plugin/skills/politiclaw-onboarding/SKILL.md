@@ -24,6 +24,10 @@ are supported; the user picks.
 3. Re-invoke `politiclaw_start_onboarding` with the chosen `mode`. The
    tool returns everything you need to run that mode plus any stances the
    user has already declared.
+4. Check the handoff's persistence status before claiming anything was
+   saved. If `politiclaw_set_issue_stance` is not available in the
+   current runtime, say so plainly up front: you can collect answers on
+   this surface, but they will not be persisted here.
 
 If the user already has stances and asks to "redo" onboarding, ask
 whether they want to keep, revise, or wipe each existing one before
@@ -49,9 +53,11 @@ issue-slug set. Use them like this:
    not one of the canonical issues PolitiClaw scores — I can still save
    it as a custom slug, but automated bill matching may be weaker." Then
    let them decide.
-5. **Persist via `politiclaw_set_issue_stance`.** Pass the normalized
-   slug, the confirmed stance (`support` / `oppose` / `neutral`), and
-   the weight. Do not batch persists silently — confirm each.
+5. **Persist via `politiclaw_set_issue_stance` only when available.**
+   Pass the normalized slug, the confirmed stance (`support` /
+   `oppose` / `neutral`), and the weight. Do not batch persists silently
+   — confirm each. If the tool is unavailable in this runtime, do not
+   pretend the stance was saved.
 6. **Stop when the user runs out of things to say.** Three solid stances
    are better than twelve half-considered ones.
 
@@ -78,7 +84,9 @@ suggested labels. Rules:
 5. **Read back the full list before committing.** "Here's what I'll save:
    [list]. Commit all of these?"
 6. **Commit via `politiclaw_set_issue_stance`** once the user
-   confirms.
+   confirms, but only if the current runtime actually exposes that tool.
+   Otherwise stop after readback and explain that persistence is blocked
+   on tool availability from this surface.
 
 ## Returning users
 

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>PolitiClaw Status</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="pc-header">
+      <h1>PolitiClaw Status</h1>
+      <p class="pc-subtitle">Read-only dashboard. Edits happen via the agent.</p>
+      <p class="pc-generated" id="pc-generated" aria-live="polite">Loading…</p>
+    </header>
+
+    <main class="pc-main">
+      <section class="pc-section" id="pc-section-preferences">
+        <h2>Preferences</h2>
+        <div class="pc-section-body" id="pc-preferences-body">Loading…</div>
+      </section>
+
+      <section class="pc-section" id="pc-section-reps">
+        <h2>Representatives &amp; alignment</h2>
+        <div class="pc-section-body" id="pc-reps-body">Loading…</div>
+      </section>
+
+      <section class="pc-section" id="pc-section-monitoring">
+        <h2>Monitoring jobs</h2>
+        <div class="pc-section-body" id="pc-monitoring-body">Loading…</div>
+      </section>
+
+      <section class="pc-section" id="pc-section-election">
+        <h2>Upcoming election</h2>
+        <div class="pc-section-body" id="pc-election-body">Loading…</div>
+      </section>
+    </main>
+
+    <footer class="pc-footer">
+      <p>
+        Local-only. No edits from this page. Ask the agent to update
+        preferences, refresh reps, or pause monitoring.
+      </p>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>

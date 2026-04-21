@@ -1,6 +1,6 @@
 # Generated Source Coverage
 
-This page is generated from the explicit source coverage catalog and the current state ballot adapter files.
+This page is generated from the explicit source coverage catalog.
 
 ## Status Legend
 
@@ -14,8 +14,7 @@ This page is generated from the explicit source coverage catalog and the current
 | api.data.gov | `implemented` | `apiKeys.apiDataGov` | yes | Required for the current federal bill, House vote, committee schedule, and FEC finance integrations. |
 | Local shapefile pipeline | `implemented` | n/a | no | Zero-key default for federal reps-by-address resolution after the cache is primed locally. |
 | Geocodio | `optional_upgrade` | `apiKeys.geocodio` | no | Optional API-backed upgrade for faster reps-by-address lookup. |
-| Google Civic voterInfoQuery | `optional_upgrade` | `apiKeys.googleCivic` | no | Key-gated ballot and election-logistics provider used when a state adapter does not return a result. |
-| State secretary of state ballot adapters | `implemented` | n/a | no | Structured ballot coverage currently exists for California, Colorado, Florida, Michigan, Ohio, and Washington. |
+| Google Civic voterInfoQuery | `optional_upgrade` | `apiKeys.googleCivic` | no | Key-gated ballot and election-logistics provider — the only ballot source the plugin wires today. |
 | Candidate and measure bio web search | `transport_pending` | n/a | no | The guarded adapter shape exists, but the production transport is not wired, so live calls return unavailable. |
 | Open States | `schema_only` | `apiKeys.openStates` | no | Declared in the plugin config schema but not wired into the current runtime. |
 | LegiScan | `schema_only` | `apiKeys.legiscan` | no | Declared in the plugin config schema but not wired into the current runtime. |
@@ -62,19 +61,10 @@ This page is generated from the explicit source coverage catalog and the current
 - Status: `optional_upgrade`
 - Required: no
 - Config key: `apiKeys.googleCivic`
-- Summary: Key-gated ballot and election-logistics provider used when a state adapter does not return a result.
-- Notes: Required for the generic ballot tools today. State ballot adapters run first for six states.
+- Summary: Key-gated ballot and election-logistics provider — the only ballot source the plugin wires today.
+- Notes: Required for every ballot tool. Per-state SoS adapters were scoped out in v1 after an audit found none of the six candidate states publishes a public address-to-ballot JSON feed; revisit when BallotReady or Democracy Works provides self-serve keys.
 - Tools: `politiclaw_get_my_ballot`, `politiclaw_explain_my_ballot`, `politiclaw_prepare_me_for_my_next_election`
 - Runtime files: `packages/politiclaw-plugin/src/sources/ballot/index.ts`, `packages/politiclaw-plugin/src/sources/ballot/googleCivic.ts`
-
-### State secretary of state ballot adapters
-
-- Status: `implemented`
-- Required: no
-- Summary: Structured ballot coverage currently exists for California, Colorado, Florida, Michigan, Ohio, and Washington.
-- Notes: These adapters are built in and do not require a user-supplied key.
-- Tools: `politiclaw_get_my_ballot`, `politiclaw_explain_my_ballot`, `politiclaw_prepare_me_for_my_next_election`
-- Runtime files: `packages/politiclaw-plugin/src/sources/ballot/stateSoS/california.ts`, `packages/politiclaw-plugin/src/sources/ballot/stateSoS/colorado.ts`, `packages/politiclaw-plugin/src/sources/ballot/stateSoS/florida.ts`, `packages/politiclaw-plugin/src/sources/ballot/stateSoS/michigan.ts`, `packages/politiclaw-plugin/src/sources/ballot/stateSoS/ohio.ts`, `packages/politiclaw-plugin/src/sources/ballot/stateSoS/washington.ts`
 
 ### Candidate and measure bio web search
 
@@ -156,16 +146,3 @@ This page is generated from the explicit source coverage catalog and the current
 - Summary: Declared in the plugin config schema but not wired into the current runtime.
 - Notes: Down-ballot commercial coverage is not integrated today.
 - Runtime files: `packages/politiclaw-plugin/openclaw.plugin.json`, `packages/politiclaw-plugin/src/storage/context.ts`
-
-## Built-In State Ballot Adapters
-
-Current adapter count: 6. These run before the Google Civic fallback in the ballot resolver.
-
-| State | Code | Source File |
-| --- | --- | --- |
-| California | `CA` | `packages/politiclaw-plugin/src/sources/ballot/stateSoS/california.ts` |
-| Colorado | `CO` | `packages/politiclaw-plugin/src/sources/ballot/stateSoS/colorado.ts` |
-| Florida | `FL` | `packages/politiclaw-plugin/src/sources/ballot/stateSoS/florida.ts` |
-| Michigan | `MI` | `packages/politiclaw-plugin/src/sources/ballot/stateSoS/michigan.ts` |
-| Ohio | `OH` | `packages/politiclaw-plugin/src/sources/ballot/stateSoS/ohio.ts` |
-| Washington | `WA` | `packages/politiclaw-plugin/src/sources/ballot/stateSoS/washington.ts` |

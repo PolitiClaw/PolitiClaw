@@ -36,16 +36,4 @@ describe("documentation baseline", () => {
     );
     expect(skills).toHaveLength(DOCS_BASELINE.skills);
   });
-
-  it("tracks the current state ballot adapter count", () => {
-    const adapters = readdirSync(
-      join(pluginRoot, "src", "sources", "ballot", "stateSoS"),
-    ).filter(
-      (fileName) =>
-        fileName.endsWith(".ts") &&
-        fileName !== "types.ts" &&
-        fileName !== "unimplemented.ts",
-    );
-    expect(adapters).toHaveLength(DOCS_BASELINE.stateBallotAdapters);
-  });
 });

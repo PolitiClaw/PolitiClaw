@@ -1,6 +1,6 @@
 # Generated Tool Reference
 
-This section is generated from the registered runtime tool objects. Current count: 27.
+This section is generated from the registered runtime tool objects. Current count: 30.
 
 ## Preferences and onboarding
 
@@ -49,6 +49,9 @@ Check upcoming federal activity and reconcile the plugin-owned monitoring jobs.
 - [`politiclaw_setup_monitoring`](./politiclaw_setup_monitoring.md) — Install PolitiClaw default monitoring cron jobs
 - [`politiclaw_pause_monitoring`](./politiclaw_pause_monitoring.md) — Pause all PolitiClaw monitoring cron jobs
 - [`politiclaw_resume_monitoring`](./politiclaw_resume_monitoring.md) — Resume paused PolitiClaw monitoring cron jobs
+- [`politiclaw_mute`](./politiclaw_mute.md) — Mute a bill, rep, or issue
+- [`politiclaw_unmute`](./politiclaw_unmute.md) — Unmute a bill, rep, or issue
+- [`politiclaw_list_mutes`](./politiclaw_list_mutes.md) — List current mutes
 
 ## Candidate research and outreach
 

@@ -21,7 +21,6 @@ export const DOCS_BASELINE = {
   cronTemplates: 5,
   migrations: 11,
   skills: 5,
-  stateBallotAdapters: 6,
 } as const;
 
 export const SOURCE_COVERAGE_CATALOG: readonly SourceCoverageEntry[] = [
@@ -95,35 +94,12 @@ export const SOURCE_COVERAGE_CATALOG: readonly SourceCoverageEntry[] = [
     configKey: "googleCivic",
     required: false,
     summary:
-      "Key-gated ballot and election-logistics provider used when a state adapter does not return a result.",
+      "Key-gated ballot and election-logistics provider — the only ballot source the plugin wires today.",
     notes:
-      "Required for the generic ballot tools today. State ballot adapters run first for six states.",
+      "Required for every ballot tool. Per-state SoS adapters were scoped out in v1 after an audit found none of the six candidate states publishes a public address-to-ballot JSON feed; revisit when BallotReady or Democracy Works provides self-serve keys.",
     sourcePaths: [
       "packages/politiclaw-plugin/src/sources/ballot/index.ts",
       "packages/politiclaw-plugin/src/sources/ballot/googleCivic.ts",
-    ],
-    unlockedByTools: [
-      "politiclaw_get_my_ballot",
-      "politiclaw_explain_my_ballot",
-      "politiclaw_prepare_me_for_my_next_election",
-    ],
-  },
-  {
-    id: "stateSoSBallotAdapters",
-    label: "State secretary of state ballot adapters",
-    status: "implemented",
-    required: false,
-    summary:
-      "Structured ballot coverage currently exists for California, Colorado, Florida, Michigan, Ohio, and Washington.",
-    notes:
-      "These adapters are built in and do not require a user-supplied key.",
-    sourcePaths: [
-      "packages/politiclaw-plugin/src/sources/ballot/stateSoS/california.ts",
-      "packages/politiclaw-plugin/src/sources/ballot/stateSoS/colorado.ts",
-      "packages/politiclaw-plugin/src/sources/ballot/stateSoS/florida.ts",
-      "packages/politiclaw-plugin/src/sources/ballot/stateSoS/michigan.ts",
-      "packages/politiclaw-plugin/src/sources/ballot/stateSoS/ohio.ts",
-      "packages/politiclaw-plugin/src/sources/ballot/stateSoS/washington.ts",
     ],
     unlockedByTools: [
       "politiclaw_get_my_ballot",

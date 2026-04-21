@@ -39,12 +39,6 @@ type ConfigKeyDoc = {
   notes: string;
 };
 
-type StateBallotDoc = {
-  stateName: string;
-  stateCode: string;
-  sourcePath: string;
-};
-
 type StorageTableDoc = {
   name: string;
   sql: string;
@@ -120,7 +114,6 @@ function buildOutputs(): OutputFile[] {
   };
 
   const configKeyDocs = buildConfigKeyDocs(pluginManifest);
-  const stateBallotDocs = readStateBallotDocs();
   const skillDocs = readSkillDocs();
   const storageDocs = readStorageDocs();
   const migrationFiles = readdirSync(join(pluginRoot, "src", "storage", "migrations"))
@@ -132,7 +125,6 @@ function buildOutputs(): OutputFile[] {
     cronCount: POLITICLAW_CRON_TEMPLATES.length,
     migrationCount: migrationFiles.length,
     skillCount: skillDocs.length,
-    stateBallotCount: stateBallotDocs.length,
   });
 
   const outputs: OutputFile[] = [];
@@ -178,16 +170,11 @@ function buildOutputs(): OutputFile[] {
     path: join(generatedRoot, "source-coverage.json"),
     content: formatJson({
       providers: SOURCE_COVERAGE_CATALOG,
-      stateBallotAdapters: stateBallotDocs,
     }),
   });
   outputs.push({
     path: join(generatedRoot, "source-coverage.md"),
-    content: renderSourceCoveragePage(stateBallotDocs),
-  });
-  outputs.push({
-    path: join(generatedRoot, "state-ballot-coverage.md"),
-    content: renderStateBallotCoveragePage(stateBallotDocs),
+    content: renderSourceCoveragePage(),
   });
 
   outputs.push({
@@ -239,32 +226,6 @@ function buildConfigKeyDocs(pluginManifest: {
       notes: coverage?.notes ?? "No source coverage entry recorded for this key.",
     };
   });
-}
-
-function readStateBallotDocs(): StateBallotDoc[] {
-  const stateDir = join(pluginRoot, "src", "sources", "ballot", "stateSoS");
-  const states = readdirSync(stateDir)
-    .filter((fileName) => fileName.endsWith(".ts"))
-    .filter((fileName) => fileName !== "types.ts" && fileName !== "unimplemented.ts")
-    .sort();
-
-  return states.map((fileName) => {
-    const stateSlug = fileName.replace(/\.ts$/, "");
-    return {
-      stateName: titleCase(stateSlug),
-      stateCode: readStateCode(join(stateDir, fileName)),
-      sourcePath: `packages/politiclaw-plugin/src/sources/ballot/stateSoS/${fileName}`,
-    };
-  });
-}
-
-function readStateCode(filePath: string): string {
-  const source = readFileSync(filePath, "utf8");
-  const match = source.match(/stateCode:\s*"([A-Z]{2})"/);
-  if (!match?.[1]) {
-    throw new Error(`Could not read stateCode from ${relative(repoRoot, filePath)}.`);
-  }
-  return match[1];
 }
 
 function readSkillDocs(): SkillDoc[] {
@@ -426,11 +387,11 @@ function renderConfigSchemaPage(configKeyDocs: readonly ConfigKeyDoc[]): string 
   return lines.join("\n");
 }
 
-function renderSourceCoveragePage(stateBallotDocs: readonly StateBallotDoc[]): string {
+function renderSourceCoveragePage(): string {
   const lines: string[] = [
     "# Generated Source Coverage",
     "",
-    "This page is generated from the explicit source coverage catalog and the current state ballot adapter files.",
+    "This page is generated from the explicit source coverage catalog.",
     "",
     "## Status Legend",
     "",
@@ -471,51 +432,6 @@ function renderSourceCoveragePage(stateBallotDocs: readonly StateBallotDoc[]): s
     );
     lines.push("");
   }
-
-  lines.push("## Built-In State Ballot Adapters", "");
-  lines.push(
-    `Current adapter count: ${stateBallotDocs.length}. These run before the Google Civic fallback in the ballot resolver.`,
-  );
-  lines.push("");
-  lines.push("| State | Code | Source File |");
-  lines.push("| --- | --- | --- |");
-  for (const stateDoc of stateBallotDocs) {
-    lines.push(
-      `| ${stateDoc.stateName} | \`${stateDoc.stateCode}\` | \`${stateDoc.sourcePath}\` |`,
-    );
-  }
-  lines.push("");
-
-  return lines.join("\n");
-}
-
-function renderStateBallotCoveragePage(stateBallotDocs: readonly StateBallotDoc[]): string {
-  const lines: string[] = [
-    "# Generated State Ballot Coverage",
-    "",
-    "This page is generated from the current `stateSoS` adapter files.",
-    "",
-    `Structured state ballot adapter count: ${stateBallotDocs.length}.`,
-    "",
-    "| State | Code | Source File |",
-    "| --- | --- | --- |",
-  ];
-
-  for (const stateDoc of stateBallotDocs) {
-    lines.push(
-      `| ${stateDoc.stateName} | \`${stateDoc.stateCode}\` | \`${stateDoc.sourcePath}\` |`,
-    );
-  }
-
-  lines.push(
-    "",
-    "Resolver order today:",
-    "",
-    "1. Try a matching built-in state adapter.",
-    "2. Fall back to Google Civic when a configured key is available.",
-    "3. Return an actionable unavailable result when neither path can answer the request.",
-    "",
-  );
 
   return lines.join("\n");
 }
@@ -720,7 +636,6 @@ function assertBaseline(counts: {
   cronCount: number;
   migrationCount: number;
   skillCount: number;
-  stateBallotCount: number;
 }): void {
   const mismatches: string[] = [];
   if (counts.toolCount !== DOCS_BASELINE.tools) {
@@ -738,11 +653,6 @@ function assertBaseline(counts: {
   }
   if (counts.skillCount !== DOCS_BASELINE.skills) {
     mismatches.push(`skills: expected ${DOCS_BASELINE.skills}, found ${counts.skillCount}`);
-  }
-  if (counts.stateBallotCount !== DOCS_BASELINE.stateBallotAdapters) {
-    mismatches.push(
-      `state ballot adapters: expected ${DOCS_BASELINE.stateBallotAdapters}, found ${counts.stateBallotCount}`,
-    );
   }
   if (mismatches.length > 0) {
     throw new Error(
@@ -814,13 +724,6 @@ function describeSchedule(schedule: { kind: string; everyMs?: number; expr?: str
     return `every ${minutes} minute(s)`;
   }
   return schedule.tz ? `${schedule.expr} (${schedule.tz})` : schedule.expr ?? "unknown";
-}
-
-function titleCase(input: string): string {
-  return input
-    .split("-")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 function formatJson(value: unknown): string {

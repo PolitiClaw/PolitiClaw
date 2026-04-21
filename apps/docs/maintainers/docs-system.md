@@ -18,7 +18,6 @@ The generator reads from:
 - the plugin config schema
 - the cron templates
 - the skill front matter
-- the state ballot adapter files
 - a real migrated in-memory SQLite database
 
 ## Commands

@@ -21,7 +21,7 @@ Use the generated config and coverage pages when in doubt:
 
 ## Ballot Tools Say Google Civic Is Missing
 
-Set `plugins.politiclaw.apiKeys.googleCivic`, unless you are relying on one of the built-in state ballot adapters and that state adapter already covers your query.
+Set `plugins.politiclaw.apiKeys.googleCivic`. It is required for every ballot lookup today.
 
 ## Representative Lookup Falls Back Or Fails
 

@@ -127,4 +127,4 @@ OPTIONAL but required for politiclaw_get_my_ballot. Google Cloud API key with th
 - Wired today: yes
 - Unlocks: `politiclaw_get_my_ballot`, `politiclaw_explain_my_ballot`, `politiclaw_prepare_me_for_my_next_election`
 - Runtime files: `packages/politiclaw-plugin/src/sources/ballot/index.ts`, `packages/politiclaw-plugin/src/sources/ballot/googleCivic.ts`
-- Notes: Required for the generic ballot tools today. State ballot adapters run first for six states.
+- Notes: Required for every ballot tool. Per-state SoS adapters were scoped out in v1 after an audit found none of the six candidate states publishes a public address-to-ballot JSON feed; revisit when BallotReady or Democracy Works provides self-serve keys.

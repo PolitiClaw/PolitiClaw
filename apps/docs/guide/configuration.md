@@ -10,7 +10,7 @@ These keys are active in the current runtime:
   - Required for the current federal bill, House vote, committee schedule, and FEC finance paths.
   - One key covers both api.congress.gov and FEC OpenFEC.
 - `plugins.politiclaw.apiKeys.googleCivic`
-  - Needed for the generic ballot and election-logistics flow when a built-in state ballot adapter does not answer first.
+  - Required for every ballot and election-logistics lookup today. Google Civic is the only wired ballot source.
 - `plugins.politiclaw.apiKeys.geocodio`
   - Optional upgrade for reps-by-address lookup when you want the API path instead of the zero-key local shapefile path.
 

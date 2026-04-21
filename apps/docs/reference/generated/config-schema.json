@@ -158,7 +158,7 @@
         "politiclaw_explain_my_ballot",
         "politiclaw_prepare_me_for_my_next_election"
       ],
-      "notes": "Required for the generic ballot tools today. State ballot adapters run first for six states."
+      "notes": "Required for every ballot tool. Per-state SoS adapters were scoped out in v1 after an audit found none of the six candidate states publishes a public address-to-ballot JSON feed; revisit when BallotReady or Democracy Works provides self-serve keys."
     }
   ],
   "rawConfigSchema": {

@@ -13,7 +13,7 @@ PolitiClaw keeps its structured state in plugin-owned local storage. The current
 External network calls only happen when a tool needs a provider-backed answer. Today that mainly means:
 
 - Federal bills, House votes, committee schedule, and FEC finance through the shared `api.data.gov` key.
-- Ballot and election-logistics calls through Google Civic when the built-in state ballot adapters do not answer first.
+- Ballot and election-logistics calls through Google Civic, which is the only wired ballot source today.
 - Optional Geocodio lookups when you configure that key.
 
 The candidate-bio web-search adapter shape exists, but the production transport is not wired today. The generated source coverage page marks that status explicitly.

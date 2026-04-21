@@ -26,7 +26,7 @@ Run these tool calls through your agent in order. None require hand-editing file
 
 4. **Install monitoring cron jobs.** Call `politiclaw_setup_monitoring`. This installs the gateway cron jobs that pull fresh bills, roll-call votes, and election-proximity alerts on a schedule tuned to your declared monitoring cadence.
 
-5. **Wait for the first alert.** The weekly summary cron fires once a week; election-proximity alerts fire more often as an election in your state approaches. You can also call `politiclaw_weekly_summary` directly to see what the next scheduled run would produce.
+5. **Wait for the first alert.** The weekly summary cron fires once a week; election-proximity alerts fire more often as an election in your state approaches. If you want a preview of what the next weekly digest will pull from, call `politiclaw_check_upcoming_votes` with a 7-day window — that is the main input the weekly summary composes from. There is no "run the weekly summary now" tool; the digest is cron-driven and assembled via the `politiclaw-summary` skill.
 
 If anything in this path looks wrong, run `politiclaw_doctor` — see [Troubleshooting](#troubleshooting).
 

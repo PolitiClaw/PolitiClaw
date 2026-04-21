@@ -957,6 +957,131 @@
     }
   },
   {
+    "name": "politiclaw_mute",
+    "label": "Mute a bill, rep, or issue",
+    "groupId": "monitoring",
+    "groupLabel": "Monitoring and cadence",
+    "sourcePath": "packages/politiclaw-plugin/src/tools/mutes.ts",
+    "description": "Suppress future monitoring alerts for a specific bill, representative, or issue. Muting is idempotent — re-muting the same target refreshes the optional reason and timestamp. Use when the user says they have seen enough about a topic; they can always unmute later.",
+    "parameters": [
+      {
+        "name": "kind",
+        "required": true,
+        "type": "\"bill\" | \"rep\" | \"issue\"",
+        "description": "What to mute: 'bill' (by bill id like '119-hr-1234'), 'rep' (by bioguide id), or 'issue' (by issue slug)."
+      },
+      {
+        "name": "ref",
+        "required": true,
+        "type": "string",
+        "description": "The bill id, bioguide id, or issue slug to mute. Issue refs are normalized to lowercase kebab-case."
+      },
+      {
+        "name": "reason",
+        "required": false,
+        "type": "string",
+        "description": "Optional short note about why this is muted (e.g. 'followup-2026-05'). Stored for your own reference; not rendered in alerts."
+      }
+    ],
+    "rawSchema": {
+      "type": "object",
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "properties": {
+        "kind": {
+          "description": "What to mute: 'bill' (by bill id like '119-hr-1234'), 'rep' (by bioguide id), or 'issue' (by issue slug).",
+          "anyOf": [
+            {
+              "const": "bill",
+              "type": "string"
+            },
+            {
+              "const": "rep",
+              "type": "string"
+            },
+            {
+              "const": "issue",
+              "type": "string"
+            }
+          ]
+        },
+        "ref": {
+          "description": "The bill id, bioguide id, or issue slug to mute. Issue refs are normalized to lowercase kebab-case.",
+          "type": "string"
+        },
+        "reason": {
+          "description": "Optional short note about why this is muted (e.g. 'followup-2026-05'). Stored for your own reference; not rendered in alerts.",
+          "type": "string"
+        }
+      }
+    }
+  },
+  {
+    "name": "politiclaw_unmute",
+    "label": "Unmute a bill, rep, or issue",
+    "groupId": "monitoring",
+    "groupLabel": "Monitoring and cadence",
+    "sourcePath": "packages/politiclaw-plugin/src/tools/mutes.ts",
+    "description": "Remove a previously-added mute. Future monitoring alerts will include this target again. Returns a no-op acknowledgement if nothing was muted under that (kind, ref).",
+    "parameters": [
+      {
+        "name": "kind",
+        "required": true,
+        "type": "\"bill\" | \"rep\" | \"issue\"",
+        "description": ""
+      },
+      {
+        "name": "ref",
+        "required": true,
+        "type": "string",
+        "description": ""
+      }
+    ],
+    "rawSchema": {
+      "type": "object",
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "properties": {
+        "kind": {
+          "anyOf": [
+            {
+              "const": "bill",
+              "type": "string"
+            },
+            {
+              "const": "rep",
+              "type": "string"
+            },
+            {
+              "const": "issue",
+              "type": "string"
+            }
+          ]
+        },
+        "ref": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  {
+    "name": "politiclaw_list_mutes",
+    "label": "List current mutes",
+    "groupId": "monitoring",
+    "groupLabel": "Monitoring and cadence",
+    "sourcePath": "packages/politiclaw-plugin/src/tools/mutes.ts",
+    "description": "Return every active mute entry, newest first. Use to show the user what is currently being suppressed from monitoring alerts before unmuting.",
+    "parameters": [],
+    "rawSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
     "name": "politiclaw_research_candidate",
     "label": "Look up FEC candidate finance totals + tier-5 bio",
     "groupId": "research",

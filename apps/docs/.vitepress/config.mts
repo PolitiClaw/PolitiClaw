@@ -29,7 +29,6 @@ export default defineConfig({
           { text: "Tools", link: "/reference/tools" },
           { text: "Config Schema", link: "/reference/config-schema" },
           { text: "Source Coverage", link: "/reference/source-coverage" },
-          { text: "State Ballot Coverage", link: "/reference/state-ballot-coverage" },
           { text: "Cron Jobs", link: "/reference/cron-jobs" },
           { text: "Storage Schema", link: "/reference/storage-schema" },
           { text: "Skills", link: "/reference/skills" }

@@ -1,5 +1,5 @@
 /**
- * Status payload builder for the read-only dashboard (Phase 8a-1).
+ * Status payload builder for the read-only dashboard.
  *
  * Composes plugin-DB reads + the gateway cron list into a single JSON object
  * consumed by `src/http/public/app.js`. No remote data-source fetches: the

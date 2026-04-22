@@ -9,9 +9,10 @@ PolitiClaw lives in this monorepo as an OpenClaw plugin plus a VitePress docs ap
 
 1. [Installation and Verification](./installation-and-verification)
 2. [Configuration](./configuration)
-3. [Privacy and Storage](./privacy-and-storage)
-4. [Tools Reference](../reference/tools)
-5. [Source Coverage](../reference/source-coverage)
+3. [Entry Points by Goal](./entry-points-by-goal)
+4. [Privacy and Storage](./privacy-and-storage)
+5. [Tools Reference](../reference/tools)
+6. [Source Coverage](../reference/source-coverage)
 
 ## First Successful Run
 
@@ -23,7 +24,7 @@ If you are bringing up a fresh local install, the shortest path is:
 4. Load reps with [`politiclaw_get_my_reps`](../reference/generated/tools/politiclaw_get_my_reps).
 5. Start issue setup with [`politiclaw_start_onboarding`](../reference/generated/tools/politiclaw_start_onboarding).
 
-From there, most users branch into either bill tracking, ballot prep, or monitoring.
+From there, most users branch into either bill tracking, ballot prep, or monitoring. When several tools seem to overlap, use [Entry Points by Goal](./entry-points-by-goal) to find the default front door before jumping into lower-level reference pages.
 
 ## What To Trust
 

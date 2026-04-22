@@ -21,6 +21,7 @@ export default defineConfig({
         text: "Guide",
         items: [
           { text: "Getting Started", link: "/guide/getting-started" },
+          { text: "Entry Points by Goal", link: "/guide/entry-points-by-goal" },
           { text: "Installation and Verification", link: "/guide/installation-and-verification" },
           { text: "Configuration", link: "/guide/configuration" },
           { text: "Privacy and Storage", link: "/guide/privacy-and-storage" },

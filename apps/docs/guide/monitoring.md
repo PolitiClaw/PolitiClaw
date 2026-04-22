@@ -8,13 +8,18 @@ PolitiClaw monitoring is built around a small set of plugin-owned cron templates
 
 ## User-Facing Controls
 
-The main runtime surfaces are:
+Default front door:
 
 - [`politiclaw_set_monitoring_cadence`](../reference/generated/tools/politiclaw_set_monitoring_cadence)
+
+Follow-up and operator controls:
+
+- [`politiclaw_check_upcoming_votes`](../reference/generated/tools/politiclaw_check_upcoming_votes)
 - [`politiclaw_setup_monitoring`](../reference/generated/tools/politiclaw_setup_monitoring)
 - [`politiclaw_pause_monitoring`](../reference/generated/tools/politiclaw_pause_monitoring)
 - [`politiclaw_resume_monitoring`](../reference/generated/tools/politiclaw_resume_monitoring)
-- [`politiclaw_check_upcoming_votes`](../reference/generated/tools/politiclaw_check_upcoming_votes)
+
+If you are choosing between overlapping monitoring tools, see [Entry Points by Goal](./entry-points-by-goal).
 
 ## What Changes With Cadence
 
@@ -33,5 +38,6 @@ Monitoring does not edit user-authored cron jobs, and it does not quietly fabric
 
 1. Save preferences and issue stances first.
 2. Run [`politiclaw_doctor`](../reference/generated/tools/politiclaw_doctor).
-3. Set a cadence.
-4. Use the generated cron reference when you need to inspect exact template behavior.
+3. Set a cadence with [`politiclaw_set_monitoring_cadence`](../reference/generated/tools/politiclaw_set_monitoring_cadence).
+4. Use [`politiclaw_check_upcoming_votes`](../reference/generated/tools/politiclaw_check_upcoming_votes) when you want a manual snapshot.
+5. Use the generated cron reference only when you need to inspect exact template behavior or debug operator paths.

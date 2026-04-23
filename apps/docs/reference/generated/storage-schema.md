@@ -2,7 +2,7 @@
 
 This page is generated from a real in-memory SQLite database after migrations run.
 
-Migration count: 13.
+Migration count: 14.
 
 ## Migrations
 
@@ -19,6 +19,7 @@ Migration count: 13.
 - `packages/politiclaw-plugin/src/storage/migrations/0011_hot_path_indexes.sql`
 - `packages/politiclaw-plugin/src/storage/migrations/0012_alert_history.sql`
 - `packages/politiclaw-plugin/src/storage/migrations/0013_letter_redraft.sql`
+- `packages/politiclaw-plugin/src/storage/migrations/0014_monitoring_mode.sql`
 
 ## Tables
 
@@ -319,19 +320,20 @@ CREATE TABLE mute_list (
 | `zip` | `TEXT` | no | no | n/a |
 | `state` | `TEXT` | no | no | n/a |
 | `district` | `TEXT` | no | no | n/a |
+| `monitoring_mode` | `TEXT` | yes | no | `'action_only'` |
 | `updated_at` | `INTEGER` | yes | no | n/a |
-| `monitoring_cadence` | `TEXT` | yes | no | `'election_proximity'` |
 
 ```sql
-CREATE TABLE preferences (
-  id              INTEGER PRIMARY KEY CHECK (id = 1),
-  address         TEXT NOT NULL,
-  zip             TEXT,
-  state           TEXT,
-  district        TEXT,
-  updated_at      INTEGER NOT NULL
-, monitoring_cadence TEXT NOT NULL DEFAULT 'election_proximity'
-  CHECK (monitoring_cadence IN ('off','election_proximity','weekly','both')))
+CREATE TABLE "preferences" (
+  id                 INTEGER PRIMARY KEY CHECK (id = 1),
+  address            TEXT NOT NULL,
+  zip                TEXT,
+  state              TEXT,
+  district           TEXT,
+  monitoring_mode    TEXT NOT NULL DEFAULT 'action_only'
+    CHECK (monitoring_mode IN ('off','quiet_watch','weekly_digest','action_only','full_copilot')),
+  updated_at         INTEGER NOT NULL
+)
 ```
 
 ### rep_scores

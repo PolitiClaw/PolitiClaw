@@ -43,13 +43,14 @@
               </label>
             </div>
             <label>
-              <span>Monitoring cadence</span>
-              <select name="monitoringCadence">
+              <span>Monitoring mode</span>
+              <select name="monitoringMode">
                 <option value="">(unchanged)</option>
-                <option value="off">off</option>
-                <option value="election_proximity">election_proximity</option>
-                <option value="weekly">weekly</option>
-                <option value="both">both</option>
+                <option value="off">Off &mdash; paused</option>
+                <option value="quiet_watch">Quiet watch &mdash; silent unless tracked items change</option>
+                <option value="weekly_digest">Weekly digest &mdash; Sunday summary + rep report</option>
+                <option value="action_only">Action-only &mdash; pings before elections or on changes</option>
+                <option value="full_copilot">Full copilot &mdash; digest, rep report, and election alerts</option>
               </select>
             </label>
             <button type="submit">Save preferences</button>

@@ -137,7 +137,7 @@ describe("politiclaw_configure", () => {
         address: "123 Main St",
         state: "ca",
         zip: "94110",
-        monitoringCadence: "weekly",
+        monitoringMode: "weekly_digest",
         issueStances: [{ issue: "climate", stance: "support", weight: 5 }],
       },
       undefined,
@@ -147,18 +147,18 @@ describe("politiclaw_configure", () => {
     const text = textFrom(res as { content: Array<{ type: string; text: string }> });
     const details = detailsFrom<{
       status: string;
-      cadence: string;
+      monitoringMode: string;
       currentIssueStances: Array<{ issue: string; stance: string; weight: number }>;
     }>(res as {
       details: {
         status: string;
-        cadence: string;
+        monitoringMode: string;
         currentIssueStances: Array<{ issue: string; stance: string; weight: number }>;
       };
     });
 
     expect(details.status).toBe("configured");
-    expect(details.cadence).toBe("weekly");
+    expect(details.monitoringMode).toBe("weekly_digest");
     expect(details.currentIssueStances).toHaveLength(1);
     expect(details.currentIssueStances[0]).toMatchObject({
       issue: "climate",
@@ -166,7 +166,7 @@ describe("politiclaw_configure", () => {
       weight: 5,
     });
     expect(text).toContain("PolitiClaw is configured");
-    expect(text).toContain("Monitoring cadence: weekly");
-    expect(reconcileMonitoring).toHaveBeenCalledWith({ cadence: "weekly" });
+    expect(text).toContain("Monitoring mode: weekly_digest");
+    expect(reconcileMonitoring).toHaveBeenCalledWith({ mode: "weekly_digest" });
   });
 });

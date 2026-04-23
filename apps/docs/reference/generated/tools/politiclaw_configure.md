@@ -6,7 +6,7 @@
 
 ## Description
 
-Stand up the accountability loop: capture the stances PolitiClaw will measure the user's reps against, save the address that resolves those reps, and set how loudly monitoring should alert. Saves or updates the user's address, resolves reps, runs issue-stance setup, and applies monitoring cadence in one flow. When information is missing, returns the next setup step instead of requiring separate setup tools.
+Stand up the accountability loop: capture the stances PolitiClaw will measure the user's reps against, save the address that resolves those reps, and set how loudly monitoring should alert. Saves or updates the user's address, resolves reps, runs issue-stance setup, and applies the chosen monitoring mode in one flow. When information is missing, returns the next setup step instead of requiring separate setup tools.
 
 ## Parameters
 
@@ -18,7 +18,7 @@ Stand up the accountability loop: capture the stances PolitiClaw will measure th
 | `district` | no | `string` | Congressional district if known. |
 | `mode` | no | `"conversation" \| "quiz"` | Optional issue-setup style. Use when the user is ready to walk through stance setup. |
 | `issueStances` | no | `object[]` |  |
-| `monitoringCadence` | no | `"off" \| "election_proximity" \| "weekly" \| "both"` | How loud PolitiClaw monitoring should be. Defaults to election_proximity when first configuring unless a cadence is already saved. |
+| `monitoringMode` | no | `"off" \| "quiet_watch" \| "weekly_digest" \| "action_only" \| "full_copilot"` | How PolitiClaw should watch for you. 'off' pauses everything. 'quiet_watch' is silent unless tracked bills/hearings materially change. 'weekly_digest' adds the Sunday summary and monthly rep report. 'action_only' is quiet except when elections are near or tracked items change. 'full_copilot' enables everything. Defaults to 'action_only' when first configuring unless a mode is already saved. |
 | `refreshReps` | no | `boolean` | When true, bypass the reps cache and re-resolve representatives. |
 
 ## Raw Schema
@@ -94,23 +94,27 @@ Stand up the accountability loop: capture the stances PolitiClaw will measure th
         }
       }
     },
-    "monitoringCadence": {
-      "description": "How loud PolitiClaw monitoring should be. Defaults to election_proximity when first configuring unless a cadence is already saved.",
+    "monitoringMode": {
+      "description": "How PolitiClaw should watch for you. 'off' pauses everything. 'quiet_watch' is silent unless tracked bills/hearings materially change. 'weekly_digest' adds the Sunday summary and monthly rep report. 'action_only' is quiet except when elections are near or tracked items change. 'full_copilot' enables everything. Defaults to 'action_only' when first configuring unless a mode is already saved.",
       "anyOf": [
         {
           "const": "off",
           "type": "string"
         },
         {
-          "const": "election_proximity",
+          "const": "quiet_watch",
           "type": "string"
         },
         {
-          "const": "weekly",
+          "const": "weekly_digest",
           "type": "string"
         },
         {
-          "const": "both",
+          "const": "action_only",
+          "type": "string"
+        },
+        {
+          "const": "full_copilot",
           "type": "string"
         }
       ]

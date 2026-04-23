@@ -84,7 +84,7 @@
     if (section.zip) appendKv(kv, "ZIP", section.zip);
     if (section.state) appendKv(kv, "State", section.state);
     if (section.district) appendKv(kv, "District", section.district);
-    appendKv(kv, "Cadence", section.monitoringCadence);
+    appendKv(kv, "Mode", section.monitoringMode);
     appendKv(kv, "Updated", formatDate(section.updatedAtMs));
     container.appendChild(kv);
 
@@ -235,7 +235,7 @@
     if (section.jobs.length === 0) {
       container.appendChild(mutedLine("No PolitiClaw monitoring jobs installed."));
       container.appendChild(
-        actionable("call politiclaw_configure to install the default cadence"),
+        actionable("call politiclaw_configure to install the default monitoring mode"),
       );
       return;
     }
@@ -478,8 +478,8 @@
       if (state) payload.state = state.toUpperCase();
       const district = String(fd.get("district") || "").trim();
       if (district) payload.district = district;
-      const cadence = String(fd.get("monitoringCadence") || "").trim();
-      if (cadence) payload.monitoringCadence = cadence;
+      const monitoringMode = String(fd.get("monitoringMode") || "").trim();
+      if (monitoringMode) payload.monitoringMode = monitoringMode;
 
       if (Object.keys(payload).length === 0) {
         toast("Nothing to save.", true);

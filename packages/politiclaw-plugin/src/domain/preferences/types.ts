@@ -11,6 +11,12 @@ export const MonitoringCadenceSchema = z.enum(MONITORING_CADENCE_VALUES);
 
 export type MonitoringCadence = z.infer<typeof MonitoringCadenceSchema>;
 
+export const ACTION_PROMPTING_VALUES = ["off", "on"] as const;
+
+export const ActionPromptingSchema = z.enum(ACTION_PROMPTING_VALUES);
+
+export type ActionPrompting = z.infer<typeof ActionPromptingSchema>;
+
 export const PreferencesSchema = z.object({
   address: z.string().min(1, "address is required"),
   zip: z.string().trim().optional(),
@@ -22,6 +28,7 @@ export const PreferencesSchema = z.object({
     .optional(),
   district: z.string().trim().optional(),
   monitoringCadence: MonitoringCadenceSchema.optional(),
+  actionPrompting: ActionPromptingSchema.optional(),
 });
 
 export type Preferences = z.infer<typeof PreferencesSchema>;

@@ -23,7 +23,14 @@ import {
   type MonitoringToggleResult,
 } from "../cron/setup.js";
 import {
+  getActionPackage,
+  recordPackageFeedback,
+  type ActionPackageRow,
+  type PackageFeedbackVerdict,
+} from "../domain/actionMoments/index.js";
+import {
   recordStanceSignal,
+  setActionPrompting,
   setMonitoringCadence,
   upsertIssueStance,
   upsertPreferences,
@@ -48,6 +55,7 @@ const PreferencesUpdateSchema = z.object({
   monitoringCadence: z
     .enum(["off", "election_proximity", "weekly", "both"])
     .optional(),
+  actionPrompting: z.enum(["off", "on"]).optional(),
   issueStances: z
     .array(
       z.object({
@@ -97,6 +105,7 @@ export function handlePreferencesUpdate(
   if (
     body.address === undefined &&
     body.monitoringCadence === undefined &&
+    body.actionPrompting === undefined &&
     (body.issueStances === undefined || body.issueStances.length === 0)
   ) {
     return {
@@ -121,21 +130,39 @@ export function handlePreferencesUpdate(
         state: body.state,
         district: body.district,
         monitoringCadence: body.monitoringCadence,
+        actionPrompting: body.actionPrompting,
       });
       cadence = updatedPrefs.monitoringCadence ?? null;
-    } else if (body.monitoringCadence !== undefined) {
-      try {
-        updatedPrefs = setMonitoringCadence(db, body.monitoringCadence);
-        cadence = updatedPrefs.monitoringCadence ?? null;
-      } catch (err) {
-        return {
-          ok: false,
-          status: 409,
-          body: {
-            error: "no_address_on_file",
-            message: err instanceof Error ? err.message : String(err),
-          },
-        };
+    } else {
+      if (body.monitoringCadence !== undefined) {
+        try {
+          updatedPrefs = setMonitoringCadence(db, body.monitoringCadence);
+          cadence = updatedPrefs.monitoringCadence ?? null;
+        } catch (err) {
+          return {
+            ok: false,
+            status: 409,
+            body: {
+              error: "no_address_on_file",
+              message: err instanceof Error ? err.message : String(err),
+            },
+          };
+        }
+      }
+      if (body.actionPrompting !== undefined) {
+        try {
+          updatedPrefs = setActionPrompting(db, body.actionPrompting);
+          cadence = updatedPrefs.monitoringCadence ?? null;
+        } catch (err) {
+          return {
+            ok: false,
+            status: 409,
+            body: {
+              error: "no_address_on_file",
+              message: err instanceof Error ? err.message : String(err),
+            },
+          };
+        }
       }
     }
   } catch (err) {
@@ -330,4 +357,89 @@ export function handleLetterRedraft(
     };
   }
   return { ok: true, status: 200, body: result };
+}
+
+const PackageFeedbackSchema = z.object({
+  verdict: z.enum(["useful", "not_now", "stop"]),
+  note: z.string().trim().min(1).optional(),
+});
+
+export type PackageFeedbackBody = z.infer<typeof PackageFeedbackSchema>;
+
+export type PackageFeedbackResult = {
+  package: ActionPackageRow;
+  verdict: PackageFeedbackVerdict;
+};
+
+/**
+ * Dashboard feedback handler. Both `/feedback` (accepts any verdict) and
+ * `/dismiss` (forces `verdict='not_now'` when the body omits one) route
+ * through here so the dashboard's "Not now" button can be a minimal POST
+ * with no payload.
+ */
+export function handlePackageFeedback(
+  db: PolitiClawDb,
+  packageId: number,
+  raw: unknown,
+  defaultVerdict?: PackageFeedbackVerdict,
+): MutationResult {
+  if (!Number.isInteger(packageId) || packageId <= 0) {
+    return {
+      ok: false,
+      status: 400,
+      body: {
+        error: "invalid_package_id",
+        message: "package id must be a positive integer",
+      },
+    };
+  }
+  const body =
+    raw === undefined || raw === null
+      ? { verdict: defaultVerdict }
+      : typeof raw === "object" && !Array.isArray(raw)
+        ? { verdict: defaultVerdict, ...(raw as Record<string, unknown>) }
+        : raw;
+  const parsed = PackageFeedbackSchema.safeParse(body);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      status: 400,
+      body: {
+        error: "invalid_body",
+        message: "package feedback body failed validation",
+        details: parsed.error.flatten(),
+      },
+    };
+  }
+  const existing = getActionPackage(db, packageId);
+  if (!existing) {
+    return {
+      ok: false,
+      status: 404,
+      body: {
+        error: "package_not_found",
+        message: `no action package with id ${packageId}`,
+      },
+    };
+  }
+  const result = recordPackageFeedback(db, {
+    packageId,
+    verdict: parsed.data.verdict,
+    note: parsed.data.note,
+  });
+  if (result.status === "not_found") {
+    return {
+      ok: false,
+      status: 404,
+      body: {
+        error: "package_not_found",
+        message: result.reason,
+      },
+    };
+  }
+  const body200: PackageFeedbackResult = {
+    package: result.package,
+    verdict: parsed.data.verdict,
+  };
+  return { ok: true, status: 200, body: body200 };
 }

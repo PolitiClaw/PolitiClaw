@@ -20,9 +20,9 @@ import {
   REP_REPORT_TEMPLATE,
   REP_VOTE_WATCH_TEMPLATE,
   TRACKED_HEARINGS_TEMPLATE,
-  templatesForCadence,
+  templatesForMode,
   WEEKLY_SUMMARY_TEMPLATE,
-  type MonitoringCadence,
+  type MonitoringMode,
 } from "./templates.js";
 
 /**
@@ -164,20 +164,24 @@ describe("cron/templates", () => {
     expect(new Set([weeklyMs, repMs, hearingMs, reportMs, proximityMs]).size).toBe(5);
   });
 
-  it("maps each cadence to the documented template subset", () => {
-    expect(templatesForCadence("off").map((t) => t.name)).toEqual([]);
-    expect(templatesForCadence("election_proximity").map((t) => t.name)).toEqual([
+  it("maps each mode to the documented template subset", () => {
+    expect(templatesForMode("off").map((t) => t.name)).toEqual([]);
+    expect(templatesForMode("quiet_watch").map((t) => t.name)).toEqual([
       "politiclaw.rep_vote_watch",
       "politiclaw.tracked_hearings",
-      "politiclaw.election_proximity_alert",
     ]);
-    expect(templatesForCadence("weekly").map((t) => t.name)).toEqual([
+    expect(templatesForMode("weekly_digest").map((t) => t.name)).toEqual([
       "politiclaw.rep_vote_watch",
       "politiclaw.tracked_hearings",
       "politiclaw.weekly_summary",
       "politiclaw.rep_report",
     ]);
-    expect(templatesForCadence("both").map((t) => t.name).sort()).toEqual(
+    expect(templatesForMode("action_only").map((t) => t.name)).toEqual([
+      "politiclaw.rep_vote_watch",
+      "politiclaw.tracked_hearings",
+      "politiclaw.election_proximity_alert",
+    ]);
+    expect(templatesForMode("full_copilot").map((t) => t.name).sort()).toEqual(
       [...POLITICLAW_CRON_NAMES].sort(),
     );
   });
@@ -188,11 +192,11 @@ describe("setupMonitoring", () => {
     resetGatewayCronAdapterForTests();
   });
 
-  it("creates every default job on a first run with cadence 'both'", async () => {
+  it("creates every default job on a first run with mode 'full_copilot'", async () => {
     const { adapter, jobs, calls } = createInMemoryAdapter();
     setGatewayCronAdapterForTests(adapter);
 
-    const result = await setupMonitoring({ cadence: "both" });
+    const result = await setupMonitoring({ mode: "full_copilot" });
 
     expect(result.outcomes).toHaveLength(5);
     expect(result.outcomes.map((o) => o.action)).toEqual([
@@ -211,8 +215,8 @@ describe("setupMonitoring", () => {
     const { adapter } = createInMemoryAdapter();
     setGatewayCronAdapterForTests(adapter);
 
-    await setupMonitoring({ cadence: "both" });
-    const again = await setupMonitoring({ cadence: "both" });
+    await setupMonitoring({ mode: "full_copilot" });
+    const again = await setupMonitoring({ mode: "full_copilot" });
 
     expect(again.outcomes.every((o) => o.action === "unchanged")).toBe(true);
     expect(again.outcomes).toHaveLength(5);
@@ -226,7 +230,7 @@ describe("setupMonitoring", () => {
     const { adapter, jobs, calls } = createInMemoryAdapter([driftedJob]);
     setGatewayCronAdapterForTests(adapter);
 
-    const result = await setupMonitoring({ cadence: "both" });
+    const result = await setupMonitoring({ mode: "full_copilot" });
 
     const weeklyOutcome = result.outcomes.find(
       (o) => o.name === WEEKLY_SUMMARY_TEMPLATE.name,
@@ -246,7 +250,7 @@ describe("setupMonitoring", () => {
     const { adapter, jobs } = createInMemoryAdapter([disabled]);
     setGatewayCronAdapterForTests(adapter);
 
-    const result = await setupMonitoring({ cadence: "both" });
+    const result = await setupMonitoring({ mode: "full_copilot" });
 
     const repOutcome = result.outcomes.find(
       (o) => o.name === REP_VOTE_WATCH_TEMPLATE.name,
@@ -268,34 +272,34 @@ describe("setupMonitoring", () => {
     const { adapter, jobs } = createInMemoryAdapter([unrelated]);
     setGatewayCronAdapterForTests(adapter);
 
-    await setupMonitoring({ cadence: "both" });
+    await setupMonitoring({ mode: "full_copilot" });
 
     const preserved = jobs.find((j) => j.id === "cron_unrelated");
     expect(preserved).toBeDefined();
     expect(preserved?.name).toBe("user.daily_brief");
   });
 
-  const cadenceMatrix: Array<{
-    cadence: MonitoringCadence;
+  const modeMatrix: Array<{
+    mode: MonitoringMode;
     installed: string[];
     paused: string[];
   }> = [
     {
-      cadence: "off",
+      mode: "off",
       installed: [],
       paused: [...POLITICLAW_CRON_NAMES],
     },
     {
-      cadence: "election_proximity",
-      installed: [
-        "politiclaw.rep_vote_watch",
-        "politiclaw.tracked_hearings",
+      mode: "quiet_watch",
+      installed: ["politiclaw.rep_vote_watch", "politiclaw.tracked_hearings"],
+      paused: [
+        "politiclaw.weekly_summary",
+        "politiclaw.rep_report",
         "politiclaw.election_proximity_alert",
       ],
-      paused: ["politiclaw.weekly_summary", "politiclaw.rep_report"],
     },
     {
-      cadence: "weekly",
+      mode: "weekly_digest",
       installed: [
         "politiclaw.rep_vote_watch",
         "politiclaw.tracked_hearings",
@@ -305,27 +309,36 @@ describe("setupMonitoring", () => {
       paused: ["politiclaw.election_proximity_alert"],
     },
     {
-      cadence: "both",
+      mode: "action_only",
+      installed: [
+        "politiclaw.rep_vote_watch",
+        "politiclaw.tracked_hearings",
+        "politiclaw.election_proximity_alert",
+      ],
+      paused: ["politiclaw.weekly_summary", "politiclaw.rep_report"],
+    },
+    {
+      mode: "full_copilot",
       installed: [...POLITICLAW_CRON_NAMES],
       paused: [],
     },
   ];
 
-  for (const row of cadenceMatrix) {
-    it(`cadence '${row.cadence}' installs ${row.installed.length} jobs and pauses ${row.paused.length}`, async () => {
+  for (const row of modeMatrix) {
+    it(`mode '${row.mode}' installs ${row.installed.length} jobs and pauses ${row.paused.length}`, async () => {
       const { adapter, jobs } = createInMemoryAdapter();
       setGatewayCronAdapterForTests(adapter);
 
       // Start from "everything installed + enabled" so pauses are observable.
-      await setupMonitoring({ cadence: "both" });
-      const result = await setupMonitoring({ cadence: row.cadence });
+      await setupMonitoring({ mode: "full_copilot" });
+      const result = await setupMonitoring({ mode: row.mode });
 
       const enabledNames = jobs.filter((j) => j.enabled).map((j) => j.name).sort();
       const disabledNames = jobs.filter((j) => !j.enabled).map((j) => j.name).sort();
       expect(enabledNames).toEqual([...row.installed].sort());
       expect(disabledNames).toEqual([...row.paused].sort());
 
-      // Jobs outside the cadence should render as 'paused' (they were enabled).
+      // Jobs outside the mode's set should render as 'paused' (they were enabled).
       const pausedOutcomes = result.outcomes.filter((o) => o.action === "paused");
       expect(pausedOutcomes.map((o) => o.name).sort()).toEqual(
         [...row.paused].sort(),
@@ -333,11 +346,11 @@ describe("setupMonitoring", () => {
     });
   }
 
-  it("renders 'missing' for templates outside the cadence that were never installed", async () => {
+  it("renders 'missing' for templates outside the mode that were never installed", async () => {
     const { adapter } = createInMemoryAdapter();
     setGatewayCronAdapterForTests(adapter);
 
-    const result = await setupMonitoring({ cadence: "election_proximity" });
+    const result = await setupMonitoring({ mode: "action_only" });
 
     const missing = result.outcomes.filter((o) => o.action === "missing");
     expect(missing.map((o) => o.name).sort()).toEqual(
@@ -346,7 +359,7 @@ describe("setupMonitoring", () => {
     expect(missing.every((o) => o.jobId === null)).toBe(true);
   });
 
-  it("defaults to 'election_proximity' when no cadence is provided", async () => {
+  it("defaults to 'action_only' when no mode is provided", async () => {
     const { adapter } = createInMemoryAdapter();
     setGatewayCronAdapterForTests(adapter);
 
@@ -381,7 +394,7 @@ describe("pauseMonitoring / resumeMonitoring", () => {
     const { adapter, jobs } = createInMemoryAdapter([unrelated]);
     setGatewayCronAdapterForTests(adapter);
 
-    await setupMonitoring({ cadence: "both" });
+    await setupMonitoring({ mode: "full_copilot" });
     const paused = await pauseMonitoring();
 
     expect(paused.outcomes).toHaveLength(POLITICLAW_CRON_NAMES.length);
@@ -408,7 +421,7 @@ describe("pauseMonitoring / resumeMonitoring", () => {
     const { adapter } = createInMemoryAdapter();
     setGatewayCronAdapterForTests(adapter);
 
-    await setupMonitoring({ cadence: "both" });
+    await setupMonitoring({ mode: "full_copilot" });
     await pauseMonitoring();
     const paused = await pauseMonitoring();
     expect(paused.outcomes.every((o) => o.action === "unchanged")).toBe(true);
@@ -422,7 +435,7 @@ describe("pauseMonitoring / resumeMonitoring", () => {
     const { adapter, jobs } = createInMemoryAdapter();
     setGatewayCronAdapterForTests(adapter);
 
-    await setupMonitoring({ cadence: "both" });
+    await setupMonitoring({ mode: "full_copilot" });
     await pauseMonitoring();
     const resumed = await resumeMonitoring();
 

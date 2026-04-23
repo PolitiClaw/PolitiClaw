@@ -180,43 +180,48 @@ export const POLITICLAW_CRON_TEMPLATES: readonly PolitiClawCronTemplate[] = [
 export const POLITICLAW_CRON_NAMES: readonly string[] =
   POLITICLAW_CRON_TEMPLATES.map((template) => template.name);
 
-export type MonitoringCadence = "off" | "election_proximity" | "weekly" | "both";
+import type { MonitoringMode } from "../domain/preferences/types.js";
+
+export type { MonitoringMode };
 
 /**
  * Returns the subset of default templates that should be **installed and
- * enabled** for a given user cadence. Templates absent from the returned list
- * are paused by `setupMonitoring()` (not deleted — preserves gateway state if
- * the user flips back).
+ * enabled** for a given user monitoring mode. Templates absent from the
+ * returned list are paused by `setupMonitoring()` (not deleted — preserves
+ * gateway state if the user flips back).
  *
- * Cadence semantics:
+ * Mode semantics:
  * - `off`: no automated monitoring.
- * - `election_proximity`: silent except within 30/14/7/1 days of an election,
- *   plus the rep-vote + hearings watches (change-detection-gated, so quiet
- *   windows still produce no output).
- * - `weekly`: the digest cadence — weekly summary + monthly rep report +
- *   rep-vote + hearings.
- * - `both`: everything.
+ * - `quiet_watch`: silent background change-watches only (rep-vote + hearings,
+ *   both change-detection-gated, so quiet windows produce no output).
+ * - `weekly_digest`: Sunday summary + monthly rep report, plus the background
+ *   change-watches. No election ramp-up.
+ * - `action_only`: quiet background watches plus election proximity alerts.
+ *   Suppresses the weekly summary and rep report.
+ * - `full_copilot`: everything — digest, rep report, election alerts, watches.
  */
-export function templatesForCadence(
-  cadence: MonitoringCadence,
+export function templatesForMode(
+  mode: MonitoringMode,
 ): readonly PolitiClawCronTemplate[] {
-  switch (cadence) {
+  switch (mode) {
     case "off":
       return [];
-    case "election_proximity":
-      return [
-        REP_VOTE_WATCH_TEMPLATE,
-        TRACKED_HEARINGS_TEMPLATE,
-        ELECTION_PROXIMITY_ALERT_TEMPLATE,
-      ];
-    case "weekly":
+    case "quiet_watch":
+      return [REP_VOTE_WATCH_TEMPLATE, TRACKED_HEARINGS_TEMPLATE];
+    case "weekly_digest":
       return [
         REP_VOTE_WATCH_TEMPLATE,
         TRACKED_HEARINGS_TEMPLATE,
         WEEKLY_SUMMARY_TEMPLATE,
         REP_REPORT_TEMPLATE,
       ];
-    case "both":
+    case "action_only":
+      return [
+        REP_VOTE_WATCH_TEMPLATE,
+        TRACKED_HEARINGS_TEMPLATE,
+        ELECTION_PROXIMITY_ALERT_TEMPLATE,
+      ];
+    case "full_copilot":
       return POLITICLAW_CRON_TEMPLATES;
   }
 }

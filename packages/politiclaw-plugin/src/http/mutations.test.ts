@@ -83,22 +83,22 @@ describe("handlePreferencesUpdate", () => {
       zip: "90001",
       state: "CA",
       district: "12",
-      monitoringCadence: "weekly",
+      monitoringMode: "weekly_digest",
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.status).toBe(200);
     const body = result.body as {
-      preferences: { address: string; monitoringCadence: string };
+      preferences: { address: string; monitoringMode: string };
     };
     expect(body.preferences.address).toBe("742 Evergreen Terrace");
-    expect(body.preferences.monitoringCadence).toBe("weekly");
+    expect(body.preferences.monitoringMode).toBe("weekly_digest");
   });
 
   it("returns 400 when the body fails validation", () => {
     const db = openMemoryDb();
     const result = handlePreferencesUpdate(db, {
-      monitoringCadence: "invalid-cadence",
+      monitoringMode: "invalid-mode",
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -115,23 +115,23 @@ describe("handlePreferencesUpdate", () => {
     expect((result.body as { error: string }).error).toBe("empty_update");
   });
 
-  it("returns 409 when cadence-only update runs without an address on file", () => {
+  it("returns 409 when mode-only update runs without an address on file", () => {
     const db = openMemoryDb();
-    const result = handlePreferencesUpdate(db, { monitoringCadence: "off" });
+    const result = handlePreferencesUpdate(db, { monitoringMode: "off" });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.status).toBe(409);
     expect((result.body as { error: string }).error).toBe("no_address_on_file");
   });
 
-  it("cadence-only update succeeds when preferences already exist", () => {
+  it("mode-only update succeeds when preferences already exist", () => {
     const db = openMemoryDb();
     upsertPreferences(db, { address: "742 Evergreen", state: "CA" });
-    const result = handlePreferencesUpdate(db, { monitoringCadence: "off" });
+    const result = handlePreferencesUpdate(db, { monitoringMode: "off" });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const body = result.body as { cadence: string };
-    expect(body.cadence).toBe("off");
+    const body = result.body as { monitoringMode: string };
+    expect(body.monitoringMode).toBe("off");
   });
 
   it("upserts issue stances and returns them", () => {
@@ -162,7 +162,7 @@ describe("handleMonitoringToggle", () => {
   it("pauses every PolitiClaw job when enabled=false", async () => {
     const { adapter, jobs } = createInMemoryAdapter();
     setGatewayCronAdapterForTests(adapter);
-    await setupMonitoring({ cadence: "both" });
+    await setupMonitoring({ mode: "full_copilot" });
 
     const result = await handleMonitoringToggle({ enabled: false });
     expect(result.ok).toBe(true);
@@ -178,7 +178,7 @@ describe("handleMonitoringToggle", () => {
   it("resumes every PolitiClaw job when enabled=true", async () => {
     const { adapter, jobs } = createInMemoryAdapter();
     setGatewayCronAdapterForTests(adapter);
-    await setupMonitoring({ cadence: "both" });
+    await setupMonitoring({ mode: "full_copilot" });
     await handleMonitoringToggle({ enabled: false });
 
     const result = await handleMonitoringToggle({ enabled: true });

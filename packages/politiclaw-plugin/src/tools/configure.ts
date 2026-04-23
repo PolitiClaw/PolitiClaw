@@ -4,14 +4,14 @@ import type { AnyAgentTool } from "openclaw/plugin-sdk";
 import { setupMonitoring, type MonitoringSetupResult } from "../cron/setup.js";
 import {
   IssueStanceSchema,
-  MonitoringCadenceSchema,
+  MonitoringModeSchema,
   getPreferences,
   listIssueStances,
-  setMonitoringCadence,
+  setMonitoringMode,
   upsertIssueStance,
   upsertPreferences,
   type IssueStanceRow,
-  type MonitoringCadence,
+  type MonitoringMode,
   type PreferencesRow,
 } from "../domain/preferences/index.js";
 import { identifyMyReps, type IdentifyResult } from "../domain/reps/index.js";
@@ -64,17 +64,18 @@ const ConfigureParams = Type.Object({
       },
     ),
   ),
-  monitoringCadence: Type.Optional(
+  monitoringMode: Type.Optional(
     Type.Union(
       [
         Type.Literal("off"),
-        Type.Literal("election_proximity"),
-        Type.Literal("weekly"),
-        Type.Literal("both"),
+        Type.Literal("quiet_watch"),
+        Type.Literal("weekly_digest"),
+        Type.Literal("action_only"),
+        Type.Literal("full_copilot"),
       ],
       {
         description:
-          "How loud PolitiClaw monitoring should be. Defaults to election_proximity when first configuring unless a cadence is already saved.",
+          "How PolitiClaw should watch for you. 'off' pauses everything. 'quiet_watch' is silent unless tracked bills/hearings materially change. 'weekly_digest' adds the Sunday summary and monthly rep report. 'action_only' is quiet except when elections are near or tracked items change. 'full_copilot' enables everything. Defaults to 'action_only' when first configuring unless a mode is already saved.",
       },
     ),
   ),
@@ -92,7 +93,7 @@ type ConfigureInput = {
   district?: string;
   mode?: "conversation" | "quiz";
   issueStances?: Array<{ issue: string; stance: "support" | "oppose" | "neutral"; weight?: number }>;
-  monitoringCadence?: MonitoringCadence;
+  monitoringMode?: MonitoringMode;
   refreshReps?: boolean;
 };
 
@@ -106,7 +107,7 @@ type ConfigureNeedsIssueSetupResult = {
   preferences: PreferencesRow;
   reps: IdentifyResult;
   issueSetup: StartOnboardingResult;
-  cadence: MonitoringCadence;
+  monitoringMode: MonitoringMode;
   addressUpdated: boolean;
   savedIssueStances: IssueStanceRow[];
   currentIssueStances: IssueStanceRow[];
@@ -116,7 +117,7 @@ type ConfigureConfiguredResult = {
   status: "configured";
   preferences: PreferencesRow;
   reps: IdentifyResult;
-  cadence: MonitoringCadence;
+  monitoringMode: MonitoringMode;
   monitoring: MonitoringSetupResult;
   addressUpdated: boolean;
   savedIssueStances: IssueStanceRow[];
@@ -127,11 +128,20 @@ type ConfigurePartialResult = {
   status: "partial";
   preferences: PreferencesRow;
   reps: IdentifyResult;
-  cadence: MonitoringCadence;
+  monitoringMode: MonitoringMode;
   monitoringError: string;
   addressUpdated: boolean;
   savedIssueStances: IssueStanceRow[];
   currentIssueStances: IssueStanceRow[];
+};
+
+const MODE_DESCRIPTIONS: Record<MonitoringMode, string> = {
+  off: "Paused — PolitiClaw won't run on its own.",
+  quiet_watch: "Silent unless tracked bills or hearings materially change.",
+  weekly_digest:
+    "Sunday digest and monthly rep report, plus background change-watches.",
+  action_only: "Quiet except when an election is near or tracked items change.",
+  full_copilot: "Everything: digest, rep report, election alerts, background watches.",
 };
 
 export type ConfigureResult =
@@ -215,7 +225,7 @@ function renderNeedsIssueSetup(result: ConfigureNeedsIssueSetupResult): string {
   );
   lines.push("");
   lines.push(
-    `Monitoring will default to '${result.cadence}' once issue setup is complete unless you tell me to use a different cadence.`,
+    `Monitoring will default to '${result.monitoringMode}' (${MODE_DESCRIPTIONS[result.monitoringMode]}) once issue setup is complete unless you tell me to use a different mode.`,
   );
   return lines.join("\n");
 }
@@ -223,7 +233,9 @@ function renderNeedsIssueSetup(result: ConfigureNeedsIssueSetupResult): string {
 function renderConfigured(result: ConfigureConfiguredResult): string {
   const lines: string[] = ["PolitiClaw is configured.", ""];
   lines.push(`- Address: ${result.preferences.address}`);
-  lines.push(`- Monitoring cadence: ${result.cadence}`);
+  lines.push(
+    `- Monitoring mode: ${result.monitoringMode} — ${MODE_DESCRIPTIONS[result.monitoringMode]}`,
+  );
   lines.push(
     `- Issue stances: ${result.currentIssueStances.length} total${
       result.savedIssueStances.length > 0 ? ` (${result.savedIssueStances.length} saved this call)` : ""
@@ -261,7 +273,7 @@ export function createConfigureTool(deps: ConfigureToolDeps = {}): AnyAgentTool 
     name: "politiclaw_configure",
     label: "Configure PolitiClaw",
     description:
-      "Stand up the accountability loop: capture the stances PolitiClaw will measure the user's reps against, save the address that resolves those reps, and set how loudly monitoring should alert. Saves or updates the user's address, resolves reps, runs issue-stance setup, and applies monitoring cadence in one flow. When information is missing, returns the next setup step instead of requiring separate setup tools.",
+      "Stand up the accountability loop: capture the stances PolitiClaw will measure the user's reps against, save the address that resolves those reps, and set how loudly monitoring should alert. Saves or updates the user's address, resolves reps, runs issue-stance setup, and applies the chosen monitoring mode in one flow. When information is missing, returns the next setup step instead of requiring separate setup tools.",
     parameters: ConfigureParams,
     async execute(_toolCallId, rawParams) {
       const input = (rawParams ?? {}) as ConfigureInput;
@@ -277,13 +289,13 @@ export function createConfigureTool(deps: ConfigureToolDeps = {}): AnyAgentTool 
           zip: input.zip,
           state: input.state,
           district: input.district,
-          monitoringCadence: input.monitoringCadence,
+          monitoringMode: input.monitoringMode,
         });
         addressUpdated = true;
-      } else if (input.monitoringCadence) {
-        const parsedCadence = MonitoringCadenceSchema.parse(input.monitoringCadence);
+      } else if (input.monitoringMode) {
+        const parsedMode = MonitoringModeSchema.parse(input.monitoringMode);
         try {
-          preferences = setMonitoringCadence(db, parsedCadence);
+          preferences = setMonitoringMode(db, parsedMode);
         } catch {
           // We surface the missing-address case below through the normal gate.
         }
@@ -296,7 +308,7 @@ export function createConfigureTool(deps: ConfigureToolDeps = {}): AnyAgentTool 
         } satisfies ConfigureNeedsAddressResult);
       }
 
-      const cadence = preferences.monitoringCadence ?? "election_proximity";
+      const monitoringMode = preferences.monitoringMode ?? "action_only";
       const resolver = createResolver({ geocodioApiKey: pluginConfig.apiKeys?.geocodio });
       const reps = await identifyReps(db, resolver, {
         refresh: Boolean(input.refreshReps) || addressUpdated,
@@ -319,7 +331,7 @@ export function createConfigureTool(deps: ConfigureToolDeps = {}): AnyAgentTool 
           preferences,
           reps,
           issueSetup,
-          cadence,
+          monitoringMode,
           addressUpdated,
           savedIssueStances,
           currentIssueStances,
@@ -328,12 +340,12 @@ export function createConfigureTool(deps: ConfigureToolDeps = {}): AnyAgentTool 
       }
 
       try {
-        const monitoring = await reconcileMonitoring({ cadence });
+        const monitoring = await reconcileMonitoring({ mode: monitoringMode });
         const result: ConfigureConfiguredResult = {
           status: "configured",
           preferences,
           reps,
-          cadence,
+          monitoringMode,
           monitoring,
           addressUpdated,
           savedIssueStances,
@@ -346,7 +358,7 @@ export function createConfigureTool(deps: ConfigureToolDeps = {}): AnyAgentTool 
           status: "partial",
           preferences,
           reps,
-          cadence,
+          monitoringMode,
           monitoringError,
           addressUpdated,
           savedIssueStances,

@@ -22,8 +22,8 @@ import {
 import {
   POLITICLAW_CRON_NAMES,
   POLITICLAW_CRON_TEMPLATES,
-  templatesForCadence,
-  type MonitoringCadence,
+  templatesForMode,
+  type MonitoringMode,
   type PolitiClawCronTemplate,
 } from "./templates.js";
 
@@ -45,7 +45,7 @@ export type MonitoringSetupResult = {
 };
 
 export type SetupMonitoringOptions = {
-  cadence?: MonitoringCadence;
+  mode?: MonitoringMode;
 };
 
 export type MonitoringToggleAction = "paused" | "resumed" | "unchanged" | "missing";
@@ -130,19 +130,19 @@ function deepEqual(left: unknown, right: unknown): boolean {
 
 /**
  * Install (or update in place) the PolitiClaw default monitoring cron jobs
- * for a given cadence. Templates selected by `templatesForCadence(cadence)`
+ * for a given monitoring mode. Templates selected by `templatesForMode(mode)`
  * are created/updated and enabled; templates outside that set that already
  * exist are paused (kept, not deleted — preserves gateway state if the user
- * flips back). Idempotent: re-running with the same cadence produces
- * "unchanged" outcomes.
+ * flips back). Idempotent: re-running with the same mode produces "unchanged"
+ * outcomes.
  *
- * Defaults to `election_proximity` to match the migration's default value.
+ * Defaults to `action_only` to match the migration's default value.
  */
 export async function setupMonitoring(
   options: SetupMonitoringOptions = {},
 ): Promise<MonitoringSetupResult> {
-  const cadence: MonitoringCadence = options.cadence ?? "election_proximity";
-  const installSet = templatesForCadence(cadence);
+  const mode: MonitoringMode = options.mode ?? "action_only";
+  const installSet = templatesForMode(mode);
   const installNames = new Set(installSet.map((t) => t.name));
 
   const adapter = getGatewayCronAdapter();

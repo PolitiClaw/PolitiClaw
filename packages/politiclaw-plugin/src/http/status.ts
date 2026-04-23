@@ -29,7 +29,7 @@ import { listRecentAlerts, type AlertKind } from "../domain/alerts/index.js";
 import { listLetters, type LetterListEntry } from "../domain/letters/index.js";
 import { listRecentBillVotes, type RecentBillVote } from "../domain/votes/ingest.js";
 
-export const STATUS_SCHEMA_VERSION = 3 as const;
+export const STATUS_SCHEMA_VERSION = 4 as const;
 export const UPCOMING_ELECTION_WINDOW_DAYS = 60;
 export const RECENT_ALERTS_LIMIT = 10;
 export const RECENT_LETTERS_LIMIT = 10;
@@ -42,7 +42,7 @@ export type StatusPreferences =
       zip: string | null;
       state: string | null;
       district: string | null;
-      monitoringCadence: string;
+      monitoringMode: string;
       updatedAtMs: number;
       issueStances: {
         issue: string;
@@ -312,7 +312,7 @@ function buildPreferencesSection(
     zip: prefs.zip ?? null,
     state: prefs.state ?? null,
     district: prefs.district ?? null,
-    monitoringCadence: prefs.monitoringCadence ?? "election_proximity",
+    monitoringMode: prefs.monitoringMode ?? "action_only",
     updatedAtMs: prefs.updatedAt,
     issueStances: stances,
   };

@@ -34,7 +34,7 @@ Examples:
 - `politiclaw_score_bill`
 - `politiclaw_research_candidate`
 - `politiclaw_draft_letter`
-- `politiclaw_set_monitoring_cadence`
+- `politiclaw_set_monitoring_mode`
 
 ## Tier 2, advanced / power-user
 

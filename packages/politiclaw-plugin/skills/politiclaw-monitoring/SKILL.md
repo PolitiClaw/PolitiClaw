@@ -193,19 +193,21 @@ When `politiclaw.election_proximity_alert` fires (daily):
    isn't configured), post one line naming the missing config key — do not
    guess a date.
 
-## Cadence
+## Monitoring mode
 
 The user picks how loud monitoring is via `politiclaw_configure`:
 
 - `off` — no monitoring jobs installed.
-- `election_proximity` (default) — rep-vote watch + hearings + the
-  proximity alert above. Quiet between cycles.
-- `weekly` — rep-vote watch + hearings + weekly summary + monthly rep
+- `quiet_watch` — rep-vote watch + hearings only. Silent unless something
+  materially changes.
+- `weekly_digest` — rep-vote watch + hearings + weekly summary + monthly rep
   report. No proximity alert.
-- `both` — everything.
+- `action_only` (default) — rep-vote watch + hearings + the proximity alert
+  above. Quiet between cycles.
+- `full_copilot` — everything.
 
-`politiclaw_configure` reconciles to whichever cadence is saved; jobs outside
-the cadence are paused (kept, not deleted) so flipping back is instant.
+`politiclaw_configure` reconciles to whichever mode is saved; jobs outside the
+mode's set are paused (kept, not deleted) so flipping back is instant.
 
 ## Rep report (periodic digest)
 

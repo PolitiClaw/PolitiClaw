@@ -24,7 +24,7 @@ import {
 } from "../cron/setup.js";
 import {
   recordStanceSignal,
-  setMonitoringCadence,
+  setMonitoringMode,
   upsertIssueStance,
   upsertPreferences,
   type IssueStanceRow,
@@ -45,8 +45,8 @@ const PreferencesUpdateSchema = z.object({
   zip: z.string().trim().optional(),
   state: z.string().trim().optional(),
   district: z.string().trim().optional(),
-  monitoringCadence: z
-    .enum(["off", "election_proximity", "weekly", "both"])
+  monitoringMode: z
+    .enum(["off", "quiet_watch", "weekly_digest", "action_only", "full_copilot"])
     .optional(),
   issueStances: z
     .array(
@@ -63,19 +63,19 @@ export type PreferencesUpdateBody = z.infer<typeof PreferencesUpdateSchema>;
 
 export type PreferencesUpdateResult = {
   preferences: PreferencesRow | null;
-  cadence: PreferencesRow["monitoringCadence"] | null;
+  monitoringMode: PreferencesRow["monitoringMode"] | null;
   upsertedIssueStances: IssueStanceRow[];
 };
 
 /**
  * Updates preferences from the dashboard. Mirrors the editable surface of
- * `politiclaw_configure` (address, cadence, issue stances) but does NOT
- * trigger reps refresh or run onboarding flows — those remain agent-only so
- * the dashboard stays a thin edit surface, not an alternate runtime.
+ * `politiclaw_configure` (address, monitoring mode, issue stances) but does
+ * NOT trigger reps refresh or run onboarding flows — those remain agent-only
+ * so the dashboard stays a thin edit surface, not an alternate runtime.
  *
- * Either `address` (full prefs upsert) or `monitoringCadence` (cadence-only
- * tweak) may be present; both are optional. `issueStances` are upserted one
- * by one so a partial failure on one stance does not roll back the rest.
+ * Either `address` (full prefs upsert) or `monitoringMode` (mode-only tweak)
+ * may be present; both are optional. `issueStances` are upserted one by one
+ * so a partial failure on one stance does not roll back the rest.
  */
 export function handlePreferencesUpdate(
   db: PolitiClawDb,
@@ -96,7 +96,7 @@ export function handlePreferencesUpdate(
   const body = parsed.data;
   if (
     body.address === undefined &&
-    body.monitoringCadence === undefined &&
+    body.monitoringMode === undefined &&
     (body.issueStances === undefined || body.issueStances.length === 0)
   ) {
     return {
@@ -105,13 +105,13 @@ export function handlePreferencesUpdate(
       body: {
         error: "empty_update",
         message:
-          "at least one of address, monitoringCadence, or issueStances is required",
+          "at least one of address, monitoringMode, or issueStances is required",
       },
     };
   }
 
   let updatedPrefs: PreferencesRow | null = null;
-  let cadence: PreferencesRow["monitoringCadence"] | null = null;
+  let monitoringMode: PreferencesRow["monitoringMode"] | null = null;
 
   try {
     if (body.address !== undefined) {
@@ -120,13 +120,13 @@ export function handlePreferencesUpdate(
         zip: body.zip,
         state: body.state,
         district: body.district,
-        monitoringCadence: body.monitoringCadence,
+        monitoringMode: body.monitoringMode,
       });
-      cadence = updatedPrefs.monitoringCadence ?? null;
-    } else if (body.monitoringCadence !== undefined) {
+      monitoringMode = updatedPrefs.monitoringMode ?? null;
+    } else if (body.monitoringMode !== undefined) {
       try {
-        updatedPrefs = setMonitoringCadence(db, body.monitoringCadence);
-        cadence = updatedPrefs.monitoringCadence ?? null;
+        updatedPrefs = setMonitoringMode(db, body.monitoringMode);
+        monitoringMode = updatedPrefs.monitoringMode ?? null;
       } catch (err) {
         return {
           ok: false,
@@ -176,7 +176,7 @@ export function handlePreferencesUpdate(
 
   const result: PreferencesUpdateResult = {
     preferences: updatedPrefs,
-    cadence,
+    monitoringMode,
     upsertedIssueStances,
   };
   return { ok: true, status: 200, body: result };

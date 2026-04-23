@@ -192,10 +192,10 @@ describe("handleDashboardRequest", () => {
     expect(state.statusCode).toBe(200);
     expect(String(state.headers["Content-Type"])).toMatch(/application\/json/);
     const parsed = JSON.parse(bodyText(res)) as StatusPayload;
-    expect(parsed.schemaVersion).toBe(3);
+    expect(parsed.schemaVersion).toBe(4);
     expect(parsed.preferences.status).toBe("missing");
     expect(captured).not.toBeNull();
-    expect(captured?.schemaVersion).toBe(3);
+    expect(captured?.schemaVersion).toBe(4);
   });
 
   it("returns 405 with Allow header for unsupported methods like PUT", async () => {

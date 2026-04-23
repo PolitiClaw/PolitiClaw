@@ -1,12 +1,12 @@
 import type { PolitiClawDb } from "../../storage/sqlite.js";
 import {
   IssueStanceSchema,
-  MonitoringCadenceSchema,
+  MonitoringModeSchema,
   PreferencesSchema,
   StanceSignalSchema,
   type IssueStance,
   type IssueStanceRow,
-  type MonitoringCadence,
+  type MonitoringMode,
   type Preferences,
   type PreferencesRow,
   type StanceSignal,
@@ -14,14 +14,14 @@ import {
 
 export {
   IssueStanceSchema,
-  MonitoringCadenceSchema,
+  MonitoringModeSchema,
   PreferencesSchema,
   StanceSignalSchema,
 };
 export type {
   IssueStance,
   IssueStanceRow,
-  MonitoringCadence,
+  MonitoringMode,
   Preferences,
   PreferencesRow,
   StanceSignal,
@@ -30,7 +30,7 @@ export type {
 export function getPreferences(db: PolitiClawDb): PreferencesRow | null {
   const row = db
     .prepare(
-      "SELECT address, zip, state, district, monitoring_cadence, updated_at FROM preferences WHERE id = 1",
+      "SELECT address, zip, state, district, monitoring_mode, updated_at FROM preferences WHERE id = 1",
     )
     .get() as
     | {
@@ -38,7 +38,7 @@ export function getPreferences(db: PolitiClawDb): PreferencesRow | null {
         zip: string | null;
         state: string | null;
         district: string | null;
-        monitoring_cadence: MonitoringCadence;
+        monitoring_mode: MonitoringMode;
         updated_at: number;
       }
     | undefined;
@@ -48,7 +48,7 @@ export function getPreferences(db: PolitiClawDb): PreferencesRow | null {
     zip: row.zip ?? undefined,
     state: row.state ?? undefined,
     district: row.district ?? undefined,
-    monitoringCadence: row.monitoring_cadence,
+    monitoringMode: row.monitoring_mode,
     updatedAt: row.updated_at,
   };
 }
@@ -56,37 +56,37 @@ export function getPreferences(db: PolitiClawDb): PreferencesRow | null {
 export function upsertPreferences(db: PolitiClawDb, input: Preferences): PreferencesRow {
   const parsed = PreferencesSchema.parse(input);
   const existing = db
-    .prepare("SELECT monitoring_cadence FROM preferences WHERE id = 1")
-    .get() as { monitoring_cadence: MonitoringCadence } | undefined;
-  const cadence =
-    parsed.monitoringCadence ?? existing?.monitoring_cadence ?? "election_proximity";
+    .prepare("SELECT monitoring_mode FROM preferences WHERE id = 1")
+    .get() as { monitoring_mode: MonitoringMode } | undefined;
+  const mode =
+    parsed.monitoringMode ?? existing?.monitoring_mode ?? "action_only";
   const now = Date.now();
   db.prepare(
-    `INSERT INTO preferences (id, address, zip, state, district, monitoring_cadence, updated_at)
-     VALUES (1, @address, @zip, @state, @district, @monitoring_cadence, @updated_at)
+    `INSERT INTO preferences (id, address, zip, state, district, monitoring_mode, updated_at)
+     VALUES (1, @address, @zip, @state, @district, @monitoring_mode, @updated_at)
      ON CONFLICT(id) DO UPDATE SET
-       address            = excluded.address,
-       zip                = excluded.zip,
-       state              = excluded.state,
-       district           = excluded.district,
-       monitoring_cadence = excluded.monitoring_cadence,
-       updated_at         = excluded.updated_at`,
+       address          = excluded.address,
+       zip              = excluded.zip,
+       state            = excluded.state,
+       district         = excluded.district,
+       monitoring_mode  = excluded.monitoring_mode,
+       updated_at       = excluded.updated_at`,
   ).run({
     address: parsed.address,
     zip: parsed.zip ?? null,
     state: parsed.state ?? null,
     district: parsed.district ?? null,
-    monitoring_cadence: cadence,
+    monitoring_mode: mode,
     updated_at: now,
   });
-  return { ...parsed, monitoringCadence: cadence, updatedAt: now };
+  return { ...parsed, monitoringMode: mode, updatedAt: now };
 }
 
-export function setMonitoringCadence(
+export function setMonitoringMode(
   db: PolitiClawDb,
-  cadence: MonitoringCadence,
+  mode: MonitoringMode,
 ): PreferencesRow {
-  const parsed = MonitoringCadenceSchema.parse(cadence);
+  const parsed = MonitoringModeSchema.parse(mode);
   const existing = db
     .prepare(
       "SELECT address, zip, state, district FROM preferences WHERE id = 1",
@@ -101,22 +101,22 @@ export function setMonitoringCadence(
     | undefined;
   if (!existing) {
     throw new Error(
-      "Cannot set monitoring cadence before address is saved. Call politiclaw_configure first.",
+      "Cannot set monitoring mode before address is saved. Call politiclaw_configure first.",
     );
   }
   const now = Date.now();
   db.prepare(
     `UPDATE preferences
-       SET monitoring_cadence = @cadence,
+       SET monitoring_mode = @mode,
            updated_at = @updated_at
      WHERE id = 1`,
-  ).run({ cadence: parsed, updated_at: now });
+  ).run({ mode: parsed, updated_at: now });
   return {
     address: existing.address,
     zip: existing.zip ?? undefined,
     state: existing.state ?? undefined,
     district: existing.district ?? undefined,
-    monitoringCadence: parsed,
+    monitoringMode: parsed,
     updatedAt: now,
   };
 }

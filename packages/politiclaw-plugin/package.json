@@ -1,6 +1,6 @@
 {
   "name": "@politiclaw/politiclaw",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Local-first OpenClaw plugin: a civic copilot that holds your representatives accountable to the values you declare — watches federal legislation and elections for you, flags when your reps' actions align or don't, and drafts letters you send yourself.",
   "type": "module",
   "main": "./src/index.ts",
@@ -34,6 +34,7 @@
     "openclaw": ">=2026.4.15"
   },
   "dependencies": {
+    "@sinclair/typebox": "^0.34.0",
     "@turf/boolean-point-in-polygon": "^7.3.5",
     "js-yaml": "^4.1.1",
     "shapefile": "^0.6.6",

@@ -21,6 +21,13 @@ export const TOOL_AUDIT_ENTRIES: readonly ToolAuditEntry[] = [
       "Best first-run and reconfiguration entry point because it folds address setup, rep bootstrap, issue-setup handoff, and monitoring cadence into one user-facing flow.",
   },
   {
+    name: "politiclaw_set_api_keys",
+    tier: "core",
+    docsAction: "lead-in-guides",
+    rationale:
+      "Writable counterpart to the configure flow's API-key stage: lets the agent persist provider keys (api.data.gov, Google Civic, Geocodio, and the optional upgrades) without the user editing the gateway config by hand.",
+  },
+  {
     name: "politiclaw_record_stance_signal",
     tier: "internal",
     docsAction: "generated-reference-only",

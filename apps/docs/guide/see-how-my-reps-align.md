@@ -32,3 +32,11 @@ Rep accountability requires declared issue stances and at least one recorded sta
 
 - [`politiclaw_prepare_me_for_my_next_election`](../reference/generated/tools/politiclaw_prepare_me_for_my_next_election) when the accountability findings should fold into ballot context.
 - [`politiclaw_draft_letter`](../reference/generated/tools/politiclaw_draft_letter) when the next step is outreach grounded in a cited conflict.
+
+## In the accountability loop
+
+This page is the operational entry point. The other three sides of the loop:
+
+- [How PolitiClaw Holds Representatives Accountable](./rep-accountability) — the full loop with the diagram, the dissenting-view rule, and source-tier discipline.
+- [Track Bills and Votes](./track-bills-and-votes) — the evidence side: how bills and roll-call votes get into the system before scoring runs.
+- [Examples of Good Alerts](./example-alerts) — what the periodic rep report and weekly digest actually look like.

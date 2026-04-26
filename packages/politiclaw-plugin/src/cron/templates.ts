@@ -194,8 +194,8 @@ export type { MonitoringMode };
  * - `off`: no automated monitoring.
  * - `quiet_watch`: silent background change-watches only (rep-vote + hearings,
  *   both change-detection-gated, so quiet windows produce no output).
- * - `weekly_digest`: Sunday summary + monthly rep report, plus the background
- *   change-watches. No election ramp-up.
+ * - `weekly_digest`: weekly summary (every 7 days from install) + monthly rep
+ *   report, plus the background change-watches. No election ramp-up.
  * - `action_only`: quiet background watches plus election proximity alerts.
  *   Suppresses the weekly summary and rep report.
  * - `full_copilot`: everything — digest, rep report, election alerts, watches.

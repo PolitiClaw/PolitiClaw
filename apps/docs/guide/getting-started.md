@@ -10,17 +10,18 @@ It lives in this monorepo as an OpenClaw plugin plus a VitePress docs app. The d
 ## Recommended Reading Order
 
 1. [Installation and Verification](./installation-and-verification)
-2. [Configuration](./configuration)
-3. [Entry Points by Goal](./entry-points-by-goal)
-4. [Privacy and Storage](./privacy-and-storage)
-5. [Tools Reference](../reference/tools)
-6. [Source Coverage](../reference/source-coverage)
+2. [API Keys](./api-keys)
+3. [Configuration](./configuration)
+4. [Entry Points by Goal](./entry-points-by-goal)
+5. [Privacy and Storage](./privacy-and-storage)
+6. [Tools Reference](../reference/tools)
+7. [Source Coverage](../reference/source-coverage)
 
 ## First Successful Run
 
-If you are bringing up a fresh local install, the shortest path is:
+The shortest path from install to a real answer:
 
-1. Install the plugin locally and confirm the workspace builds.
+1. Install the plugin — `openclaw plugins install @politiclaw/politiclaw` for the npm path, or follow the local-checkout path in [Installation and Verification](./installation-and-verification) if you are working in this workspace.
 2. Run [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure) with your address.
 3. Run [`politiclaw_doctor`](../reference/generated/tools/politiclaw_doctor) to catch missing configuration or storage problems early.
 4. If `politiclaw_configure` returns an issue-setup handoff, follow it to save at least one stance.
@@ -28,9 +29,11 @@ If you are bringing up a fresh local install, the shortest path is:
 
 From there, most users branch into either bill tracking, ballot prep, or monitoring. When several tools seem to overlap, use [Entry Points by Goal](./entry-points-by-goal) to find the default front door before jumping into lower-level reference pages.
 
+For everything related to provider keys — which key unlocks which tool, how to obtain each, how to save them with [`politiclaw_set_api_keys`](../reference/generated/tools/politiclaw_set_api_keys) or the configure flow, and what the gateway-restart implication is — see [API Keys](./api-keys).
+
 ## What To Expect Over Time
 
-After setup, PolitiClaw's recurring monitoring jobs run on your gateway and stay silent on empty windows. For a walk-through of what shows up in your session and when, read [Set It and Forget It](./set-it-and-forget-it). For a feel for the shape of a good alert, read [Examples of Good Alerts](./example-alerts). For how scoring and accountability fit together, read [How PolitiClaw Holds Representatives Accountable](./rep-accountability).
+After setup, PolitiClaw's recurring monitoring jobs run on your gateway and stay silent on empty windows. For a walk-through of what shows up in your session and when, read [Recurring Monitoring](./recurring-monitoring). For a feel for the shape of a good alert, read [Examples of Good Alerts](./example-alerts). For how scoring and accountability fit together, read [How PolitiClaw Holds Representatives Accountable](./rep-accountability).
 
 ## What To Trust
 

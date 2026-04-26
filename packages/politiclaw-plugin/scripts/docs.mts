@@ -16,6 +16,7 @@ import {
 import {
   TOOL_AUDIT_ENTRIES,
   type ToolAuditEntry,
+  type ToolVisibilityTier,
 } from "../src/docs/toolAudit.ts";
 import { openMemoryDb } from "../src/storage/sqlite.ts";
 
@@ -80,7 +81,10 @@ if (mode !== "generate" && mode !== "check") {
 
 const outputs = buildOutputs();
 const driftedPaths = syncOutputs(outputs, mode === "check");
-const policyIssues = collectPublishedDocsPolicyIssues();
+const policyIssues = [
+  ...collectPublishedDocsPolicyIssues(),
+  ...collectTierMislabelIssues(),
+];
 
 if (driftedPaths.length > 0 || policyIssues.length > 0) {
   if (driftedPaths.length > 0) {
@@ -759,6 +763,65 @@ function collectMarkdownFiles(root: string): string[] {
 
 function mentionsHiddenDocs(content: string): boolean {
   return /`\/docs`|\]\(\/docs(?:\/|\))|\]\(docs(?:\/|\))|[^\w]\/docs(?:\/|\b)/.test(content);
+}
+
+function collectTierMislabelIssues(): PublishedDocPolicyIssue[] {
+  // Catches the kind of drift that landed three tools under "Tier 3 internal"
+  // in tool-surface.md when their toolAudit.ts entries said `core` or
+  // `advanced`. Any hand-written page that lists a `politiclaw_*` tool
+  // underneath a "## Tier N ..." heading must agree with TOOL_AUDIT_ENTRIES.
+  const markdownFiles = collectMarkdownFiles(docsRoot);
+  const issues: PublishedDocPolicyIssue[] = [];
+  const generatedDocsPrefix = generatedRoot + sep;
+  const auditByName = new Map(TOOL_AUDIT_ENTRIES.map((entry) => [entry.name, entry]));
+  const tierByNumber: Record<string, ToolVisibilityTier> = {
+    "1": "core",
+    "2": "advanced",
+    "3": "internal",
+  };
+  const tierHeadingPattern = /^##\s+Tier\s+(\d)\b/i;
+  const seen = new Set<string>();
+
+  for (const markdownFile of markdownFiles) {
+    if (markdownFile.startsWith(generatedDocsPrefix)) continue;
+    const relativePath = relative(repoRoot, markdownFile);
+    const content = readFileSync(markdownFile, "utf8");
+    const lines = content.split("\n");
+
+    let currentTier: ToolVisibilityTier | null = null;
+    let currentTierNumber: string | null = null;
+
+    for (const line of lines) {
+      if (line.startsWith("## ")) {
+        const headingMatch = line.match(tierHeadingPattern);
+        if (headingMatch) {
+          currentTierNumber = headingMatch[1];
+          currentTier = tierByNumber[currentTierNumber] ?? null;
+        } else {
+          currentTier = null;
+          currentTierNumber = null;
+        }
+        continue;
+      }
+      if (!currentTier || !currentTierNumber) continue;
+
+      for (const match of line.matchAll(/`(politiclaw_\w+)`/g)) {
+        const toolName = match[1];
+        const audit = auditByName.get(toolName);
+        if (!audit) continue;
+        if (audit.tier === currentTier) continue;
+        const dedupeKey = `${relativePath}::${toolName}::${currentTierNumber}`;
+        if (seen.has(dedupeKey)) continue;
+        seen.add(dedupeKey);
+        issues.push({
+          file: relativePath,
+          message: `lists \`${toolName}\` under "Tier ${currentTierNumber}" but the audit catalog classifies it as \`${audit.tier}\``,
+        });
+      }
+    }
+  }
+
+  return issues;
 }
 
 function assertBaseline(counts: {

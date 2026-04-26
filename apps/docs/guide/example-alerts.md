@@ -38,9 +38,9 @@ What to notice:
 
 Emitted by any monitoring job when the delta is empty.
 
-> Nothing materially new since last check.
+> No new or materially changed items since last check (checked 14 bills, 3 upcoming events).
 
-That's the whole message. No padding, no "here's what's still on the watch list," no "stay tuned." The monitoring skill is explicit: empty deltas get one line.
+That's the whole message. No padding, no "here's what's still on the watch list," no "stay tuned." The monitoring skill is explicit: empty deltas get one brief confirmation line, never a padded digest.
 
 ## A weekly summary
 
@@ -124,3 +124,11 @@ Percentages without a tier-1 vote ledger are a tier-5 fabrication. The skill is 
 > **Headline.** A quiet but interesting week, with lots happening behind the scenes on your tracked issues...
 
 Padding empty deltas trains the user to stop reading. The skill requires a single quiet-week line instead. Brevity is a trust mechanism, not a missing feature.
+
+## In the accountability loop
+
+This page is the "what alerts look like" side of the loop. The rest:
+
+- [How PolitiClaw Holds Representatives Accountable](./rep-accountability) — the full loop with the diagram, the dissenting-view rule, and source-tier discipline.
+- [See How My Reps Align](./see-how-my-reps-align) — the operational entry point that scoring drives.
+- [Track Bills and Votes](./track-bills-and-votes) — the evidence side that monitoring jobs read from.

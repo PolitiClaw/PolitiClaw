@@ -10,6 +10,16 @@
     "sourcePath": "packages/politiclaw-plugin/src/tools/configure.ts"
   },
   {
+    "name": "politiclaw_set_api_keys",
+    "tier": "core",
+    "docsAction": "lead-in-guides",
+    "rationale": "Writable counterpart to the configure flow's API-key stage: lets the agent persist provider keys (api.data.gov, Google Civic, Geocodio, and the optional upgrades) without the user editing the gateway config by hand.",
+    "label": "Save PolitiClaw API keys",
+    "groupId": "preferences",
+    "groupLabel": "Configuration and preferences",
+    "sourcePath": "packages/politiclaw-plugin/src/tools/setApiKeys.ts"
+  },
+  {
     "name": "politiclaw_record_stance_signal",
     "tier": "internal",
     "docsAction": "generated-reference-only",

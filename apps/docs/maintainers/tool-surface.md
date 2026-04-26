@@ -27,6 +27,8 @@ Examples:
 
 - `politiclaw_doctor`
 - `politiclaw_configure`
+- `politiclaw_set_api_keys`
+- `politiclaw_set_issue_stance`
 - `politiclaw_prepare_me_for_my_next_election`
 - `politiclaw_get_my_reps`
 - `politiclaw_score_representative`
@@ -54,6 +56,8 @@ Examples:
 - `politiclaw_check_upcoming_votes`
 - `politiclaw_research_challengers`
 - `politiclaw_list_issue_stances`
+- `politiclaw_delete_issue_stance`
+- `politiclaw_create_reminder`
 - `politiclaw_mute`
 - `politiclaw_unmute`
 - `politiclaw_list_mutes`
@@ -73,9 +77,6 @@ Examples:
 
 - `politiclaw_record_stance_signal`
 - `politiclaw_ingest_votes`
-- `politiclaw_set_issue_stance`
-- `politiclaw_delete_issue_stance`
-- `politiclaw_create_reminder`
 - `politiclaw_get_my_ballot`
 
 ## Presentation rules

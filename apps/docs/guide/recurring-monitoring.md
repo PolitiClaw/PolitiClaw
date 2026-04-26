@@ -1,10 +1,10 @@
-# Set It and Forget It
+# Recurring Monitoring
 
 This page describes what PolitiClaw does for you *after* setup, when you're not actively asking it anything.
 
-For the short controls reference — the cadence switch, the one-off snapshot tool, and the mute commands — read [Manage Monitoring](./monitoring). This page is the narrative companion.
+For the controls reference — switching cadence, muting topics, running an immediate snapshot — read [Manage Monitoring](./monitoring). This page is the narrative companion.
 
-## What "set it and forget it" means here
+## What recurring monitoring means here
 
 Once you've run [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure) with an address and at least one issue stance, PolitiClaw installs a small set of cron templates onto your OpenClaw gateway. They run on their own schedules, on your machine, from then on.
 
@@ -36,37 +36,49 @@ A deterministic alignment digest of your stored representatives against your dec
 
 Posts only at 30, 14, 7, and 1 day before an election on your saved ballot. One short line: "Election in N days at [polling place]," pointing at [`politiclaw_prepare_me_for_my_next_election`](../reference/generated/tools/politiclaw_prepare_me_for_my_next_election). Nothing on other days.
 
+## When the first message arrives
+
+```
+day 0 ─── install (politiclaw_configure)
+   │
+   ├── 6h ──── first rep-vote watch (silent if no tracked-issue movement)
+   │
+   ├── 12h ─── first tracked-hearings sweep (silent if no upcoming agendas)
+   │
+   ├── 24h ─── first election-proximity check (silent unless 30/14/7/1d out)
+   │
+   ├── 7d ──── first weekly summary (always speaks; "quiet week" line if empty)
+   │
+   └── 30d ─── first rep report
+```
+
+Cron jobs fire on their own intervals starting from when you enabled them — they do not run immediately. If you want a read while you wait, use [`politiclaw_check_upcoming_votes`](../reference/generated/tools/politiclaw_check_upcoming_votes) for an on-demand snapshot.
+
 ## The quiet-by-design contract
 
 PolitiClaw's default posture is to shut up when nothing changed. The monitoring skill is explicit about this:
 
-- Empty delta → one-liner: "Nothing materially new since last check." No padding.
-- Source unavailable → one line naming the missing config key and the fix. No fabricated summary.
+- Empty delta → brief confirmation: "No new or materially changed items since last check (checked N bills, M upcoming events)." No padding.
+- Source unavailable → one line with the failure reason and any actionable hint. No fabricated summary.
 - Partial failure → render what did come back, name the failing sub-source. No pretending.
 
 A noisy monitor gets muted. A silent monitor that says so when something breaks stays trusted.
 
 If you want to suppress a specific topic without changing cadence, use [`politiclaw_mute`](../reference/generated/tools/politiclaw_mute). Mutes are additive and auditable — the monitoring loop surfaces a compact "(N items suppressed by mute list)" note so you can always see the filter is active.
 
-## How cadence shapes the set
-
-You control how loud monitoring is with a single cadence value on `politiclaw_configure`:
-
-- **`off`** — no monitoring jobs installed. PolitiClaw only runs when you ask it something.
-- **`quiet_watch`** — rep-vote watch and tracked hearings only. Silent unless tracked bills or hearings materially change.
-- **`weekly_digest`** — rep-vote watch, tracked hearings, weekly summary, and monthly rep report. No proximity alert.
-- **`action_only`** *(default)* — rep-vote watch, tracked hearings, and the proximity alert. Quiet between cycles; ramps up as an election approaches.
-- **`full_copilot`** — everything above, together.
-
-Changing cadence re-reconciles jobs. Templates outside the new cadence are paused, not deleted, so flipping back is instant.
-
 ## What isn't yet proactive
 
 Deliberate limits so the blind spots don't hide:
 
-- **State and local bills.** Federal bill and roll-call sources are wired (House via api.congress.gov, Senate via voteview.com); state-level providers are declared in the config schema but not wired into runtime today. See [Generated Source Coverage](../reference/generated/source-coverage) for the full matrix of schema-only providers.
+- **State and local bills.** Federal bill and roll-call sources are wired (House via api.congress.gov, Senate via voteview.com); state-level providers are declared in the config schema but not wired into runtime today. See [Generated Source Coverage](../reference/generated/source-coverage) for the full matrix.
 - **Finance-driven alerts.** FEC campaign-finance lookups are available on demand via the candidate research tool, but no cron template currently fires finance-delta alerts.
 - **Outgoing transport.** PolitiClaw posts to your own session; it does not send email, push notifications, or messages to third parties. Outreach ends at a draft you send yourself.
 - **Reactive follow-up.** If a rep responds to a letter, PolitiClaw won't notice. The loop is monitoring → draft; it doesn't close around the reply.
 
 When any of these change, the cron-jobs and source-coverage pages will reflect it before this page will.
+
+## See also
+
+- [Manage Monitoring](./monitoring) — the controls reference: modes, mutes, on-demand snapshots.
+- [Examples of Good Alerts](./example-alerts) — the shape of each job's output.
+- [How PolitiClaw Holds Representatives Accountable](./rep-accountability) — the loop monitoring feeds into.

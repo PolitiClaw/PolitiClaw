@@ -125,3 +125,7 @@ From the workspace root:
 ```bash
 npm run dev:plugin
 ```
+
+## License
+
+PolitiClaw is released under the [MIT License](LICENSE).

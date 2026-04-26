@@ -41,3 +41,7 @@ openclaw plugins install ./packages/politiclaw-plugin --link
 ```
 
 If you only want to work on the plugin package directly, the package-specific commands still run from `packages/politiclaw-plugin`.
+
+## License
+
+PolitiClaw is released under the [MIT License](LICENSE).

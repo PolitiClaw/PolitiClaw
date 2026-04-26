@@ -4,7 +4,7 @@ This page tracks the biggest categories where earlier planning material drifted 
 
 ## Claims Retired From The Published Docs
 
-- dashboard and HTTP route surfaces
+- speculative dashboard features beyond the local-only `/politiclaw` surface that actually ships (the dashboard itself is wired; see `maintainers/architecture`)
 - long-running background service claims
 - send-on-your-behalf outreach behavior
 - broad provider coverage that only exists as declared config placeholders

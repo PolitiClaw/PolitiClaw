@@ -6,7 +6,7 @@ This path is for, "Tell me more about the people running."
 
 - [`politiclaw_research_candidate`](../reference/generated/tools/politiclaw_research_candidate)
 
-Use it first for a single candidate's FEC-backed finance summary and attached bio context.
+Use it first for a single candidate's FEC-backed finance summary and attached bio context. Finance totals come from FEC OpenFEC (tier 1, dollar amounts only). Bio narrative defaults to a tier-5 LLM web-search adapter and is downgraded to tier 1 or 2 only when every citation is a primary government or neutral civic source — useful context, but not the same source class as the finance numbers.
 
 ## Focused follow-ups
 

@@ -28,11 +28,12 @@ export default defineConfig({
           { text: "Track Bills and Votes", link: "/guide/track-bills-and-votes" },
           { text: "Research Candidates", link: "/guide/research-candidates" },
           { text: "Draft Outreach", link: "/guide/draft-outreach" },
-          { text: "Set It and Forget It", link: "/guide/set-it-and-forget-it" },
+          { text: "Recurring Monitoring", link: "/guide/recurring-monitoring" },
           { text: "How Accountability Works", link: "/guide/rep-accountability" },
           { text: "Example Alerts", link: "/guide/example-alerts" },
           { text: "Manage Monitoring", link: "/guide/monitoring" },
           { text: "Installation and Verification", link: "/guide/installation-and-verification" },
+          { text: "API Keys", link: "/guide/api-keys" },
           { text: "Configuration", link: "/guide/configuration" },
           { text: "Privacy and Storage", link: "/guide/privacy-and-storage" },
           { text: "Troubleshooting", link: "/guide/troubleshooting" }

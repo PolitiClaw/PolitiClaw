@@ -86,7 +86,7 @@ import { withBase } from "vitepress";
 <h2 class="pc-h2">how it works</h2>
 
 <p>
-  The plugin registers three things with your OpenClaw gateway: a pool of <strong>provider adapters</strong> (api.data.gov, Google Civic, Geocodio, optional FEC), a <strong>tool bundle</strong> the agent can call (<code>politiclaw_doctor</code>, <code>politiclaw_get_my_reps</code>, <code>politiclaw_prepare_me_for_my_next_election</code>, …), and a set of <strong>cron templates</strong> the gateway schedules for monitoring.
+  The plugin registers three things with your OpenClaw gateway: a pool of <strong>provider adapters</strong> (api.data.gov for federal bills, House votes, and FEC finance; voteview.com for Senate votes; Google Civic for ballots; Geocodio as an optional rep-lookup upgrade), a <strong>tool bundle</strong> the agent can call (<code>politiclaw_doctor</code>, <code>politiclaw_configure</code>, <code>politiclaw_set_api_keys</code>, <code>politiclaw_get_my_reps</code>, <code>politiclaw_prepare_me_for_my_next_election</code>, …), and a set of <strong>cron templates</strong> the gateway schedules for monitoring.
 </p>
 
 <div class="pc-arch">  your message
@@ -100,13 +100,17 @@ import { withBase } from "vitepress";
             │                   ┌──────┴───────┐
             │                   ▼              ▼
             │            ┌────────────┐ ┌────────────┐
-            │            │ <span class="b">providers</span>  │ │ plugin     │
-            │            │ api.data,  │ │ sqlite +   │
-            │            │ civic,     │ │ shapefile  │
-            │            │ geocodio   │ │ cache      │
+            │            │ <span class="b">providers</span>  │ │ local      │
+            │            │ api.data,  │ │ storage    │
+            │            │ civic,     │ │ sqlite +   │
+            │            │ geocodio   │ │ shapefiles │
             │            └────────────┘ └────────────┘
             │
    agent response + generated references</div>
+
+<p class="pc-legend">
+  <strong>providers</strong>: external network sources reached only when a tool needs a provider-backed answer (api.congress.gov, voteview.com, Google Civic, Geocodio, FEC). <strong>local storage</strong>: plugin-owned files on your machine (SQLite database for structured records; cached shapefiles for the zero-key reps-by-address path).
+</p>
 
 <p>
   For the exact runtime wiring, read the <a href="/maintainers/architecture">architecture notes</a> and the <a href="/reference/source-coverage">source coverage matrix</a>.
@@ -140,7 +144,7 @@ import { withBase } from "vitepress";
   <div class="pc-card">
     <div class="idx">05</div>
     <div class="ttl">recurring monitoring</div>
-    <div class="desc">Plugin-owned cron templates plus a saved cadence that controls which default jobs stay enabled. Feeds the weekly digest and monthly rep report — see <a href="/guide/set-it-and-forget-it">set it and forget it</a> for what the jobs do over time.</div>
+    <div class="desc">Plugin-owned cron templates plus a saved cadence that controls which default jobs stay enabled. Feeds the weekly digest and monthly rep report — see <a href="/guide/recurring-monitoring">recurring monitoring</a> for what the jobs do over time.</div>
   </div>
   <div class="pc-card">
     <div class="idx">06</div>
@@ -248,9 +252,9 @@ import { withBase } from "vitepress";
     <div class="desc">Turn accountability findings, bill research, or ballot prep into a draft the user can send themselves.</div>
     <span class="arrow">→</span>
   </a>
-  <a class="pc-card" href="/guide/set-it-and-forget-it">
+  <a class="pc-card" href="/guide/recurring-monitoring">
     <div class="idx">07 · experience</div>
-    <div class="ttl">set it and forget it</div>
+    <div class="ttl">recurring monitoring</div>
     <div class="desc">What the recurring monitoring jobs actually produce — when they speak, when they stay silent, what each one watches.</div>
     <span class="arrow">→</span>
   </a>

@@ -4,8 +4,8 @@
 
 PolitiClaw keeps its structured state in plugin-owned local storage. The current runtime uses:
 
-- A plugin-private SQLite database for structured records.
-- A plugin-scoped key-value layer for smaller runtime values.
+- A plugin-private SQLite database for structured records (preferences, declared stances, stored reps, bills, votes, letters, mutes, reminders, action moments).
+- A small key-value table inside the same database for runtime flags such as onboarding progress and alert settings.
 - A local shapefile cache for zero-key reps-by-address lookup.
 
 ## What Leaves The Machine

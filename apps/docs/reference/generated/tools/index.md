@@ -1,12 +1,13 @@
 # Generated Tool Reference
 
-This section is generated from the registered runtime tool objects. Current count: 27.
+This section is generated from the registered runtime tool objects. Current count: 28.
 
 ## Configuration and preferences
 
 Configure the plugin, declare issue stances, and manage the saved preference data that remains user-facing.
 
 - [`politiclaw_configure`](./politiclaw_configure.md) — Configure PolitiClaw
+- [`politiclaw_set_api_keys`](./politiclaw_set_api_keys.md) — Save PolitiClaw API keys
 - [`politiclaw_record_stance_signal`](./politiclaw_record_stance_signal.md) — Record PolitiClaw stance signal
 - [`politiclaw_set_issue_stance`](./politiclaw_set_issue_stance.md) — Set a declared issue stance
 - [`politiclaw_list_issue_stances`](./politiclaw_list_issue_stances.md) — List declared issue stances

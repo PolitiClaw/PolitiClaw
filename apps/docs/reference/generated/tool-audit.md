@@ -7,6 +7,7 @@ Review question: would a normal user knowingly reach for this tool by name, or i
 | Tool | Group | Tier | Docs action | Why |
 | --- | --- | --- | --- | --- |
 | [`politiclaw_configure`](./tools/politiclaw_configure.md) | Configuration and preferences | `core` | `lead-in-guides` | Best first-run and reconfiguration entry point because it folds address setup, rep bootstrap, issue-setup handoff, and monitoring cadence into one user-facing flow. |
+| [`politiclaw_set_api_keys`](./tools/politiclaw_set_api_keys.md) | Configuration and preferences | `core` | `lead-in-guides` | Writable counterpart to the configure flow's API-key stage: lets the agent persist provider keys (api.data.gov, Google Civic, Geocodio, and the optional upgrades) without the user editing the gateway config by hand. |
 | [`politiclaw_record_stance_signal`](./tools/politiclaw_record_stance_signal.md) | Configuration and preferences | `internal` | `generated-reference-only` | Low-level preference telemetry for flows and monitoring, not a normal direct user action. |
 | [`politiclaw_set_issue_stance`](./tools/politiclaw_set_issue_stance.md) | Configuration and preferences | `core` | `lead-in-guides` | Directly expresses user priorities and powers bill and rep alignment. |
 | [`politiclaw_list_issue_stances`](./tools/politiclaw_list_issue_stances.md) | Configuration and preferences | `advanced` | `follow-up-or-advanced-docs` | Useful for reviewing and tuning saved preferences after onboarding. |

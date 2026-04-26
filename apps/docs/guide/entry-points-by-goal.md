@@ -16,6 +16,7 @@ It bundles the highest-friction setup work into one flow instead of making users
 
 - you are editing a single issue later with [`politiclaw_set_issue_stance`](../reference/generated/tools/politiclaw_set_issue_stance)
 - you are reviewing or pruning a saved stance set with [`politiclaw_list_issue_stances`](../reference/generated/tools/politiclaw_list_issue_stances) or [`politiclaw_delete_issue_stance`](../reference/generated/tools/politiclaw_delete_issue_stance)
+- you want to save or update a single API key without re-running the whole flow with [`politiclaw_set_api_keys`](../reference/generated/tools/politiclaw_set_api_keys) (triggers a gateway restart)
 
 ## Ballot and election prep
 
@@ -49,7 +50,7 @@ It is the cleanest user-facing control. Most users want one place to save setup 
 
 ### See also
 
-- [Set It and Forget It](./set-it-and-forget-it) for what the cadence actually produces over time.
+- [Recurring Monitoring](./recurring-monitoring) for what the cadence actually produces over time.
 - [Examples of Good Alerts](./example-alerts) for the shape of each job's output.
 
 ## Candidate and race research

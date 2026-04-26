@@ -71,3 +71,11 @@ Be concrete about what this does *not* cover yet:
 - **Finance-triggered alerts.** FEC lookups are available on demand for candidate research; there's no cron template that fires a "large new donor reported" proactive signal.
 
 When any of those change, the generated reference pages update before this narrative does. [Generated Source Coverage](../reference/generated/source-coverage) is the matrix to check.
+
+## In the accountability loop
+
+This page is the synthesis — the loop with the diagram, the disciplines, and the limits. The operational sides:
+
+- [See How My Reps Align](./see-how-my-reps-align) — the operational entry point: get reps, score one, score the whole delegation.
+- [Track Bills and Votes](./track-bills-and-votes) — where the evidence comes from before any scoring runs.
+- [Examples of Good Alerts](./example-alerts) — what the recurring rep report and weekly digest actually look like over time.

@@ -1,47 +1,49 @@
 # Manage Monitoring
 
-This page is the controls reference — cadence values, the one-off snapshot tool, and the mute commands. For the narrative version of what proactive monitoring feels like, read [Set It and Forget It](./set-it-and-forget-it).
+This page is the controls reference: cadence values, the on-demand snapshot tool, and the mute commands. For the narrative version of what each cron job does over time, read [Recurring Monitoring](./recurring-monitoring).
 
-## Core Idea
+## Core idea
 
-PolitiClaw monitoring is built around a small set of plugin-owned cron templates plus a saved user monitoring mode. You pick a mode by intent; the plugin maps it to the right subset of default jobs. The exact job names, schedules, and payloads live in the generated reference:
+PolitiClaw monitoring is built around a small set of plugin-owned cron templates plus a saved monitoring mode. You pick a mode by intent; the plugin maps it to the right subset of default jobs. Job names, schedules, and payloads are generated from the runtime — the [Generated Cron Jobs](../reference/generated/cron-jobs) page is the source of truth for the current set.
 
-- [Generated Cron Jobs](../reference/generated/cron-jobs)
-
-## User-Facing Controls
+## User-facing controls
 
 Default front door:
 
-- [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure)
+- [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure) — saves address, stances, and monitoring mode in one flow. Re-run any time to change cadence.
 
-Follow-up:
+Follow-ups:
 
-- [`politiclaw_check_upcoming_votes`](../reference/generated/tools/politiclaw_check_upcoming_votes)
+- [`politiclaw_check_upcoming_votes`](../reference/generated/tools/politiclaw_check_upcoming_votes) — on-demand snapshot of recent and upcoming federal activity on your tracked issues.
+- [`politiclaw_mute`](../reference/generated/tools/politiclaw_mute), [`politiclaw_unmute`](../reference/generated/tools/politiclaw_unmute), [`politiclaw_list_mutes`](../reference/generated/tools/politiclaw_list_mutes) — suppress a specific bill, rep, or issue without changing cadence.
 
 If you are choosing between overlapping monitoring paths, see [Entry Points by Goal](./entry-points-by-goal).
 
 ## Monitoring modes
 
-The monitoring mode controls which default jobs stay enabled. Use `politiclaw_configure` to save or change it. The generated cron page is the source of truth for current templates; the modes map to:
+The monitoring mode controls which default jobs stay enabled. Use `politiclaw_configure` to save or change it. Modes map to job sets as follows:
 
 | Mode | What it does |
 |---|---|
 | `off` | Paused — PolitiClaw won't run on its own. |
 | `quiet_watch` | Silent unless tracked bills or hearings materially change. |
-| `weekly_digest` | Sunday digest and monthly rep report, plus background change-watches. |
+| `weekly_digest` | Weekly digest (every 7 days from install) and monthly rep report, plus background change-watches. |
 | `action_only` | Quiet except when an election is near or tracked items change. |
 | `full_copilot` | Everything: digest, rep report, election alerts, background watches. |
 
 Background change-watches (`rep_vote_watch`, `tracked_hearings`) are change-detection-gated — they produce no output during quiet windows, so even verbose modes stay silent when nothing has moved.
 
-## What Monitoring Does Not Do
+Switching modes re-reconciles jobs: templates outside the new mode are paused (not deleted), so flipping back is instant.
 
-Monitoring does not edit user-authored cron jobs, and it does not quietly fabricate summaries when a source is unavailable. The runtime returns actionable failures or partial results instead.
-
-## Recommended Workflow
+## Recommended workflow
 
 1. Run `politiclaw_configure` until you have a saved address and at least one issue stance.
-2. Run [`politiclaw_doctor`](../reference/generated/tools/politiclaw_doctor).
+2. Run [`politiclaw_doctor`](../reference/generated/tools/politiclaw_doctor) to confirm storage, schema version, and key presence are all healthy.
 3. Re-run `politiclaw_configure` any time you want to pick a different monitoring mode.
 4. Use [`politiclaw_check_upcoming_votes`](../reference/generated/tools/politiclaw_check_upcoming_votes) when you want a manual snapshot.
-5. Use the generated cron reference only when you need to inspect exact template behavior or debug operator paths.
+5. Drop into the [Generated Cron Jobs](../reference/generated/cron-jobs) reference only when you need exact template behavior or operator-level debugging.
+
+## See also
+
+- [Recurring Monitoring](./recurring-monitoring) — what each cron job actually produces, the quiet-by-design contract, and what isn't yet proactive.
+- [Examples of Good Alerts](./example-alerts) — the shape of each job's output.

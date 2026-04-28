@@ -38,7 +38,7 @@ function stubUnavailableResolver(): BallotResolver {
         status: "unavailable",
         adapterId: "googleCivic",
         reason: "googleCivic key is not configured",
-        actionable: "Set plugins.politiclaw.apiKeys.googleCivic.",
+        actionable: "Set plugins.entries.politiclaw.config.apiKeys.googleCivic.",
       };
     },
   };

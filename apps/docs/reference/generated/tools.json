@@ -294,7 +294,7 @@
     "groupId": "preferences",
     "groupLabel": "Configuration and preferences",
     "sourcePath": "packages/politiclaw-plugin/src/tools/setApiKeys.ts",
-    "description": "Persist one or more PolitiClaw API keys into the user's OpenClaw config (`plugins.politiclaw.apiKeys.*`). Pass only the keys the user actually has — unsupplied fields are left untouched. Writes go through the gateway's `config.patch` method (validated, audited, optimistic concurrency); the gateway schedules its own restart so the new values become live. The required key is `apiDataGov` (one free key from api.data.gov covers federal bills, House roll-call votes, committee schedules, and FEC finance). All other keys are optional upgrades. Prefer one call with every key the user has, since each call triggers exactly one gateway restart.",
+    "description": "Persist one or more PolitiClaw API keys into the user's OpenClaw config (`plugins.entries.politiclaw.config.apiKeys.*`). Pass only the keys the user actually has — unsupplied fields are left untouched. Writes go through the gateway's `config.patch` method (validated, audited, optimistic concurrency); the gateway schedules its own restart so the new values become live. The required key is `apiDataGov` (one free key from api.data.gov covers federal bills, House roll-call votes, committee schedules, and FEC finance). All other keys are optional upgrades. Prefer one call with every key the user has, since each call triggers exactly one gateway restart.",
     "parameters": [
       {
         "name": "apiDataGov",
@@ -706,7 +706,7 @@
     "groupId": "bills",
     "groupLabel": "Bills and votes",
     "sourcePath": "packages/politiclaw-plugin/src/tools/bills.ts",
-    "description": "List recent federal bills from api.congress.gov (tier 1). Filter by congress, billType, updateDate range, and title substring. Requires plugins.politiclaw.apiKeys.apiDataGov. Cached for 6h; pass refresh=true to re-fetch.",
+    "description": "List recent federal bills from api.congress.gov (tier 1). Filter by congress, billType, updateDate range, and title substring. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov. Cached for 6h; pass refresh=true to re-fetch.",
     "parameters": [
       {
         "name": "congress",
@@ -794,7 +794,7 @@
     "groupId": "bills",
     "groupLabel": "Bills and votes",
     "sourcePath": "packages/politiclaw-plugin/src/tools/bills.ts",
-    "description": "Fetch one bill's full detail (sponsors, subjects, summary, latest action) from api.congress.gov (tier 1). Accepts either a canonical billId (e.g. '119-hr-1234') or congress + billType + number. Requires plugins.politiclaw.apiKeys.apiDataGov.",
+    "description": "Fetch one bill's full detail (sponsors, subjects, summary, latest action) from api.congress.gov (tier 1). Accepts either a canonical billId (e.g. '119-hr-1234') or congress + billType + number. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov.",
     "parameters": [
       {
         "name": "billId",
@@ -856,7 +856,7 @@
     "groupId": "bills",
     "groupLabel": "Bills and votes",
     "sourcePath": "packages/politiclaw-plugin/src/tools/scoring.ts",
-    "description": "Compute how much a federal bill touches the user's declared issue stances. Deterministic (no LLM): matches policy area, subjects, title, and summary against each declared stance. Reports relevance and confidence; confidence below the 0.4 floor renders as \"insufficient data\". Rationale names specific matched subjects (never abstract generalities). Requires declared issue stances (see politiclaw_set_issue_stance) and plugins.politiclaw.apiKeys.apiDataGov for the bill source.",
+    "description": "Compute how much a federal bill touches the user's declared issue stances. Deterministic (no LLM): matches policy area, subjects, title, and summary against each declared stance. Reports relevance and confidence; confidence below the 0.4 floor renders as \"insufficient data\". Rationale names specific matched subjects (never abstract generalities). Requires declared issue stances (see politiclaw_set_issue_stance) and plugins.entries.politiclaw.config.apiKeys.apiDataGov for the bill source.",
     "parameters": [
       {
         "name": "billId",
@@ -919,7 +919,7 @@
     "groupId": "bills",
     "groupLabel": "Bills and votes",
     "sourcePath": "packages/politiclaw-plugin/src/tools/voteIngest.ts",
-    "description": "Sweep primary roll-call sources and persist recent votes (plus per-member positions keyed by bioguide id) into the plugin-private DB. House: api.congress.gov `/house-vote` (tier 1, requires plugins.politiclaw.apiKeys.apiDataGov). Senate: voteview.com `/api/search` + `/api/download` (tier 2, zero-key). Idempotent: unchanged entries (by update_date when available, by memberCount>0 otherwise) skip the detail fetch. Use chamber='Both' (default) to ingest both chambers in one call.",
+    "description": "Sweep primary roll-call sources and persist recent votes (plus per-member positions keyed by bioguide id) into the plugin-private DB. House: api.congress.gov `/house-vote` (tier 1, requires plugins.entries.politiclaw.config.apiKeys.apiDataGov). Senate: voteview.com `/api/search` + `/api/download` (tier 2, zero-key). Idempotent: unchanged entries (by update_date when available, by memberCount>0 otherwise) skip the detail fetch. Use chamber='Both' (default) to ingest both chambers in one call.",
     "parameters": [
       {
         "name": "chamber",
@@ -1012,7 +1012,7 @@
     "groupId": "ballot",
     "groupLabel": "Ballot and election prep",
     "sourcePath": "packages/politiclaw-plugin/src/tools/ballot.ts",
-    "description": "Fetch election logistics and contest rows from Google Civic voterInfoQuery. Requires plugins.politiclaw.apiKeys.googleCivic with the Civic Information API enabled. Coverage labels are honest: this tool lists what Google returns today and marks each race PARTIAL unless fuller structured coverage is available.",
+    "description": "Fetch election logistics and contest rows from Google Civic voterInfoQuery. Requires plugins.entries.politiclaw.config.apiKeys.googleCivic with the Civic Information API enabled. Coverage labels are honest: this tool lists what Google returns today and marks each race PARTIAL unless fuller structured coverage is available.",
     "parameters": [
       {
         "name": "refresh",
@@ -1037,7 +1037,7 @@
     "groupId": "ballot",
     "groupLabel": "Ballot and election prep",
     "sourcePath": "packages/politiclaw-plugin/src/tools/explainBallot.ts",
-    "description": "Per-contest, non-prescriptive framing of your ballot. For measures, renders deterministic 'A YES vote would…' / 'A NO vote would…' lines drawn from Google Civic's published summary (tier 2 aggregator — verify against official text). For candidate races, explains what the race decides and attaches candidate bios from the tier-5 web-search adapter when wired. Never says 'vote YES/NO'. Always includes the verify-against-official-source disclaimer when any rendered line is LLM-search-derived. Requires declared issue stances, a saved address, and plugins.politiclaw.apiKeys.googleCivic.",
+    "description": "Per-contest, non-prescriptive framing of your ballot. For measures, renders deterministic 'A YES vote would…' / 'A NO vote would…' lines drawn from Google Civic's published summary (tier 2 aggregator — verify against official text). For candidate races, explains what the race decides and attaches candidate bios from the tier-5 web-search adapter when wired. Never says 'vote YES/NO'. Always includes the verify-against-official-source disclaimer when any rendered line is LLM-search-derived. Requires declared issue stances, a saved address, and plugins.entries.politiclaw.config.apiKeys.googleCivic.",
     "parameters": [
       {
         "name": "refresh",
@@ -1087,7 +1087,7 @@
     "groupId": "monitoring",
     "groupLabel": "Monitoring and cadence",
     "sourcePath": "packages/politiclaw-plugin/src/tools/monitoring.ts",
-    "description": "Surface federal bills and committee events that touch the user's declared stances, so they can see how their reps' agenda lines up — or doesn't — with the values they care about. Fetches recent federal bills and upcoming committee events from api.congress.gov (tier 1), compares each against the persisted snapshot, and returns only items that are new or have materially changed since the last check. Bill changes are scored against declared issue stances when any are set. Output is grouped by triage tier (interruptive / digest / tail). A second invocation on unchanged data returns an empty delta. Requires plugins.politiclaw.apiKeys.apiDataGov.",
+    "description": "Surface federal bills and committee events that touch the user's declared stances, so they can see how their reps' agenda lines up — or doesn't — with the values they care about. Fetches recent federal bills and upcoming committee events from api.congress.gov (tier 1), compares each against the persisted snapshot, and returns only items that are new or have materially changed since the last check. Bill changes are scored against declared issue stances when any are set. Output is grouped by triage tier (interruptive / digest / tail). A second invocation on unchanged data returns an empty delta. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov.",
     "parameters": [
       {
         "name": "congress",
@@ -1521,7 +1521,7 @@
     "groupId": "research",
     "groupLabel": "Candidate research and outreach",
     "sourcePath": "packages/politiclaw-plugin/src/tools/researchCandidate.ts",
-    "description": "Research a federal candidate (President, Senate, House) via FEC OpenFEC plus an optional LLM-search bio. Pass `candidateId` (e.g. H8CA12345) for a full per-cycle totals summary with an attached bio; pass `name` for a fuzzy search that returns up to 5 FEC matches (no bio on the search path — re-run by `candidateId` to pull one). Dollar amounts come only from FEC (tier 1) — industry rollups, donor identities, and independent expenditures are intentionally out of scope until an OpenSecrets key lands. The bio is tier-5 by default and only reaches tier 1/2 when every citation is a primary-government or neutral civic-infrastructure domain. Requires plugins.politiclaw.apiKeys.apiDataGov (same key as api.congress.gov).",
+    "description": "Research a federal candidate (President, Senate, House) via FEC OpenFEC plus an optional LLM-search bio. Pass `candidateId` (e.g. H8CA12345) for a full per-cycle totals summary with an attached bio; pass `name` for a fuzzy search that returns up to 5 FEC matches (no bio on the search path — re-run by `candidateId` to pull one). Dollar amounts come only from FEC (tier 1) — industry rollups, donor identities, and independent expenditures are intentionally out of scope until an OpenSecrets key lands. The bio is tier-5 by default and only reaches tier 1/2 when every citation is a primary-government or neutral civic-infrastructure domain. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov (same key as api.congress.gov).",
     "parameters": [
       {
         "name": "candidateId",
@@ -1604,7 +1604,7 @@
     "groupId": "research",
     "groupLabel": "Candidate research and outreach",
     "sourcePath": "packages/politiclaw-plugin/src/tools/researchChallengers.ts",
-    "description": "For each stored rep (or a specific one via repId), look up every federal candidate filed for that race this cycle and render a side-by-side FEC finance comparison. Dollar amounts come only from FEC (tier 1). Pass `cycle` for historical comparisons. Requires plugins.politiclaw.apiKeys.apiDataGov. Call politiclaw_get_my_reps first if no reps are stored.",
+    "description": "For each stored rep (or a specific one via repId), look up every federal candidate filed for that race this cycle and render a side-by-side FEC finance comparison. Dollar amounts come only from FEC (tier 1). Pass `cycle` for historical comparisons. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov. Call politiclaw_get_my_reps first if no reps are stored.",
     "parameters": [
       {
         "name": "repId",
@@ -1639,7 +1639,7 @@
     "groupId": "research",
     "groupLabel": "Candidate research and outreach",
     "sourcePath": "packages/politiclaw-plugin/src/tools/draftLetter.ts",
-    "description": "Put an accountability question in front of a rep on the user's behalf: a polite, sourced letter that states the user's declared stance and asks the rep where they stand on the same issue, optionally citing a specific federal bill. Deterministic slot-fill (no LLM). Output is copy-paste ready for the user's own email client — PolitiClaw never sends mail; the user sends from their own client. Letters are capped at 400 words and persist in the letters table for audit. Requires a declared stance on the issue (politiclaw_set_issue_stance) and, when citing a bill, plugins.politiclaw.apiKeys.apiDataGov for bill lookup.",
+    "description": "Put an accountability question in front of a rep on the user's behalf: a polite, sourced letter that states the user's declared stance and asks the rep where they stand on the same issue, optionally citing a specific federal bill. Deterministic slot-fill (no LLM). Output is copy-paste ready for the user's own email client — PolitiClaw never sends mail; the user sends from their own client. Letters are capped at 400 words and persist in the letters table for audit. Requires a declared stance on the issue (politiclaw_set_issue_stance) and, when citing a bill, plugins.entries.politiclaw.config.apiKeys.apiDataGov for bill lookup.",
     "parameters": [
       {
         "name": "repId",
@@ -1698,7 +1698,7 @@
     "groupId": "research",
     "groupLabel": "Candidate research and outreach",
     "sourcePath": "packages/politiclaw-plugin/src/tools/callScript.ts",
-    "description": "Draft a ≤150-word call script the user can read to their rep's office on a declared issue, optionally citing a specific federal bill. Deterministic slot-fill (no LLM). Phone numbers come from the stored rep contact record — never invented. PolitiClaw never dials; the output is copy-paste ready for the user. Requires a declared stance (politiclaw_set_issue_stance) and, when citing a bill, plugins.politiclaw.apiKeys.apiDataGov.",
+    "description": "Draft a ≤150-word call script the user can read to their rep's office on a declared issue, optionally citing a specific federal bill. Deterministic slot-fill (no LLM). Phone numbers come from the stored rep contact record — never invented. PolitiClaw never dials; the output is copy-paste ready for the user. Requires a declared stance (politiclaw_set_issue_stance) and, when citing a bill, plugins.entries.politiclaw.config.apiKeys.apiDataGov.",
     "parameters": [
       {
         "name": "repId",

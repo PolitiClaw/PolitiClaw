@@ -55,7 +55,7 @@ export function createGeocodioAdapter(opts: GeocodioAdapterOptions): SourceAdapt
 
     async fetch(q: RepQuery): Promise<AdapterResult<Rep[]>> {
       if (!opts.apiKey) {
-        return unavailable(ID, "missing geocodio api key", "set plugins.politiclaw.apiKeys.geocodio");
+        return unavailable(ID, "missing geocodio api key", "set plugins.entries.politiclaw.config.apiKeys.geocodio");
       }
 
       const url = new URL(`${GEOCODIO_BASE}/geocode`);

@@ -6,7 +6,7 @@
 
 ## Description
 
-Draft a ≤150-word call script the user can read to their rep's office on a declared issue, optionally citing a specific federal bill. Deterministic slot-fill (no LLM). Phone numbers come from the stored rep contact record — never invented. PolitiClaw never dials; the output is copy-paste ready for the user. Requires a declared stance (politiclaw_set_issue_stance) and, when citing a bill, plugins.politiclaw.apiKeys.apiDataGov.
+Draft a ≤150-word call script the user can read to their rep's office on a declared issue, optionally citing a specific federal bill. Deterministic slot-fill (no LLM). Phone numbers come from the stored rep contact record — never invented. PolitiClaw never dials; the output is copy-paste ready for the user. Requires a declared stance (politiclaw_set_issue_stance) and, when citing a bill, plugins.entries.politiclaw.config.apiKeys.apiDataGov.
 
 ## Parameters
 

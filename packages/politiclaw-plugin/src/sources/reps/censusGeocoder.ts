@@ -39,7 +39,7 @@ export async function geocodeAddress(
     return {
       status: "unavailable",
       reason: `census geocoder http ${response.status}`,
-      actionable: "retry in a minute or use plugins.politiclaw.apiKeys.geocodio",
+      actionable: "retry in a minute or use plugins.entries.politiclaw.config.apiKeys.geocodio",
     };
   }
 

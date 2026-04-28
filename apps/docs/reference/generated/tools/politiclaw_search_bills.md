@@ -6,7 +6,7 @@
 
 ## Description
 
-List recent federal bills from api.congress.gov (tier 1). Filter by congress, billType, updateDate range, and title substring. Requires plugins.politiclaw.apiKeys.apiDataGov. Cached for 6h; pass refresh=true to re-fetch.
+List recent federal bills from api.congress.gov (tier 1). Filter by congress, billType, updateDate range, and title substring. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov. Cached for 6h; pass refresh=true to re-fetch.
 
 ## Parameters
 

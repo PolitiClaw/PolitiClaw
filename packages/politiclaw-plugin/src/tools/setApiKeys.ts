@@ -188,7 +188,7 @@ export function createSetApiKeysTool(
     label: "Save PolitiClaw API keys",
     description:
       "Persist one or more PolitiClaw API keys into the user's OpenClaw " +
-      "config (`plugins.politiclaw.apiKeys.*`). Pass only the keys the user " +
+      "config (`plugins.entries.politiclaw.config.apiKeys.*`). Pass only the keys the user " +
       "actually has — unsupplied fields are left untouched. Writes go through " +
       "the gateway's `config.patch` method (validated, audited, optimistic " +
       "concurrency); the gateway schedules its own restart so the new values " +
@@ -237,7 +237,13 @@ export function createSetApiKeysTool(
         patchResult = await adapter.patch({
           patch: {
             plugins: {
-              politiclaw: { apiKeys: toSave },
+              entries: {
+                politiclaw: {
+                  config: {
+                    apiKeys: toSave,
+                  },
+                },
+              },
             },
           },
           baseHash: snapshotHash,

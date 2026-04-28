@@ -244,7 +244,7 @@ export const researchCandidateTool: AnyAgentTool = {
     "come only from FEC (tier 1) — industry rollups, donor identities, and independent " +
     "expenditures are intentionally out of scope until an OpenSecrets key lands. The bio is " +
     "tier-5 by default and only reaches tier 1/2 when every citation is a primary-government " +
-    "or neutral civic-infrastructure domain. Requires plugins.politiclaw.apiKeys.apiDataGov " +
+    "or neutral civic-infrastructure domain. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov " +
     "(same key as api.congress.gov).",
   parameters: ResearchCandidateParams,
   async execute(_toolCallId, rawParams) {

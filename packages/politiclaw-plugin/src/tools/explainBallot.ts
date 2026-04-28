@@ -153,7 +153,7 @@ export const explainMyBallotTool: AnyAgentTool = {
     "decides and attaches candidate bios from the tier-5 web-search adapter when wired. Never says " +
     "'vote YES/NO'. Always includes the verify-against-official-source disclaimer when " +
     "any rendered line is LLM-search-derived. Requires declared issue stances, a saved " +
-    "address, and plugins.politiclaw.apiKeys.googleCivic.",
+    "address, and plugins.entries.politiclaw.config.apiKeys.googleCivic.",
   parameters: ExplainMyBallotParams,
   async execute(_toolCallId, rawParams) {
     const parsed = safeParse(ExplainMyBallotParams, rawParams);

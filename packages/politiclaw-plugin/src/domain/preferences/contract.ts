@@ -194,7 +194,7 @@ export async function buildMonitoringContract(
         name: template.name,
         reason: "missing_api_key",
         explanation:
-          "Requires the api.data.gov key (plugins.politiclaw.apiKeys.apiDataGov). Without it, federal bill, vote, and hearing tools refuse.",
+          "Requires the api.data.gov key (plugins.entries.politiclaw.config.apiKeys.apiDataGov). Without it, federal bill, vote, and hearing tools refuse.",
       });
       continue;
     }

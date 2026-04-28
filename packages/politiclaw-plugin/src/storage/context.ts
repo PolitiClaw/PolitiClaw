@@ -7,6 +7,11 @@ export type PolitiClawStorage = {
   kv: Kv;
 };
 
+/**
+ * Flattened view of this plugin's slice of the OpenClaw config, as the SDK
+ * hands it to `register(api)`. Writes back to the gateway use the fully
+ * nested path `plugins.entries.politiclaw.config.*` (see setApiKeys.ts).
+ */
 export type PluginConfigSnapshot = {
   apiKeys?: {
     apiDataGov?: string;
@@ -62,6 +67,16 @@ export function getStateDir(): string {
   if (!resolveStateDir) {
     throw new Error("politiclaw storage: configureStorage() was not called");
   }
+  return resolveStateDir();
+}
+
+/**
+ * Non-throwing variant for tool call sites that want to thread `stateDir`
+ * into resolver options without breaking unit tests that skip
+ * `configureStorage()`. Returns undefined when storage is not configured.
+ */
+export function tryGetStateDir(): string | undefined {
+  if (!resolveStateDir) return undefined;
   return resolveStateDir();
 }
 

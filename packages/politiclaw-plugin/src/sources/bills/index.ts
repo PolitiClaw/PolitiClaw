@@ -64,7 +64,7 @@ export function createBillsResolver(opts: BillsResolverOptions = {}) {
       return unavailable(
         "bills",
         `no bills source available (${reasons.join("; ")})`,
-        "configure plugins.politiclaw.apiKeys.apiDataGov",
+        "configure plugins.entries.politiclaw.config.apiKeys.apiDataGov",
       );
     },
     async get(ref: BillRef): Promise<AdapterResult<Bill>> {
@@ -78,7 +78,7 @@ export function createBillsResolver(opts: BillsResolverOptions = {}) {
       return unavailable(
         "bills",
         `no bills source available (${reasons.join("; ")})`,
-        "configure plugins.politiclaw.apiKeys.apiDataGov (or plugins.politiclaw.sources.bills.scraperBaseUrl for self-hosted mirrors)",
+        "configure plugins.entries.politiclaw.config.apiKeys.apiDataGov (or plugins.entries.politiclaw.config.sources.bills.scraperBaseUrl for self-hosted mirrors)",
       );
     },
     adapterIds(): string[] {
@@ -93,6 +93,6 @@ function zeroKeyUnavailable<T>(): AdapterResult<T> {
   return unavailable(
     "bills",
     "no federal bills source configured",
-    "set plugins.politiclaw.apiKeys.apiDataGov (free, https://api.data.gov/signup/) or plugins.politiclaw.sources.bills.scraperBaseUrl (self-hosted unitedstates/congress mirror, single-bill lookups only)",
+    "set plugins.entries.politiclaw.config.apiKeys.apiDataGov (free, https://api.data.gov/signup/) or plugins.entries.politiclaw.config.sources.bills.scraperBaseUrl (self-hosted unitedstates/congress mirror, single-bill lookups only)",
   );
 }

@@ -30,7 +30,7 @@ export function createBallotResolver(options: BallotResolverOptions): BallotReso
         return unavailable(
           "ballot",
           "Google Civic API key is not configured",
-          "Create a Google Cloud API key with the Civic Information API enabled, then set plugins.politiclaw.apiKeys.googleCivic.",
+          "Create a Google Cloud API key with the Civic Information API enabled, then set plugins.entries.politiclaw.config.apiKeys.googleCivic.",
         );
       }
 

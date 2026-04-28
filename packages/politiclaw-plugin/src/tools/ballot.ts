@@ -120,7 +120,7 @@ export const getMyBallotTool: AnyAgentTool = {
   label: "Preview ballot logistics and contests for your saved address",
   description:
     "Fetch election logistics and contest rows from Google Civic voterInfoQuery. " +
-    "Requires plugins.politiclaw.apiKeys.googleCivic with the Civic Information API enabled. " +
+    "Requires plugins.entries.politiclaw.config.apiKeys.googleCivic with the Civic Information API enabled. " +
     "Coverage labels are honest: this tool lists what Google returns today and marks each race PARTIAL unless fuller structured coverage is available.",
   parameters: GetMyBallotParams,
   async execute(_toolCallId, rawParams) {

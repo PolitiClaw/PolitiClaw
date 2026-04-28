@@ -6,7 +6,7 @@
 
 ## Description
 
-Fetch one bill's full detail (sponsors, subjects, summary, latest action) from api.congress.gov (tier 1). Accepts either a canonical billId (e.g. '119-hr-1234') or congress + billType + number. Requires plugins.politiclaw.apiKeys.apiDataGov.
+Fetch one bill's full detail (sponsors, subjects, summary, latest action) from api.congress.gov (tier 1). Accepts either a canonical billId (e.g. '119-hr-1234') or congress + billType + number. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov.
 
 ## Parameters
 

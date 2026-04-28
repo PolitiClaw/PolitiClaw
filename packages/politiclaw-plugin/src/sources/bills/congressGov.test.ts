@@ -104,7 +104,7 @@ describe("congressGov adapter: list", () => {
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
     expect(result.reason).toContain("apiDataGov");
-    expect(result.actionable).toContain("plugins.politiclaw.apiKeys.apiDataGov");
+    expect(result.actionable).toContain("plugins.entries.politiclaw.config.apiKeys.apiDataGov");
   });
 
   it("surfaces http errors as structured unavailable results", async () => {

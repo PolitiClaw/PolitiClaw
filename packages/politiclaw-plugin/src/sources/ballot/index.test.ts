@@ -46,6 +46,6 @@ describe("createBallotResolver", () => {
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
     expect(result.reason).toContain("Google Civic API key is not configured");
-    expect(result.actionable).toContain("plugins.politiclaw.apiKeys.googleCivic");
+    expect(result.actionable).toContain("plugins.entries.politiclaw.config.apiKeys.googleCivic");
   });
 });

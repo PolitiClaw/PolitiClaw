@@ -502,7 +502,7 @@ describe("politiclaw_configure", () => {
       expect(details.stage).toBe("api_key");
       if (details.stage !== "api_key") throw new Error("type narrowing");
       expect(details.signupUrl).toBe("https://api.data.gov/signup/");
-      expect(details.configPath).toBe("plugins.politiclaw.apiKeys.apiDataGov");
+      expect(details.configPath).toBe("plugins.entries.politiclaw.config.apiKeys.apiDataGov");
       const text = textFrom(res as { content: Array<{ type: string; text: string }> });
       expect(text).toContain("api.data.gov");
       expect(text).toContain("https://api.data.gov/signup/");

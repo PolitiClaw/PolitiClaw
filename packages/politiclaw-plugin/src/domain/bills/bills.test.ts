@@ -135,7 +135,7 @@ describe("searchBills", () => {
         status: "unavailable",
         adapterId: "congressGov",
         reason: "missing apiDataGov key",
-        actionable: "set plugins.politiclaw.apiKeys.apiDataGov",
+        actionable: "set plugins.entries.politiclaw.config.apiKeys.apiDataGov",
       }) as AdapterResult<Bill[]>;
 
     const result = await searchBills(db, fakeResolver({ list }), {

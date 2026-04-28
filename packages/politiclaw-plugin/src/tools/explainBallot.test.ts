@@ -53,11 +53,11 @@ describe("renderExplainMyBallotOutput", () => {
     const text = renderExplainMyBallotOutput({
       status: "unavailable",
       reason: "googleCivic key is not configured",
-      actionable: "Set plugins.politiclaw.apiKeys.googleCivic.",
+      actionable: "Set plugins.entries.politiclaw.config.apiKeys.googleCivic.",
       adapterId: "googleCivic",
     });
     expect(text).toContain("googleCivic");
-    expect(text).toContain("Set plugins.politiclaw");
+    expect(text).toContain("Set plugins.entries.politiclaw.config.apiKeys.googleCivic");
   });
 
   it("always includes the no-recommendation notice and alignment disclaimer", () => {

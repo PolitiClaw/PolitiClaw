@@ -141,7 +141,7 @@ describe("renderIngestVotesOutput", () => {
           result: {
             status: "unavailable",
             reason: "no house-votes source configured",
-            actionable: "set plugins.politiclaw.apiKeys.apiDataGov",
+            actionable: "set plugins.entries.politiclaw.config.apiKeys.apiDataGov",
           },
         },
       ],

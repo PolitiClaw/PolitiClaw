@@ -48,13 +48,13 @@ describe("renderPrepareForElectionOutput", () => {
     const result: PrepareForElectionResult = {
       status: "ballot_unavailable",
       reason: "googleCivic is not configured",
-      actionable: "set plugins.politiclaw.apiKeys.googleCivic",
+      actionable: "set plugins.entries.politiclaw.config.apiKeys.googleCivic",
       adapterId: "googleCivic",
     };
     const text = renderPrepareForElectionOutput(result);
     expect(text).toContain("Ballot data unavailable");
     expect(text).toContain("googleCivic");
-    expect(text).toContain("set plugins.politiclaw.apiKeys.googleCivic");
+    expect(text).toContain("set plugins.entries.politiclaw.config.apiKeys.googleCivic");
   });
 });
 

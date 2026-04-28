@@ -48,7 +48,7 @@ export function createUpcomingVotesResolver(opts: UpcomingVotesResolverOptions =
       return unavailable(
         "upcomingVotes",
         `no upcoming-votes source available (${reasons.join("; ")})`,
-        "configure plugins.politiclaw.apiKeys.apiDataGov",
+        "configure plugins.entries.politiclaw.config.apiKeys.apiDataGov",
       );
     },
     adapterIds(): string[] {
@@ -63,6 +63,6 @@ function zeroKeyUnavailable<T>(): AdapterResult<T> {
   return unavailable(
     "upcomingVotes",
     "no upcoming-votes source configured",
-    "set plugins.politiclaw.apiKeys.apiDataGov (free, https://api.data.gov/signup/)",
+    "set plugins.entries.politiclaw.config.apiKeys.apiDataGov (free, https://api.data.gov/signup/)",
   );
 }

@@ -6,7 +6,7 @@
 
 ## Description
 
-For each stored rep (or a specific one via repId), look up every federal candidate filed for that race this cycle and render a side-by-side FEC finance comparison. Dollar amounts come only from FEC (tier 1). Pass `cycle` for historical comparisons. Requires plugins.politiclaw.apiKeys.apiDataGov. Call politiclaw_get_my_reps first if no reps are stored.
+For each stored rep (or a specific one via repId), look up every federal candidate filed for that race this cycle and render a side-by-side FEC finance comparison. Dollar amounts come only from FEC (tier 1). Pass `cycle` for historical comparisons. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov. Call politiclaw_get_my_reps first if no reps are stored.
 
 ## Parameters
 

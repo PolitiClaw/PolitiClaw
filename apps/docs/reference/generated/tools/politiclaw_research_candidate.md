@@ -6,7 +6,7 @@
 
 ## Description
 
-Research a federal candidate (President, Senate, House) via FEC OpenFEC plus an optional LLM-search bio. Pass `candidateId` (e.g. H8CA12345) for a full per-cycle totals summary with an attached bio; pass `name` for a fuzzy search that returns up to 5 FEC matches (no bio on the search path — re-run by `candidateId` to pull one). Dollar amounts come only from FEC (tier 1) — industry rollups, donor identities, and independent expenditures are intentionally out of scope until an OpenSecrets key lands. The bio is tier-5 by default and only reaches tier 1/2 when every citation is a primary-government or neutral civic-infrastructure domain. Requires plugins.politiclaw.apiKeys.apiDataGov (same key as api.congress.gov).
+Research a federal candidate (President, Senate, House) via FEC OpenFEC plus an optional LLM-search bio. Pass `candidateId` (e.g. H8CA12345) for a full per-cycle totals summary with an attached bio; pass `name` for a fuzzy search that returns up to 5 FEC matches (no bio on the search path — re-run by `candidateId` to pull one). Dollar amounts come only from FEC (tier 1) — industry rollups, donor identities, and independent expenditures are intentionally out of scope until an OpenSecrets key lands. The bio is tier-5 by default and only reaches tier 1/2 when every citation is a primary-government or neutral civic-infrastructure domain. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov (same key as api.congress.gov).
 
 ## Parameters
 

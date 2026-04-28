@@ -223,7 +223,7 @@ function checkApiKeys(config: PluginConfigSnapshot): DoctorCheck {
       status: "fail",
       summary: `Missing required key(s): ${missingRequired.join(", ")}.`,
       actionable:
-        "Set plugins.politiclaw.apiKeys.apiDataGov in the gateway config. Without it, federal bill/vote/finance tools refuse.",
+        "Set plugins.entries.politiclaw.config.apiKeys.apiDataGov in the gateway config. Without it, federal bill/vote/finance tools refuse.",
     };
   }
   if (missingOptional.length > 0) {

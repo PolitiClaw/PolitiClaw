@@ -126,7 +126,7 @@ describe("scoreBill", () => {
           status: "unavailable",
           adapterId: "congressGov",
           reason: "missing apiDataGov key",
-          actionable: "set plugins.politiclaw.apiKeys.apiDataGov",
+          actionable: "set plugins.entries.politiclaw.config.apiKeys.apiDataGov",
         }) as AdapterResult<Bill>,
       ),
       { congress: 119, billType: "HR", number: "1234" },

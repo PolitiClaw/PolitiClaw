@@ -89,7 +89,7 @@ export const draftLetterTool: AnyAgentTool = {
     "Output is copy-paste ready for the user's own email client — PolitiClaw never sends mail; the user sends from their own client. " +
     `Letters are capped at ${LETTER_MAX_WORDS} words and persist in the letters table for audit. ` +
     "Requires a declared stance on the issue (politiclaw_set_issue_stance) and, when citing a bill, " +
-    "plugins.politiclaw.apiKeys.apiDataGov for bill lookup.",
+    "plugins.entries.politiclaw.config.apiKeys.apiDataGov for bill lookup.",
   parameters: DraftLetterParams,
   async execute(_toolCallId, rawParams) {
     const parsed = safeParse(DraftLetterParams, rawParams);

@@ -553,7 +553,7 @@ export const checkUpcomingVotesTool: AnyAgentTool = {
     "changed since the last check. Bill changes are scored against declared " +
     "issue stances when any are set. Output is grouped by triage tier " +
     "(interruptive / digest / tail). A second invocation on unchanged data " +
-    "returns an empty delta. Requires plugins.politiclaw.apiKeys.apiDataGov.",
+    "returns an empty delta. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov.",
   parameters: CheckUpcomingVotesParams,
   async execute(_toolCallId, rawParams) {
     const parsed = safeParse(CheckUpcomingVotesParams, rawParams);

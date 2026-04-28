@@ -3,7 +3,15 @@ import type { AnyAgentTool } from "openclaw/plugin-sdk/plugin-entry";
 
 import { identifyMyReps } from "../domain/reps/index.js";
 import { createRepsResolver } from "../sources/reps/index.js";
-import { getPluginConfig, getStorage } from "../storage/context.js";
+import { getPluginConfig, getStateDir, getStorage } from "../storage/context.js";
+
+function maybeGetStateDir(): string | undefined {
+  try {
+    return getStateDir();
+  } catch {
+    return undefined;
+  }
+}
 
 const GetMyRepsParams = Type.Object({
   refresh: Type.Optional(
@@ -44,7 +52,10 @@ export const getMyRepsTool: AnyAgentTool = {
     const params = rawParams as { refresh?: boolean };
     const { db } = getStorage();
     const cfg = getPluginConfig();
-    const resolver = createRepsResolver({ geocodioApiKey: cfg.apiKeys?.geocodio });
+    const resolver = createRepsResolver({
+      geocodioApiKey: cfg.apiKeys?.geocodio,
+      stateDir: maybeGetStateDir(),
+    });
 
     const result = await identifyMyReps(db, resolver, { refresh: params.refresh });
 

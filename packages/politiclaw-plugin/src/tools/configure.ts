@@ -29,7 +29,15 @@ import {
 import { normalizeFreeformIssue } from "../domain/preferences/normalize.js";
 import { identifyMyReps, type IdentifyResult } from "../domain/reps/index.js";
 import { createRepsResolver } from "../sources/reps/index.js";
-import { getPluginConfig, getStorage } from "../storage/context.js";
+import { getPluginConfig, getStateDir, getStorage } from "../storage/context.js";
+
+function maybeGetStateDir(): string | undefined {
+  try {
+    return getStateDir();
+  } catch {
+    return undefined;
+  }
+}
 import { getGatewayCronAdapter } from "../cron/gatewayAdapter.js";
 import { parse } from "../validation/typebox.js";
 import {
@@ -425,7 +433,7 @@ function renderApiKeysSavedPrompt(setResult: SetApiKeysResult): string {
       "Tried to save your API keys but the gateway rejected the write.",
       `Reason: ${setResult.error}`,
       "",
-      "Try again, or paste the key into `~/.openclaw/openclaw.json` under `plugins.politiclaw.apiKeys.apiDataGov` directly and reload the gateway.",
+      "Try again, or paste the key into `~/.openclaw/openclaw.json` under `plugins.entries.politiclaw.config.apiKeys.apiDataGov` directly and reload the gateway.",
     ].join("\n");
   }
   const lines: string[] = [];
@@ -671,7 +679,10 @@ export function createConfigureTool(deps: ConfigureToolDeps = {}): AnyAgentTool 
       let reps: IdentifyResult | null = null;
       const ensureReps = async (): Promise<IdentifyResult> => {
         if (reps) return reps;
-        const resolver = createResolver({ geocodioApiKey: pluginConfig.apiKeys?.geocodio });
+        const resolver = createResolver({
+          geocodioApiKey: pluginConfig.apiKeys?.geocodio,
+          stateDir: maybeGetStateDir(),
+        });
         reps = await identifyReps(db, resolver, {
           refresh: Boolean(input.refreshReps) || saved.address,
         });
@@ -751,7 +762,7 @@ export function createConfigureTool(deps: ConfigureToolDeps = {}): AnyAgentTool 
           prompt: renderApiKeyPrompt(),
           preferences,
           signupUrl: API_DATA_GOV_SIGNUP_URL,
-          configPath: "plugins.politiclaw.apiKeys.apiDataGov",
+          configPath: "plugins.entries.politiclaw.config.apiKeys.apiDataGov",
           configKey: "apiDataGov",
           savedThisCall: saved,
         };

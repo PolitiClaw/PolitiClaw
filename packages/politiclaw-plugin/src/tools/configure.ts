@@ -29,15 +29,7 @@ import {
 import { normalizeFreeformIssue } from "../domain/preferences/normalize.js";
 import { identifyMyReps, type IdentifyResult } from "../domain/reps/index.js";
 import { createRepsResolver } from "../sources/reps/index.js";
-import { getPluginConfig, getStateDir, getStorage } from "../storage/context.js";
-
-function maybeGetStateDir(): string | undefined {
-  try {
-    return getStateDir();
-  } catch {
-    return undefined;
-  }
-}
+import { getPluginConfig, getStorage, tryGetStateDir } from "../storage/context.js";
 import { getGatewayCronAdapter } from "../cron/gatewayAdapter.js";
 import { parse } from "../validation/typebox.js";
 import {
@@ -681,7 +673,7 @@ export function createConfigureTool(deps: ConfigureToolDeps = {}): AnyAgentTool 
         if (reps) return reps;
         const resolver = createResolver({
           geocodioApiKey: pluginConfig.apiKeys?.geocodio,
-          stateDir: maybeGetStateDir(),
+          stateDir: tryGetStateDir(),
         });
         reps = await identifyReps(db, resolver, {
           refresh: Boolean(input.refreshReps) || saved.address,

@@ -44,7 +44,7 @@ export type FinanceResolver = {
 
 const MISSING_KEY_REASON = "api.data.gov key is not configured";
 const MISSING_KEY_ACTIONABLE =
-  "Set plugins.politiclaw.apiKeys.apiDataGov — one key covers both api.congress.gov and FEC OpenFEC.";
+  "Set plugins.entries.politiclaw.config.apiKeys.apiDataGov — one key covers both api.congress.gov and FEC OpenFEC.";
 
 export function createFinanceResolver(options: FinanceResolverOptions): FinanceResolver {
   const key = options.apiDataGovKey?.trim();

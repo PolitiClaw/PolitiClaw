@@ -106,7 +106,7 @@ describe("politiclaw_get_my_ballot tool", () => {
     const text = (result.content[0] as { type: "text"; text: string }).text;
 
     expect(text).toContain("Google Civic API key");
-    expect(text).toContain("plugins.politiclaw.apiKeys.googleCivic");
+    expect(text).toContain("plugins.entries.politiclaw.config.apiKeys.googleCivic");
   });
 
   it("fetches once and serves cache on second call", async () => {

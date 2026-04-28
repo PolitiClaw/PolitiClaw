@@ -28,8 +28,12 @@ function makeAdapter(opts: {
         path: "/test/openclaw.json",
         config: {
           plugins: {
-            politiclaw: {
-              apiKeys: opts.existingApiKeys ?? {},
+            entries: {
+              politiclaw: {
+                config: {
+                  apiKeys: opts.existingApiKeys ?? {},
+                },
+              },
             },
           },
         },
@@ -73,7 +77,7 @@ describe("politiclaw_set_api_keys", () => {
     resetGatewayConfigAdapterForTests();
   });
 
-  it("writes a single key under plugins.politiclaw.apiKeys", async () => {
+  it("writes a single key under plugins.entries.politiclaw.config.apiKeys", async () => {
     const { adapter, recorded } = makeAdapter({});
     setGatewayConfigAdapterForTests(adapter);
 
@@ -93,8 +97,12 @@ describe("politiclaw_set_api_keys", () => {
     expect(recorded.patchCalls[0].baseHash).toBe("hash-123");
     expect(recorded.patchCalls[0].patch).toEqual({
       plugins: {
-        politiclaw: {
-          apiKeys: { apiDataGov: "key-abc" },
+        entries: {
+          politiclaw: {
+            config: {
+              apiKeys: { apiDataGov: "key-abc" },
+            },
+          },
         },
       },
     });
@@ -122,11 +130,15 @@ describe("politiclaw_set_api_keys", () => {
     expect(recorded.patchCalls).toHaveLength(1);
     expect(recorded.patchCalls[0].patch).toEqual({
       plugins: {
-        politiclaw: {
-          apiKeys: {
-            apiDataGov: "data-gov",
-            geocodio: "geo",
-            openStates: "os",
+        entries: {
+          politiclaw: {
+            config: {
+              apiKeys: {
+                apiDataGov: "data-gov",
+                geocodio: "geo",
+                openStates: "os",
+              },
+            },
           },
         },
       },
@@ -154,8 +166,12 @@ describe("politiclaw_set_api_keys", () => {
 
     expect(recorded.patchCalls[0].patch).toEqual({
       plugins: {
-        politiclaw: {
-          apiKeys: { apiDataGov: "trimmed-key" },
+        entries: {
+          politiclaw: {
+            config: {
+              apiKeys: { apiDataGov: "trimmed-key" },
+            },
+          },
         },
       },
     });
@@ -266,7 +282,13 @@ describe("politiclaw_set_api_keys", () => {
     expect(recorded.patchCalls).toHaveLength(1);
     expect(recorded.patchCalls[0].patch).toEqual({
       plugins: {
-        politiclaw: { apiKeys: { apiDataGov: "key" } },
+        entries: {
+          politiclaw: {
+            config: {
+              apiKeys: { apiDataGov: "key" },
+            },
+          },
+        },
       },
     });
     expect(details.savedKeys).toEqual(["apiDataGov"]);

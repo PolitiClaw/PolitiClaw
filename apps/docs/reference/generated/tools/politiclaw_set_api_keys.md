@@ -6,7 +6,7 @@
 
 ## Description
 
-Persist one or more PolitiClaw API keys into the user's OpenClaw config (`plugins.politiclaw.apiKeys.*`). Pass only the keys the user actually has — unsupplied fields are left untouched. Writes go through the gateway's `config.patch` method (validated, audited, optimistic concurrency); the gateway schedules its own restart so the new values become live. The required key is `apiDataGov` (one free key from api.data.gov covers federal bills, House roll-call votes, committee schedules, and FEC finance). All other keys are optional upgrades. Prefer one call with every key the user has, since each call triggers exactly one gateway restart.
+Persist one or more PolitiClaw API keys into the user's OpenClaw config (`plugins.entries.politiclaw.config.apiKeys.*`). Pass only the keys the user actually has — unsupplied fields are left untouched. Writes go through the gateway's `config.patch` method (validated, audited, optimistic concurrency); the gateway schedules its own restart so the new values become live. The required key is `apiDataGov` (one free key from api.data.gov covers federal bills, House roll-call votes, committee schedules, and FEC finance). All other keys are optional upgrades. Prefer one call with every key the user has, since each call triggers exactly one gateway restart.
 
 ## Parameters
 

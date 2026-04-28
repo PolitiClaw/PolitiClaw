@@ -176,7 +176,7 @@ export const scoreBillTool: AnyAgentTool = {
     `${CONFIDENCE_FLOOR} floor renders as "insufficient data". ` +
     "Rationale names specific matched subjects (never abstract generalities). " +
     "Requires declared issue stances (see politiclaw_set_issue_stance) and " +
-    "plugins.politiclaw.apiKeys.apiDataGov for the bill source.",
+    "plugins.entries.politiclaw.config.apiKeys.apiDataGov for the bill source.",
   parameters: ScoreBillParams,
   async execute(_toolCallId, rawParams) {
     const parsed = safeParse(ScoreBillParams, rawParams);

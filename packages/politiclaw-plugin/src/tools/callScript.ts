@@ -77,7 +77,7 @@ export const draftCallScriptTool: AnyAgentTool = {
     "issue, optionally citing a specific federal bill. Deterministic slot-fill (no LLM). " +
     "Phone numbers come from the stored rep contact record — never invented. PolitiClaw " +
     "never dials; the output is copy-paste ready for the user. Requires a declared stance " +
-    "(politiclaw_set_issue_stance) and, when citing a bill, plugins.politiclaw.apiKeys.apiDataGov.",
+    "(politiclaw_set_issue_stance) and, when citing a bill, plugins.entries.politiclaw.config.apiKeys.apiDataGov.",
   parameters: DraftCallScriptParams,
   async execute(_toolCallId, rawParams) {
     const parsed = safeParse(DraftCallScriptParams, rawParams);

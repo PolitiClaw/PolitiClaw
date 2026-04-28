@@ -27,7 +27,7 @@ export type VotesResolverOptions = {
  * Resolver for roll-call votes across both chambers. Routes by chamber:
  *
  *   House  → api.congress.gov `/house-vote` (tier 1). Requires
- *            `plugins.politiclaw.apiKeys.apiDataGov`.
+ *            `plugins.entries.politiclaw.config.apiKeys.apiDataGov`.
  *   Senate → voteview.com `/api/search` + `/api/download` (tier 2).
  *            No API key required.
  *
@@ -114,7 +114,7 @@ function zeroKeyUnavailable<T>(chamber: VoteChamber): AdapterResult<T> {
 
 function hintFor(chamber: VoteChamber): string {
   if (chamber === "House") {
-    return "set plugins.politiclaw.apiKeys.apiDataGov (free, https://api.data.gov/signup/)";
+    return "set plugins.entries.politiclaw.config.apiKeys.apiDataGov (free, https://api.data.gov/signup/)";
   }
   return "voteview.com is zero-key; network access to voteview.com required";
 }

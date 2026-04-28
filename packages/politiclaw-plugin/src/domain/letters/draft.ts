@@ -112,7 +112,7 @@ export async function draftLetter(
         status: "bill_unavailable",
         reason:
           "A bill id was supplied but no bills resolver is wired — cannot verify bill details.",
-        actionable: "Call the tool without billId, or configure plugins.politiclaw.apiKeys.apiDataGov.",
+        actionable: "Call the tool without billId, or configure plugins.entries.politiclaw.config.apiKeys.apiDataGov.",
       };
     }
     const detail = await getBillDetail(db, deps.resolver, ref);

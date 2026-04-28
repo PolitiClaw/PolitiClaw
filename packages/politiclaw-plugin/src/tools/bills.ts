@@ -113,7 +113,7 @@ export const searchBillsTool: AnyAgentTool = {
   label: "Search recent federal bills",
   description:
     "List recent federal bills from api.congress.gov (tier 1). Filter by congress, billType, " +
-    "updateDate range, and title substring. Requires plugins.politiclaw.apiKeys.apiDataGov. " +
+    "updateDate range, and title substring. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov. " +
     "Cached for 6h; pass refresh=true to re-fetch.",
   parameters: SearchBillsParams,
   async execute(_toolCallId, rawParams) {
@@ -181,7 +181,7 @@ export const getBillDetailsTool: AnyAgentTool = {
   description:
     "Fetch one bill's full detail (sponsors, subjects, summary, latest action) from api.congress.gov (tier 1). " +
     "Accepts either a canonical billId (e.g. '119-hr-1234') or congress + billType + number. " +
-    "Requires plugins.politiclaw.apiKeys.apiDataGov.",
+    "Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov.",
   parameters: GetBillDetailsParams,
   async execute(_toolCallId, rawParams) {
     const parsed = safeParse(GetBillDetailsParams, rawParams);

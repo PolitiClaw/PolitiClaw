@@ -137,7 +137,7 @@ export function createCongressGovHouseVotesAdapter(
         return unavailable(
           ID,
           "missing apiDataGov key",
-          "set plugins.politiclaw.apiKeys.apiDataGov (https://api.data.gov/signup/)",
+          "set plugins.entries.politiclaw.config.apiKeys.apiDataGov (https://api.data.gov/signup/)",
         );
       }
 
@@ -186,7 +186,7 @@ export function createCongressGovHouseVotesAdapter(
         return unavailable(
           ID,
           "missing apiDataGov key",
-          "set plugins.politiclaw.apiKeys.apiDataGov (https://api.data.gov/signup/)",
+          "set plugins.entries.politiclaw.config.apiKeys.apiDataGov (https://api.data.gov/signup/)",
         );
       }
 

@@ -88,7 +88,7 @@ export function createUnitedstatesScraperAdapter(
       return unavailable(
         ID,
         "scraper fallback does not support bill listing (no date-range index)",
-        "set plugins.politiclaw.apiKeys.apiDataGov for list/search; the scraper covers single-bill lookups only",
+        "set plugins.entries.politiclaw.config.apiKeys.apiDataGov for list/search; the scraper covers single-bill lookups only",
       );
     },
 

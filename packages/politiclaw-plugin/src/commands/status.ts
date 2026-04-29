@@ -49,7 +49,11 @@ export const statusCommand: OpenClawPluginCommandDefinition = {
     );
     if (checkpoint) {
       lines.push(`  Setup checkpoint: ${describeOnboardingCheckpoint(checkpoint)}`);
-      lines.push("  Next: use /politiclaw-setup to resume cleanly.");
+      if (checkpoint.stage === "complete") {
+        lines.push("  Next: /politiclaw-setup or /politiclaw-doctor will confirm post-restart state.");
+      } else {
+        lines.push("  Next: use /politiclaw-setup to resume cleanly.");
+      }
     }
     return { text: lines.join("\n") };
   },

@@ -27,6 +27,20 @@ export const setupCommand: OpenClawPluginCommandDefinition = {
     const checkpoint = getOnboardingCheckpoint(kv);
 
     if (checkpoint) {
+      if (checkpoint.stage === "complete") {
+        const keysLine = checkpoint.savedKeys?.length
+          ? `Saved API keys this round: ${checkpoint.savedKeys.join(", ")}.`
+          : null;
+        return {
+          text: [
+            "PolitiClaw setup is complete.",
+            "The gateway restarted to pick up the new configuration.",
+            ...(keysLine ? [keysLine] : []),
+            "",
+            "Use /politiclaw-status for the saved snapshot or /politiclaw-doctor for a deeper health check.",
+          ].join("\n"),
+        };
+      }
       return {
         text: [
           "PolitiClaw setup is in progress.",

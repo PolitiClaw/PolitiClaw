@@ -2,7 +2,7 @@
 
 This page is generated from a real in-memory SQLite database after migrations run.
 
-Migration count: 17.
+Migration count: 18.
 
 ## Schema overview
 
@@ -124,6 +124,8 @@ erDiagram
     INTEGER weight
     TEXT stance
     INTEGER updated_at
+    TEXT note
+    TEXT source_text
   }
   kv_store {
     TEXT key PK
@@ -281,6 +283,7 @@ erDiagram
 - `packages/politiclaw-plugin/src/storage/migrations/0015_accountability.sql`
 - `packages/politiclaw-plugin/src/storage/migrations/0016_action_moments.sql`
 - `packages/politiclaw-plugin/src/storage/migrations/0017_preferences_action_prompting.sql`
+- `packages/politiclaw-plugin/src/storage/migrations/0018_issue_stance_notes.sql`
 
 ## Tables
 
@@ -581,6 +584,8 @@ CREATE TABLE call_scripts (
 | `weight` | `INTEGER` | yes | no | n/a |
 | `stance` | `TEXT` | yes | no | n/a |
 | `updated_at` | `INTEGER` | yes | no | n/a |
+| `note` | `TEXT` | no | no | n/a |
+| `source_text` | `TEXT` | no | no | n/a |
 
 ```sql
 CREATE TABLE issue_stances (
@@ -588,7 +593,7 @@ CREATE TABLE issue_stances (
   weight          INTEGER NOT NULL CHECK (weight BETWEEN 1 AND 5),
   stance          TEXT NOT NULL,
   updated_at      INTEGER NOT NULL
-)
+, note TEXT, source_text TEXT)
 ```
 
 ### kv_store

@@ -55,6 +55,28 @@ describe("politiclaw-setup command", () => {
     expect(text).toContain("`politiclaw_configure` with `{}`");
   });
 
+  it("treats a complete-stage api_keys_restart checkpoint as setup complete", async () => {
+    upsertPreferences(db, {
+      address: "123 Main",
+      zip: "94110",
+      state: "CA",
+      monitoringMode: "weekly_digest",
+    });
+    upsertIssueStance(db, { issue: "housing", stance: "support", weight: 3 });
+    setOnboardingCheckpoint(kv, {
+      stage: "complete",
+      reason: "api_keys_restart",
+      savedKeys: ["apiDataGov"],
+      lastPromptSummary: "resume setup after the gateway restarts",
+    });
+
+    const text = textOf(await setupCommand.handler(fakeCtx));
+    expect(text).toContain("setup is complete");
+    expect(text).toContain("apiDataGov");
+    expect(text).not.toContain("setup is in progress");
+    expect(text).not.toContain("Continue PolitiClaw setup");
+  });
+
   it("points complete setup toward status and follow-ups", async () => {
     upsertPreferences(db, {
       address: "123 Main",

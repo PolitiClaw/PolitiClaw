@@ -75,4 +75,18 @@ describe("politiclaw-status command", () => {
     expect(text).toContain("monitoring");
     expect(text).toContain("/politiclaw-setup");
   });
+
+  it("softens the next-step hint when the checkpoint stage is complete", async () => {
+    setOnboardingCheckpoint(kv, {
+      stage: "complete",
+      reason: "api_keys_restart",
+      savedKeys: ["apiDataGov"],
+      lastPromptSummary: "resume setup after the gateway restarts",
+    });
+
+    const text = textOf(await statusCommand.handler(fakeCtx));
+    expect(text).toContain("setup is complete");
+    expect(text).toContain("apiDataGov");
+    expect(text).not.toContain("resume cleanly");
+  });
 });

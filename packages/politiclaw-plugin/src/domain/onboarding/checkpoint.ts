@@ -74,6 +74,9 @@ export function describeOnboardingCheckpoint(
     const keys = checkpoint.savedKeys?.length
       ? ` after saving ${checkpoint.savedKeys.join(", ")}`
       : "";
+    if (checkpoint.stage === "complete") {
+      return `Gateway restarted${keys}; setup is complete.`;
+    }
     return `Resume setup${keys}; next step: ${STAGE_LABELS[checkpoint.stage]}.`;
   }
   return `Setup in progress; next step: ${STAGE_LABELS[checkpoint.stage]}.`;

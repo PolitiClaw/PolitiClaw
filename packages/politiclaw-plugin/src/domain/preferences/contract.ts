@@ -204,7 +204,7 @@ export async function buildMonitoringContract(
         name: template.name,
         reason: "no_address",
         explanation:
-          "Election lookup needs a saved address. Re-run politiclaw_configure with one.",
+          "Election lookup needs a saved address. Ask the agent to call politiclaw_configure with one.",
       });
       continue;
     }
@@ -224,7 +224,7 @@ export async function buildMonitoringContract(
         name: template.name,
         reason: "feature_unavailable",
         explanation:
-          "Job is installed but currently disabled on the gateway. Re-run politiclaw_configure to reconcile or inspect gateway cron state directly.",
+          "Job is installed but currently disabled on the gateway. Ask the agent to call politiclaw_configure to reconcile or inspect gateway cron state directly.",
       });
       continue;
     }

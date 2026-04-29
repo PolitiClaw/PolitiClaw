@@ -6,6 +6,7 @@
   "skills": ["skills"],
   "commandAliases": [
     { "name": "politiclaw-help", "kind": "runtime-slash" },
+    { "name": "politiclaw-setup", "kind": "runtime-slash" },
     { "name": "politiclaw-status", "kind": "runtime-slash" },
     { "name": "politiclaw-doctor", "kind": "runtime-slash" },
     { "name": "politiclaw-keys", "kind": "runtime-slash" },

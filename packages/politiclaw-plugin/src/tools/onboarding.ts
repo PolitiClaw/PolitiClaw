@@ -52,7 +52,7 @@ function renderConversationHandoff(handoff: ConversationHandoff): string {
     "Suggested opening prompts for the skill to draw from (pick one, don't recite all):",
     ...handoff.suggestedOpeningPrompts.map((prompt) => `  - ${prompt}`),
     "",
-    "When the user expresses a position, paraphrase it back before calling politiclaw_set_issue_stance. Map free text to a canonical slug when possible; novel issues are allowed but flag them.",
+    "When the user expresses a position, paraphrase it back before calling politiclaw_issue_stances with action='set'. Map free text to a canonical slug when possible; novel issues are allowed but flag them.",
     "",
     `Canonical slug set: ${handoff.canonicalIssueSlugs.join(", ")}.`,
   ];
@@ -72,7 +72,7 @@ function renderQuizHandoff(handoff: QuizHandoff): string {
   const lines = [
     `Quiz onboarding ready — ${handoff.questions.length} questions.`,
     "",
-    "Ask them sequentially. For each, present the three answer labels; only ask the weight follow-up after support or oppose. \"No strong view\" does not persist a neutral stance unless the user explicitly asks to record one. After all answers, read back the collected stances before committing with politiclaw_set_issue_stance.",
+    "Ask them sequentially. For each, present the three answer labels; only ask the weight follow-up after support or oppose. \"No strong view\" does not persist a neutral stance unless the user explicitly asks to record one. After all answers, read back the collected stances before committing with politiclaw_issue_stances (action='set').",
     "",
     "Questions:",
   ];

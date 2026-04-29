@@ -22,4 +22,4 @@ For a shorter, voice-ready script instead of a letter, use [`politiclaw_draft_ou
 
 ## Setup prerequisites
 
-The tool requires a declared issue stance. If the user has not set one yet, start with [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure) or [`politiclaw_issue_stances`](../reference/generated/tools/politiclaw_issue_stances).
+The tool requires a declared issue stance. If the user has not set one yet, start with [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure) or [`politiclaw_issue_stances`](../reference/generated/tools/politiclaw_issue_stances). Stances with a saved `note` and `sourceText` produce more personal drafts because the letter and call-script templates can use the user's specific concern instead of only the broader issue slug.

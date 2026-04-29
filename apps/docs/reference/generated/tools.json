@@ -194,6 +194,14 @@
                 "maximum": 5,
                 "description": "How strongly the user cares (1-5). Defaults to 3.",
                 "type": "integer"
+              },
+              "note": {
+                "description": "Short paraphrase of the user's specific concern within this issue bucket. Surfaced in letters, call scripts, rep reports, and the monitoring contract.",
+                "type": "string"
+              },
+              "sourceText": {
+                "description": "Verbatim user phrasing that prompted this stance, preserved for later drafting context.",
+                "type": "string"
               }
             }
           }
@@ -294,7 +302,7 @@
     "groupId": "preferences",
     "groupLabel": "Configuration and preferences",
     "sourcePath": "packages/politiclaw-plugin/src/tools/issueStances.ts",
-    "description": "Manage the user's declared positions on policy issues. These drive bill alignment scoring and rep scoring. Pass action='set' with issue+stance (and optional 1-5 weight) to upsert — re-running with the same issue overwrites the previous stance. Pass action='list' to return every declared stance ordered by weight (no other params required). Pass action='delete' with issue to remove a stance. For first-time setup or full reconfiguration, prefer politiclaw_configure.",
+    "description": "Manage the user's declared positions on policy issues. These drive bill alignment scoring and rep scoring. Pass action='set' with issue+stance (and optional 1-5 weight, optional free-text 'note' paraphrasing the user's specific concern, and optional 'sourceText' preserving their verbatim phrasing) to upsert — re-running with the same issue overwrites the previous stance. Pass action='list' to return every declared stance ordered by weight (no other params required). Pass action='delete' with issue to remove a stance. For first-time setup or full reconfiguration, prefer politiclaw_configure.",
     "parameters": [
       {
         "name": "action",
@@ -319,6 +327,18 @@
         "required": false,
         "type": "integer",
         "description": "Optional (action='set' only). How strongly the user cares (1-5). Defaults to 3."
+      },
+      {
+        "name": "note",
+        "required": false,
+        "type": "string",
+        "description": "Optional (action='set' only). Short paraphrase of the user's specific concern within this issue bucket (e.g. 'BWCA wilderness federal protections' for the 'public-lands-and-natural-resources' slug). Surfaced in letters, call scripts, and rep reports."
+      },
+      {
+        "name": "sourceText",
+        "required": false,
+        "type": "string",
+        "description": "Optional (action='set' only). Verbatim user phrasing that prompted this stance, preserved for letter drafting and call scripts."
       }
     ],
     "rawSchema": {
@@ -370,6 +390,14 @@
           "maximum": 5,
           "description": "Optional (action='set' only). How strongly the user cares (1-5). Defaults to 3.",
           "type": "integer"
+        },
+        "note": {
+          "description": "Optional (action='set' only). Short paraphrase of the user's specific concern within this issue bucket (e.g. 'BWCA wilderness federal protections' for the 'public-lands-and-natural-resources' slug). Surfaced in letters, call scripts, and rep reports.",
+          "type": "string"
+        },
+        "sourceText": {
+          "description": "Optional (action='set' only). Verbatim user phrasing that prompted this stance, preserved for letter drafting and call scripts.",
+          "type": "string"
         }
       }
     }

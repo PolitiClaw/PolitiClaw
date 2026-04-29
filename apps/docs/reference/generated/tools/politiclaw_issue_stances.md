@@ -6,7 +6,7 @@
 
 ## Description
 
-Manage the user's declared positions on policy issues. These drive bill alignment scoring and rep scoring. Pass action='set' with issue+stance (and optional 1-5 weight) to upsert — re-running with the same issue overwrites the previous stance. Pass action='list' to return every declared stance ordered by weight (no other params required). Pass action='delete' with issue to remove a stance. For first-time setup or full reconfiguration, prefer politiclaw_configure.
+Manage the user's declared positions on policy issues. These drive bill alignment scoring and rep scoring. Pass action='set' with issue+stance (and optional 1-5 weight, optional free-text 'note' paraphrasing the user's specific concern, and optional 'sourceText' preserving their verbatim phrasing) to upsert — re-running with the same issue overwrites the previous stance. Pass action='list' to return every declared stance ordered by weight (no other params required). Pass action='delete' with issue to remove a stance. For first-time setup or full reconfiguration, prefer politiclaw_configure.
 
 ## Parameters
 
@@ -16,6 +16,8 @@ Manage the user's declared positions on policy issues. These drive bill alignmen
 | `issue` | no | `string` | Required for action='set' and action='delete'. Issue label or slug. Normalized to lowercase kebab-case (e.g. 'Affordable Housing' → 'affordable-housing'). |
 | `stance` | no | `"support" \| "oppose" \| "neutral"` | Required for action='set'. The user's declared position on the issue. |
 | `weight` | no | `integer` | Optional (action='set' only). How strongly the user cares (1-5). Defaults to 3. |
+| `note` | no | `string` | Optional (action='set' only). Short paraphrase of the user's specific concern within this issue bucket (e.g. 'BWCA wilderness federal protections' for the 'public-lands-and-natural-resources' slug). Surfaced in letters, call scripts, and rep reports. |
+| `sourceText` | no | `string` | Optional (action='set' only). Verbatim user phrasing that prompted this stance, preserved for letter drafting and call scripts. |
 
 ## Raw Schema
 
@@ -69,6 +71,14 @@ Manage the user's declared positions on policy issues. These drive bill alignmen
       "maximum": 5,
       "description": "Optional (action='set' only). How strongly the user cares (1-5). Defaults to 3.",
       "type": "integer"
+    },
+    "note": {
+      "description": "Optional (action='set' only). Short paraphrase of the user's specific concern within this issue bucket (e.g. 'BWCA wilderness federal protections' for the 'public-lands-and-natural-resources' slug). Surfaced in letters, call scripts, and rep reports.",
+      "type": "string"
+    },
+    "sourceText": {
+      "description": "Optional (action='set' only). Verbatim user phrasing that prompted this stance, preserved for letter drafting and call scripts.",
+      "type": "string"
     }
   }
 }

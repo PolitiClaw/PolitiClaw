@@ -55,6 +55,35 @@ describe("politiclaw_issue_stances — action='set'", () => {
     expect(rows).toEqual([{ stance: "oppose", weight: 2 }]);
   });
 
+  it("persists note and sourceText alongside the stance row", async () => {
+    const db = withMemoryStorage();
+    await issueStancesTool.execute!(
+      "call-1",
+      {
+        action: "set",
+        issue: "public-lands-and-natural-resources",
+        stance: "support",
+        weight: 5,
+        note: "BWCA wilderness federal protections",
+        sourceText: "I really care about keeping the BWCA protected.",
+      },
+      undefined,
+      undefined,
+    );
+    const rows = db
+      .prepare(
+        "SELECT issue, note, source_text FROM issue_stances WHERE issue = 'public-lands-and-natural-resources'",
+      )
+      .all() as Array<{ issue: string; note: string | null; source_text: string | null }>;
+    expect(rows).toEqual([
+      {
+        issue: "public-lands-and-natural-resources",
+        note: "BWCA wilderness federal protections",
+        source_text: "I really care about keeping the BWCA protected.",
+      },
+    ]);
+  });
+
   it("returns invalid when stance is missing on set", async () => {
     withMemoryStorage();
     const result = await issueStancesTool.execute!(
@@ -79,6 +108,40 @@ describe("politiclaw_issue_stances — action='list'", () => {
     const text = (result.content[0] as { type: "text"; text: string }).text;
     expect(text).toContain("No issue stances set");
     expect(text).toContain("politiclaw_issue_stances");
+  });
+
+  it("renders note suffix when a stance carries one", async () => {
+    withMemoryStorage();
+    await issueStancesTool.execute!(
+      "call-1",
+      {
+        action: "set",
+        issue: "public-lands-and-natural-resources",
+        stance: "support",
+        weight: 5,
+        note: "BWCA wilderness federal protections",
+      },
+      undefined,
+      undefined,
+    );
+    await issueStancesTool.execute!(
+      "call-2",
+      { action: "set", issue: "housing", stance: "support", weight: 3 },
+      undefined,
+      undefined,
+    );
+    const result = await issueStancesTool.execute!(
+      "call-3",
+      { action: "list" },
+      undefined,
+      undefined,
+    );
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    expect(text).toContain(
+      "public-lands-and-natural-resources: support (weight 5) — BWCA wilderness federal protections",
+    );
+    expect(text).toContain("housing: support (weight 3)");
+    expect(text).not.toContain("housing: support (weight 3) —");
   });
 
   it("renders declared stances weight-desc", async () => {

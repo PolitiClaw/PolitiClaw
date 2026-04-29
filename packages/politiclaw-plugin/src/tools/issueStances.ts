@@ -43,6 +43,18 @@ const IssueStancesParams = Type.Object({
         "Optional (action='set' only). How strongly the user cares (1-5). Defaults to 3.",
     }),
   ),
+  note: Type.Optional(
+    Type.String({
+      description:
+        "Optional (action='set' only). Short paraphrase of the user's specific concern within this issue bucket (e.g. 'BWCA wilderness federal protections' for the 'public-lands-and-natural-resources' slug). Surfaced in letters, call scripts, and rep reports.",
+    }),
+  ),
+  sourceText: Type.Optional(
+    Type.String({
+      description:
+        "Optional (action='set' only). Verbatim user phrasing that prompted this stance, preserved for letter drafting and call scripts.",
+    }),
+  ),
 });
 
 function textResult<T>(text: string, details: T) {
@@ -54,10 +66,12 @@ export const issueStancesTool: AnyAgentTool = {
   label: "Manage declared issue stances (set, list, delete)",
   description:
     "Manage the user's declared positions on policy issues. These drive bill alignment scoring " +
-    "and rep scoring. Pass action='set' with issue+stance (and optional 1-5 weight) to upsert — " +
-    "re-running with the same issue overwrites the previous stance. Pass action='list' to return " +
-    "every declared stance ordered by weight (no other params required). Pass action='delete' " +
-    "with issue to remove a stance. For first-time setup or full reconfiguration, prefer politiclaw_configure.",
+    "and rep scoring. Pass action='set' with issue+stance (and optional 1-5 weight, optional " +
+    "free-text 'note' paraphrasing the user's specific concern, and optional 'sourceText' " +
+    "preserving their verbatim phrasing) to upsert — re-running with the same issue overwrites " +
+    "the previous stance. Pass action='list' to return every declared stance ordered by weight " +
+    "(no other params required). Pass action='delete' with issue to remove a stance. For " +
+    "first-time setup or full reconfiguration, prefer politiclaw_configure.",
   parameters: IssueStancesParams,
   async execute(_toolCallId, rawParams) {
     const parsedParams = safeParse(IssueStancesParams, rawParams ?? {});
@@ -79,9 +93,10 @@ export const issueStancesTool: AnyAgentTool = {
           { stances: [] },
         );
       }
-      const lines = rows.map(
-        (row) => `- ${row.issue}: ${row.stance} (weight ${row.weight})`,
-      );
+      const lines = rows.map((row) => {
+        const noteSuffix = row.note ? ` — ${row.note}` : "";
+        return `- ${row.issue}: ${row.stance} (weight ${row.weight})${noteSuffix}`;
+      });
       return textResult(["Issue stances:", ...lines].join("\n"), { stances: rows });
     }
 
@@ -90,6 +105,8 @@ export const issueStancesTool: AnyAgentTool = {
         issue: params.issue,
         stance: params.stance,
         ...(params.weight !== undefined ? { weight: params.weight } : {}),
+        ...(params.note !== undefined ? { note: params.note } : {}),
+        ...(params.sourceText !== undefined ? { sourceText: params.sourceText } : {}),
       });
       if (!parsed.ok) {
         return textResult(

@@ -148,14 +148,24 @@ function matchStanceAgainstBill(stance: IssueStance, bill: Bill): StanceMatch | 
  * Keeps the slug's full text as well as its word components so
  * "affordable-housing" matches either "Affordable housing" subject
  * labels or a summary that only mentions "housing."
+ *
+ * For 3+-word slugs (Library of Congress Policy Area names like
+ * "public-lands-and-natural-resources"), single-word fallbacks are
+ * suppressed — words like "public", "natural", or "community" cause too
+ * many false positives in bill titles and summaries. The combined phrase
+ * already substring-matches the bill's `policyArea`, which is the whole
+ * point of the LoC alignment.
  */
 function expandKeywords(issue: string): string[] {
   const words = issue.split("-").filter(Boolean);
+  if (words.length === 0) return [];
   const combined = words.join(" ");
   const candidates = new Set<string>();
-  if (combined) candidates.add(combined);
-  for (const word of words) {
-    if (word.length >= 4) candidates.add(word);
+  candidates.add(combined);
+  if (words.length <= 2) {
+    for (const word of words) {
+      if (word.length >= 4) candidates.add(word);
+    }
   }
   return [...candidates];
 }

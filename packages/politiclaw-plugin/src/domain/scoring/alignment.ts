@@ -218,7 +218,7 @@ function buildRationale(
   matches: readonly StanceMatch[],
 ): string {
   if (stances.length === 0) {
-    return "No declared issue stances yet — use politiclaw_set_issue_stance before scoring.";
+    return "No declared issue stances yet — use politiclaw_issue_stances with action='set' before scoring.";
   }
   if (matches.length === 0) {
     return `No declared stance keywords matched this bill's policy area, subjects, title, or summary.`;

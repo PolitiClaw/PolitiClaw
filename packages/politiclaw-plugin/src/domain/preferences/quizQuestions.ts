@@ -3,7 +3,7 @@
  *
  * Each question maps 1:1 to an `IssueStance.issue` slug so that the
  * onboarding tool can persist answers through the existing
- * `politiclaw_set_issue_stance` path without re-interpreting free text.
+ * `politiclaw_issue_stances` path without re-interpreting free text.
  *
  * Rules for editing this bank (enforced by tests in ./quizQuestions.test.ts):
  *   - Every question has a non-empty kebab-case slug.

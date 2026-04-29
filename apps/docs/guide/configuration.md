@@ -52,4 +52,4 @@ For most users, the simplest order is:
 3. Decide whether you want `geocodio`, or whether the local shapefile path is enough.
 4. Re-run [`politiclaw_doctor`](../reference/generated/tools/politiclaw_doctor) after changing config.
 
-For walkthroughs of how to actually save each key (via [`politiclaw_set_api_keys`](../reference/generated/tools/politiclaw_set_api_keys) or the [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure) flow) and what the gateway-restart side effect looks like, read [API Keys](./api-keys).
+For walkthroughs of how to actually save each key (via [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure) or the [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure) flow) and what the gateway-restart side effect looks like, read [API Keys](./api-keys).

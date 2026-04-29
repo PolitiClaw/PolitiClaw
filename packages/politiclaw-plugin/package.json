@@ -37,7 +37,12 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "compile": "tsc -p tsconfig.json",
+    "copy:assets": "tsx ./scripts/copy-runtime-assets.mts",
+    "build": "npm run clean && npm run compile && npm run copy:assets",
+    "smoke:runtime": "tsx ./scripts/smoke-packed-runtime.mts",
+    "pack:check": "npm pack --dry-run",
     "prepublishOnly": "npm run build",
     "dev": "tsx watch src/index.ts",
     "docs:generate": "tsx ./scripts/docs.mts generate",

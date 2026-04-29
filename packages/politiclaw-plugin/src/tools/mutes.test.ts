@@ -53,14 +53,13 @@ describe("politiclaw_mutes — action='add'", () => {
 
   it("rejects unknown kinds at validation", async () => {
     withMemoryStorage();
-    await expect(
-      mutesTool.execute!(
-        "call-1",
-        { action: "add", kind: "invalid", ref: "x" },
-        undefined,
-        undefined,
-      ),
-    ).rejects.toThrow();
+    const result = await mutesTool.execute!(
+      "call-1",
+      { action: "add", kind: "invalid", ref: "x" },
+      undefined,
+      undefined,
+    );
+    expect(result.details).toMatchObject({ status: "invalid" });
   });
 
   it("returns invalid when ref is missing on add", async () => {
@@ -140,14 +139,13 @@ describe("politiclaw_mutes — action='remove'", () => {
 
   it("rejects unknown kinds on remove at validation", async () => {
     withMemoryStorage();
-    await expect(
-      mutesTool.execute!(
-        "call-1",
-        { action: "remove", kind: "invalid", ref: "x" },
-        undefined,
-        undefined,
-      ),
-    ).rejects.toThrow();
+    const result = await mutesTool.execute!(
+      "call-1",
+      { action: "remove", kind: "invalid", ref: "x" },
+      undefined,
+      undefined,
+    );
+    expect(result.details).toMatchObject({ status: "invalid" });
   });
 });
 

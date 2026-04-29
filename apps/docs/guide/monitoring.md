@@ -15,7 +15,7 @@ Default front door:
 Follow-ups:
 
 - [`politiclaw_check_upcoming_votes`](../reference/generated/tools/politiclaw_check_upcoming_votes) — on-demand snapshot of recent and upcoming federal activity on your tracked issues.
-- [`politiclaw_mutes`](../reference/generated/tools/politiclaw_mutes), [`politiclaw_mutes`](../reference/generated/tools/politiclaw_mutes), [`politiclaw_mutes`](../reference/generated/tools/politiclaw_mutes) — suppress a specific bill, rep, or issue without changing cadence.
+- [`politiclaw_mutes`](../reference/generated/tools/politiclaw_mutes) — suppress a specific bill, rep, or issue without changing cadence. Use `action='add'`, `action='remove'`, or `action='list'`.
 
 If you are choosing between overlapping monitoring paths, see [Entry Points by Goal](./entry-points-by-goal).
 

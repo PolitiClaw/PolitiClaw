@@ -8,7 +8,7 @@ import {
   upsertIssueStance,
 } from "../domain/preferences/index.js";
 import { getStorage } from "../storage/context.js";
-import { parse } from "../validation/typebox.js";
+import { safeParse } from "../validation/typebox.js";
 
 const IssueStancesParams = Type.Object({
   action: Type.Union(
@@ -60,12 +60,14 @@ export const issueStancesTool: AnyAgentTool = {
     "with issue to remove a stance. For first-time setup or full reconfiguration, prefer politiclaw_configure.",
   parameters: IssueStancesParams,
   async execute(_toolCallId, rawParams) {
-    const params = (rawParams ?? {}) as {
-      action?: unknown;
-      issue?: unknown;
-      stance?: unknown;
-      weight?: unknown;
-    };
+    const parsedParams = safeParse(IssueStancesParams, rawParams ?? {});
+    if (!parsedParams.ok) {
+      return textResult(
+        `Invalid input: ${parsedParams.messages.join("; ")}`,
+        { status: "invalid" },
+      );
+    }
+    const params = parsedParams.data;
     const action = params.action;
     const { db } = getStorage();
 
@@ -84,12 +86,18 @@ export const issueStancesTool: AnyAgentTool = {
     }
 
     if (action === "set") {
-      const validated = parse(IssueStanceSchema, {
+      const parsed = safeParse(IssueStanceSchema, {
         issue: params.issue,
         stance: params.stance,
         ...(params.weight !== undefined ? { weight: params.weight } : {}),
       });
-      const row = upsertIssueStance(db, validated);
+      if (!parsed.ok) {
+        return textResult(
+          `Invalid input: ${parsed.messages.join("; ")}`,
+          { status: "invalid" },
+        );
+      }
+      const row = upsertIssueStance(db, parsed.data);
       return textResult(
         `Saved ${row.stance} stance on '${row.issue}' (weight ${row.weight}).`,
         row,

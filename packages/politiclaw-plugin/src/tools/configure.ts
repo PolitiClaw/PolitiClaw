@@ -741,9 +741,9 @@ export function createConfigureTool(deps: ConfigureToolDeps = {}): AnyAgentTool 
         return textResult(result.prompt, result);
       }
 
-      // 5b. api.data.gov key — show once, don't loop. Plugin config is host-
-      //     managed, so we can only surface instructions; we can't persist the
-      //     key from here.
+      // 5b. api.data.gov key — show once, don't loop. The user can paste
+      //     keys back into this tool and the api_keys_saved branch above
+      //     writes them through the gateway config adapter.
       const apiKeyNoticeShown =
         kv.get<number>(API_KEY_NOTICE_KV_FLAG) !== undefined;
       const apiDataGovMissing = !pluginConfig.apiKeys?.apiDataGov;

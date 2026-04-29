@@ -54,6 +54,17 @@ describe("politiclaw_issue_stances — action='set'", () => {
       .all() as Array<{ stance: string; weight: number }>;
     expect(rows).toEqual([{ stance: "oppose", weight: 2 }]);
   });
+
+  it("returns invalid when stance is missing on set", async () => {
+    withMemoryStorage();
+    const result = await issueStancesTool.execute!(
+      "call-1",
+      { action: "set", issue: "climate" },
+      undefined,
+      undefined,
+    );
+    expect(result.details).toMatchObject({ status: "invalid" });
+  });
 });
 
 describe("politiclaw_issue_stances — action='list'", () => {

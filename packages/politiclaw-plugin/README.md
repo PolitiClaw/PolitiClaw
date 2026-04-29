@@ -34,9 +34,9 @@ If anything in this path looks wrong, run `politiclaw_doctor` — see [Troublesh
 
 **The fastest path: paste the key into chat.** Run `politiclaw_configure`. When the api.data.gov key is missing, the agent walks you through signup and asks you to paste the key (and any optional upgrade keys you have) back into chat. The plugin writes them through the OpenClaw gateway's `config.patch` method (validated, audited, optimistic concurrency). The gateway then restarts itself once to pick up the new values — reconnect after the restart and the keys are live.
 
-`politiclaw_configure` also handles one-off updates after onboarding: passing `apiDataGov` (or any `optionalApiKeys`) saves them straight to `plugins.politiclaw.apiKeys.*` without re-running the full setup flow.
+`politiclaw_configure` also handles one-off updates after onboarding: passing `apiDataGov` (or any `optionalApiKeys`) saves them straight to `plugins.entries.politiclaw.config.apiKeys.*` without re-running the full setup flow.
 
-You can still edit `~/.openclaw/openclaw.json` by hand under `plugins.politiclaw.apiKeys.*` if you prefer; both paths land in the same file.
+You can still edit `~/.openclaw/openclaw.json` by hand under `plugins.entries.politiclaw.config.apiKeys.*` if you prefer; both paths land in the same file.
 
 **One key is required; the rest are optional upgrades.**
 

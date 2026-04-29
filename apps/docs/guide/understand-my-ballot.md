@@ -12,7 +12,7 @@ Use it first because it checks setup, pulls ballot context, and returns one read
 
 ## Focused follow-ups
 
-- [`politiclaw_election_brief`](../reference/generated/tools/politiclaw_election_brief) for a tighter contest-by-contest framing
+- [`politiclaw_get_my_ballot`](../reference/generated/tools/politiclaw_get_my_ballot) for raw ballot data and logistics
 - [`politiclaw_research_finance`](../reference/generated/tools/politiclaw_research_finance) for a deeper look at a specific candidate
 - [`politiclaw_score_representative`](../reference/generated/tools/politiclaw_score_representative) for incumbents already in office
 

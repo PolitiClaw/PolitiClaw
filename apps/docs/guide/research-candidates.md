@@ -10,6 +10,6 @@ Use it first for a single candidate's FEC-backed finance summary and attached bi
 
 ## Focused follow-ups
 
-- [`politiclaw_research_finance`](../reference/generated/tools/politiclaw_research_finance) for an incumbent-versus-challengers comparison across stored races
+- [`politiclaw_research_finance`](../reference/generated/tools/politiclaw_research_finance) with `mode='challengers'` for an incumbent-versus-challengers comparison across stored races
 - [`politiclaw_election_brief`](../reference/generated/tools/politiclaw_election_brief) when candidate research is only one part of a broader ballot-prep answer
-- [`politiclaw_election_brief`](../reference/generated/tools/politiclaw_election_brief) for contest framing without dropping into per-candidate finance detail
+- [`politiclaw_get_my_ballot`](../reference/generated/tools/politiclaw_get_my_ballot) for raw ballot data without per-candidate finance detail

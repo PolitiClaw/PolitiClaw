@@ -11,7 +11,7 @@ import {
   type MuteRow,
 } from "../domain/mutes/index.js";
 import { getStorage } from "../storage/context.js";
-import { parse } from "../validation/typebox.js";
+import { safeParse } from "../validation/typebox.js";
 
 const MutesParams = Type.Object({
   action: Type.Union(
@@ -67,12 +67,14 @@ export const mutesTool: AnyAgentTool = {
     "dismiss a single offer rather than silence the bill/rep/issue entirely.",
   parameters: MutesParams,
   async execute(_toolCallId, rawParams) {
-    const params = (rawParams ?? {}) as {
-      action?: unknown;
-      kind?: unknown;
-      ref?: unknown;
-      reason?: unknown;
-    };
+    const parsedParams = safeParse(MutesParams, rawParams ?? {});
+    if (!parsedParams.ok) {
+      return textResult(
+        `Invalid input: ${parsedParams.messages.join("; ")}`,
+        { status: "invalid" },
+      );
+    }
+    const params = parsedParams.data;
     const action = params.action;
 
     if (action === "list") {
@@ -91,19 +93,31 @@ export const mutesTool: AnyAgentTool = {
     if (action === "add") {
       const ref = trimString(params.ref);
       const reason = trimString(params.reason);
+      if (!params.kind) {
+        return textResult(
+          "Cannot add mute: 'kind' is required when action='add'.",
+          { status: "invalid" },
+        );
+      }
       if (!ref) {
         return textResult(
           "Cannot add mute: 'ref' is required when action='add'.",
           { status: "invalid" },
         );
       }
-      const parsed = parse(MuteInputSchema, {
+      const parsed = safeParse(MuteInputSchema, {
         kind: params.kind,
         ref,
         ...(reason !== undefined ? { reason } : {}),
       });
+      if (!parsed.ok) {
+        return textResult(
+          `Invalid input: ${parsed.messages.join("; ")}`,
+          { status: "invalid" },
+        );
+      }
       const { db } = getStorage();
-      const row = addMute(db, parsed);
+      const row = addMute(db, parsed.data);
       const reasonSuffix = row.reason ? ` (reason: ${row.reason})` : "";
       return textResult(
         `Muted ${row.kind} '${row.ref}'${reasonSuffix}.`,
@@ -113,16 +127,29 @@ export const mutesTool: AnyAgentTool = {
 
     if (action === "remove") {
       const ref = trimString(params.ref);
+      if (!params.kind) {
+        return textResult(
+          "Cannot remove mute: 'kind' is required when action='remove'.",
+          { status: "invalid" },
+        );
+      }
       if (!ref) {
         return textResult(
           "Cannot remove mute: 'ref' is required when action='remove'.",
           { status: "invalid" },
         );
       }
-      const { kind, ref: parsedRef } = parse(UnmuteInputSchema, {
+      const parsed = safeParse(UnmuteInputSchema, {
         kind: params.kind,
         ref,
       });
+      if (!parsed.ok) {
+        return textResult(
+          `Invalid input: ${parsed.messages.join("; ")}`,
+          { status: "invalid" },
+        );
+      }
+      const { kind, ref: parsedRef } = parsed.data;
       const { db } = getStorage();
       const removed = removeMute(db, { kind, ref: parsedRef });
       return textResult(

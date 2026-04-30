@@ -51,6 +51,7 @@
     "build": "npm run clean && npm run compile && npm run copy:assets",
     "smoke:runtime": "tsx ./scripts/smoke-packed-runtime.mts",
     "pack:check": "npm pack --dry-run",
+    "prepack": "npm run build && npm run smoke:runtime",
     "prepublishOnly": "npm run build",
     "dev": "tsx watch src/index.ts",
     "docs:generate": "tsx ./scripts/docs.mts generate",

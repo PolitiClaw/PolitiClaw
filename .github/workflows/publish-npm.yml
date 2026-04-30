@@ -1,0 +1,79 @@
+name: Publish npm package
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish @politiclaw/politiclaw
+    runs-on: ubuntu-latest
+    environment: npm-production
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Verify release commit is on main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::Release tag ${GITHUB_REF_NAME} does not point at a commit on main"
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify release tag matches package version
+        run: |
+          package_version="$(node -p "require('./packages/politiclaw-plugin/package.json').version")"
+          expected_tag="v${package_version}"
+          if [ "${GITHUB_REF_NAME}" != "${expected_tag}" ]; then
+            echo "::error::Release tag ${GITHUB_REF_NAME} does not match package version ${expected_tag}"
+            exit 1
+          fi
+          echo "PACKAGE_VERSION=${package_version}" >> "$GITHUB_ENV"
+
+      - name: Run release checks
+        run: npm run release:check
+
+      - name: Verify version is unpublished
+        run: |
+          set +e
+          npm view "@politiclaw/politiclaw@${PACKAGE_VERSION}" version > /tmp/npm-view-version.txt 2> /tmp/npm-view-error.txt
+          status="$?"
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            echo "::error::@politiclaw/politiclaw@${PACKAGE_VERSION} is already published"
+            cat /tmp/npm-view-version.txt
+            exit 1
+          fi
+
+          if grep -q "E404" /tmp/npm-view-error.txt; then
+            echo "@politiclaw/politiclaw@${PACKAGE_VERSION} is not published yet"
+            exit 0
+          fi
+
+          cat /tmp/npm-view-error.txt
+          echo "::error::Could not verify whether @politiclaw/politiclaw@${PACKAGE_VERSION} is already published"
+          exit "$status"
+
+      - name: Publish to npm
+        run: npm publish --workspace @politiclaw/politiclaw --provenance --access public

@@ -1,0 +1,67 @@
+name: Prepare npm release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Semver bump to prepare
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare-release:
+    name: Prepare release PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare release version
+        run: npm run release:prepare -- --bump "${{ inputs.bump }}"
+
+      - name: Regenerate docs
+        run: npm run docs:generate
+
+      - name: Run release checks
+        run: npm run release:check
+
+      - name: Read release version
+        id: release-version
+        run: |
+          version="$(node -p "require('./packages/politiclaw-plugin/package.json').version")"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Open release PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: release/politiclaw-v${{ steps.release-version.outputs.version }}
+          delete-branch: true
+          commit-message: Release @politiclaw/politiclaw v${{ steps.release-version.outputs.version }}
+          title: Release @politiclaw/politiclaw v${{ steps.release-version.outputs.version }}
+          body: |
+            ## Summary
+            - Bump `@politiclaw/politiclaw` to `v${{ steps.release-version.outputs.version }}`.
+            - Keep the OpenClaw manifest, lockfile, and public docs version badges aligned.
+            - Regenerate generated docs and run the full release check.
+
+            ## Validation
+            - `npm run docs:generate`
+            - `npm run release:check`

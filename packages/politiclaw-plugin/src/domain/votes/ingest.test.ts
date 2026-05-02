@@ -332,6 +332,91 @@ describe("ingestVotes (House)", () => {
 });
 
 describe("ingestVotes (Senate)", () => {
+  it("looks past Voteview's unpublished tail so a recent-detail gap does not starve ingest", async () => {
+    const db = openMemoryDb();
+    const detailCalls: number[] = [];
+    const resolver = {
+      async list(filters: { chamber: string; congress: number; limit?: number }) {
+        expect(filters.chamber).toBe("Senate");
+        expect(filters.limit).toBe(70);
+        const data = Array.from({ length: 70 }, (_, index) => {
+          const rollCallNumber = 764 - index;
+          return {
+            id: `senate-119-2-${rollCallNumber}`,
+            chamber: "Senate" as const,
+            congress: 119,
+            session: 2 as const,
+            rollCallNumber,
+            startDate: `2026-04-${String(30 - (index % 20)).padStart(2, "0")}`,
+            updateDate: undefined,
+            voteQuestion: "On the Motion",
+          };
+        });
+        return {
+          status: "ok" as const,
+          adapterId: "voteview.senateVotes",
+          tier: 2 as const,
+          data,
+          fetchedAt: 0,
+        };
+      },
+      async getWithMembers(ref: {
+        chamber: "Senate";
+        congress: number;
+        session: 1 | 2;
+        rollCallNumber: number;
+      }) {
+        detailCalls.push(ref.rollCallNumber);
+        if (ref.rollCallNumber >= 724) {
+          return {
+            status: "unavailable" as const,
+            reason: "voteview.senateVotes: voteview: Invalid Rollcall ID specified.",
+          };
+        }
+        return {
+          status: "ok" as const,
+          adapterId: "voteview.senateVotes",
+          tier: 2 as const,
+          fetchedAt: 0,
+          data: {
+            vote: {
+              id: `senate-119-2-${ref.rollCallNumber}`,
+              chamber: "Senate" as const,
+              congress: 119,
+              session: 2 as const,
+              rollCallNumber: ref.rollCallNumber,
+              startDate: "2026-03-01",
+              voteQuestion: "On the Motion",
+            },
+            members: [
+              {
+                voteId: `senate-119-2-${ref.rollCallNumber}`,
+                bioguideId: "A000360",
+                position: "Yea" as const,
+              },
+            ],
+          },
+        };
+      },
+      adapterIds() {
+        return ["voteview.senateVotes"];
+      },
+    };
+
+    const result = await ingestVotes(db, resolver as ReturnType<typeof createVotesResolver>, {
+      filters: { chamber: "Senate", congress: 119, limit: 20 },
+    });
+
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    expect(result.ingested.filter((vote) => vote.status === "skipped_unavailable")).toHaveLength(41);
+    expect(result.ingested.filter((vote) => vote.status !== "skipped_unavailable")).toHaveLength(20);
+    expect(result.ingested.at(-1)?.id).toBe("senate-119-2-704");
+    expect(detailCalls[0]).toBe(764);
+    expect(detailCalls.at(-1)).toBe(704);
+    expect(listStoredVotes(db)).toHaveLength(20);
+  });
+
   it("is idempotent when updateDate is absent and members are already stored", async () => {
     const db = openMemoryDb();
 

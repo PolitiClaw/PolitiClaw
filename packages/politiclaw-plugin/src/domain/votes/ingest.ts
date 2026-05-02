@@ -49,6 +49,10 @@ export type IngestVotesOptions = {
   force?: boolean;
 };
 
+const DEFAULT_LIST_LIMIT = 20;
+const SENATE_DETAIL_LOOKBACK_BUFFER = 50;
+const MAX_LIST_LIMIT = 100;
+
 /**
  * Ingest recent roll-call votes for the chamber in `filters.chamber` into the
  * plugin-private DB. House votes come from api.congress.gov (tier 1); Senate
@@ -77,7 +81,8 @@ export async function ingestVotes(
   resolver: VotesResolver,
   options: IngestVotesOptions,
 ): Promise<IngestVotesResult> {
-  const listResult = await resolver.list(options.filters);
+  const targetCount = options.filters.limit ?? DEFAULT_LIST_LIMIT;
+  const listResult = await resolver.list(expandListFilters(options.filters));
   if (listResult.status !== "ok") {
     return {
       status: "unavailable",
@@ -87,6 +92,7 @@ export async function ingestVotes(
   }
 
   const ingested: IngestedVote[] = [];
+  let satisfiedCount = 0;
   for (const listVote of listResult.data) {
     const existing = readExistingVote(db, listVote.id);
     const needsRefresh =
@@ -103,6 +109,8 @@ export async function ingestVotes(
         rollCallNumber: listVote.rollCallNumber,
         memberCount: existing!.memberCount,
       });
+      satisfiedCount += 1;
+      if (satisfiedCount >= targetCount) break;
       continue;
     }
 
@@ -143,12 +151,30 @@ export async function ingestVotes(
       rollCallNumber: merged.rollCallNumber,
       memberCount: members.length,
     });
+    satisfiedCount += 1;
+    if (satisfiedCount >= targetCount) break;
   }
 
   return {
     status: "ok",
     ingested,
     source: { adapterId: listResult.adapterId, tier: listResult.tier },
+  };
+}
+
+/**
+ * Voteview's search index often leads its detail endpoint for the newest Senate
+ * roll calls. Widen the list slice so a temporary unpublished tail (recent ids
+ * that still 200 with `Invalid Rollcall ID specified`) does not consume the
+ * whole ingest window and starve representative scoring of older, fully
+ * published votes.
+ */
+function expandListFilters(filters: RollCallVoteListFilters): RollCallVoteListFilters {
+  if (filters.chamber !== "Senate") return filters;
+  const requestedLimit = filters.limit ?? DEFAULT_LIST_LIMIT;
+  return {
+    ...filters,
+    limit: Math.min(requestedLimit + SENATE_DETAIL_LOOKBACK_BUFFER, MAX_LIST_LIMIT),
   };
 }
 

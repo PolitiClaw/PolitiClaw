@@ -49,7 +49,7 @@ const IngestVotesParams = Type.Object({
       minimum: 1,
       maximum: 100,
       description:
-        "Max list-level roll-call entries to sweep per chamber (1-100). House ingest may trigger an extra detail+members fetch per vote against the api.data.gov 5000/hr quota. Senate ingest fetches the full /api/search response once then issues one /api/download per vote.",
+        "Max usable roll-call entries to sweep per chamber (1-100). House ingest may trigger an extra detail+members fetch per vote against the api.data.gov 5000/hr quota. Senate ingest fetches the full /api/search response once then issues one /api/download per vote, plus up to 50 extra downloads past `limit` to skip Voteview's recent-detail tail (capped at 100 total downloads).",
     }),
   ),
   offset: Type.Optional(Type.Integer({ minimum: 0 })),

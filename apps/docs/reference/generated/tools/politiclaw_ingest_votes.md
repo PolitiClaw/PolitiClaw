@@ -15,7 +15,7 @@ Sweep primary roll-call sources and persist recent votes (plus per-member positi
 | `chamber` | no | `"House" \| "Senate" \| "Both"` | Which chamber to sweep. Defaults to 'Both'. House uses api.congress.gov (tier 1); Senate uses voteview.com (tier 2). |
 | `congress` | no | `integer` | Congress number. Defaults to the 119th (2025-2027). |
 | `session` | no | `integer` | Session within the congress (1 or 2). If omitted, no session filter is applied — the most recent votes across both sessions are returned. |
-| `limit` | no | `integer` | Max list-level roll-call entries to sweep per chamber (1-100). House ingest may trigger an extra detail+members fetch per vote against the api.data.gov 5000/hr quota. Senate ingest fetches the full /api/search response once then issues one /api/download per vote. |
+| `limit` | no | `integer` | Max usable roll-call entries to sweep per chamber (1-100). House ingest may trigger an extra detail+members fetch per vote against the api.data.gov 5000/hr quota. Senate ingest fetches the full /api/search response once then issues one /api/download per vote, plus up to 50 extra downloads past `limit` to skip Voteview's recent-detail tail (capped at 100 total downloads). |
 | `offset` | no | `integer` |  |
 | `force` | no | `boolean` | When true, re-fetch detail+members for every listed vote even when its update_date is unchanged. Use for schema backfills or to pick up Voteview corrections (Voteview does not expose an update timestamp). |
 
@@ -56,7 +56,7 @@ Sweep primary roll-call sources and persist recent votes (plus per-member positi
     "limit": {
       "minimum": 1,
       "maximum": 100,
-      "description": "Max list-level roll-call entries to sweep per chamber (1-100). House ingest may trigger an extra detail+members fetch per vote against the api.data.gov 5000/hr quota. Senate ingest fetches the full /api/search response once then issues one /api/download per vote.",
+      "description": "Max usable roll-call entries to sweep per chamber (1-100). House ingest may trigger an extra detail+members fetch per vote against the api.data.gov 5000/hr quota. Senate ingest fetches the full /api/search response once then issues one /api/download per vote, plus up to 50 extra downloads past `limit` to skip Voteview's recent-detail tail (capped at 100 total downloads).",
       "type": "integer"
     },
     "offset": {

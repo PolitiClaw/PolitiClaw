@@ -173,8 +173,6 @@ export type ScoreRepresentativeResult =
       skippedNeutralPositionCount: number;
       missingSignalBillCount: number;
       billsWithoutRepVotes: number;
-      scoredBillCount: number;
-      signaledBillCount: number;
       signalBillsMissingAlignmentCount: number;
       repVoteBillCount: number;
       proceduralExcluded: boolean;
@@ -241,11 +239,11 @@ export function scoreRepresentative(
   const excludeProcedural = opts.excludeProcedural ?? true;
 
   const rawEvidence = readEvidenceRows(db, repId, stanceSnapshotHash);
-  const coverage = computeCoverage(db, repId, stanceSnapshotHash);
-
   const evidence = expandEvidence(rawEvidence, stances);
-
   const alignment = computeRepAlignment(stances, evidence, { excludeProcedural });
+  const coverage = computeCoverage(db, repId, stanceSnapshotHash, {
+    includeZeroVoteDiagnostics: alignment.consideredVoteCount === 0,
+  });
 
   persistRepScores(db, rep, stanceSnapshotHash, alignment.perIssue, excludeProcedural);
 
@@ -259,8 +257,6 @@ export function scoreRepresentative(
     skippedNeutralPositionCount: alignment.skippedNeutralPositionCount,
     missingSignalBillCount: coverage.missingSignalBillCount,
     billsWithoutRepVotes: coverage.billsWithoutRepVotes,
-    scoredBillCount: coverage.scoredBillCount,
-    signaledBillCount: coverage.signaledBillCount,
     signalBillsMissingAlignmentCount: coverage.signalBillsMissingAlignmentCount,
     repVoteBillCount: coverage.repVoteBillCount,
     proceduralExcluded: excludeProcedural,
@@ -362,8 +358,6 @@ function safeParseMatches(matchedJson: string): StanceMatch[] {
 type CoverageStats = {
   missingSignalBillCount: number;
   billsWithoutRepVotes: number;
-  scoredBillCount: number;
-  signaledBillCount: number;
   signalBillsMissingAlignmentCount: number;
   repVoteBillCount: number;
 };
@@ -372,6 +366,7 @@ function computeCoverage(
   db: PolitiClawDb,
   repId: string,
   stanceSnapshotHash: string,
+  opts: { includeZeroVoteDiagnostics?: boolean } = {},
 ): CoverageStats {
   const missingSignal = db
     .prepare(
@@ -403,22 +398,14 @@ function computeCoverage(
     )
     .get({ hash: stanceSnapshotHash, bioguide: repId }) as { c: number };
 
-  const scoredBills = db
-    .prepare(
-      `SELECT COUNT(DISTINCT bill_id) AS c
-         FROM bill_alignment
-        WHERE stance_snapshot_hash = @hash`,
-    )
-    .get({ hash: stanceSnapshotHash }) as { c: number };
-
-  const signaledBills = db
-    .prepare(
-      `SELECT COUNT(DISTINCT bill_id) AS c
-         FROM stance_signals
-        WHERE bill_id IS NOT NULL
-          AND direction IN ('agree','disagree')`,
-    )
-    .get() as { c: number };
+  if (!opts.includeZeroVoteDiagnostics) {
+    return {
+      missingSignalBillCount: missingSignal.c,
+      billsWithoutRepVotes: billsWithoutVotes.c,
+      signalBillsMissingAlignmentCount: 0,
+      repVoteBillCount: 0,
+    };
+  }
 
   const signalBillsMissingAlignment = db
     .prepare(
@@ -447,8 +434,6 @@ function computeCoverage(
   return {
     missingSignalBillCount: missingSignal.c,
     billsWithoutRepVotes: billsWithoutVotes.c,
-    scoredBillCount: scoredBills.c,
-    signaledBillCount: signaledBills.c,
     signalBillsMissingAlignmentCount: signalBillsMissingAlignment.c,
     repVoteBillCount: repVoteBills.c,
   };

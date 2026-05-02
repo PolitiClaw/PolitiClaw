@@ -85,8 +85,6 @@ export function renderScoreRepresentativeOutput(
     skippedProceduralCount,
     missingSignalBillCount,
     billsWithoutRepVotes,
-    scoredBillCount,
-    signaledBillCount,
     signalBillsMissingAlignmentCount,
     repVoteBillCount,
     proceduralExcluded,
@@ -116,8 +114,6 @@ export function renderScoreRepresentativeOutput(
         consideredVoteCount,
         missingSignalBillCount,
         billsWithoutRepVotes,
-        scoredBillCount,
-        signaledBillCount,
         signalBillsMissingAlignmentCount,
         repVoteBillCount,
       }),
@@ -201,8 +197,6 @@ function buildCoverageHints(inputs: {
   consideredVoteCount: number;
   missingSignalBillCount: number;
   billsWithoutRepVotes: number;
-  scoredBillCount: number;
-  signaledBillCount: number;
   signalBillsMissingAlignmentCount: number;
   repVoteBillCount: number;
 }): string[] {
@@ -218,7 +212,7 @@ function buildCoverageHints(inputs: {
     hints.push(
       `  • ${inputs.signalBillsMissingAlignmentCount} bill${
         inputs.signalBillsMissingAlignmentCount === 1 ? "" : "s"
-      } have recorded stance signals but no bill-alignment row for your current stance snapshot — run politiclaw_score_bill on those bills (or politiclaw_check_upcoming_votes) to map them back to issues.`,
+      } have recorded stance signals but no bill-alignment row for your current stance snapshot. Run politiclaw_score_bill on those bills (or politiclaw_check_upcoming_votes) to map them back to issues.`,
     );
   }
   if (inputs.billsWithoutRepVotes > 0) {
@@ -233,13 +227,12 @@ function buildCoverageHints(inputs: {
       hints.push(
         "  • No roll-call votes are stored for this rep yet — call politiclaw_ingest_votes to populate House/Senate vote coverage.",
       );
-    } else if (inputs.signaledBillCount === 0) {
+    } else if (
+      inputs.missingSignalBillCount === 0 &&
+      inputs.signalBillsMissingAlignmentCount === 0
+    ) {
       hints.push(
         "  • Roll-call votes are already ingested for this rep, but you have no recorded bill-level stance signals yet — use politiclaw_record_stance_signal on specific bills to unlock rep scoring.",
-      );
-    } else if (inputs.scoredBillCount === 0 || inputs.signalBillsMissingAlignmentCount > 0) {
-      hints.push(
-        "  • Roll-call votes and bill-level stance signals exist, but the matching bills have not been scored against your current stance snapshot yet — run politiclaw_score_bill (or politiclaw_check_upcoming_votes) on those bills first.",
       );
     }
   }

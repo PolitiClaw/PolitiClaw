@@ -223,6 +223,8 @@ describe("politiclaw_score_representative tool", () => {
   });
 
   it("explains when votes are ingested but no bill-level stance signals exist", async () => {
+    // Seed one declared stance so the tool reaches coverage diagnostics instead
+    // of short-circuiting on the no-stances guard.
     upsertIssueStance(db, { issue: "defense", stance: "oppose", weight: 2 });
     db.prepare(
       `INSERT INTO reps

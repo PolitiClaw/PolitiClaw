@@ -311,6 +311,50 @@ describe("searchBills", () => {
     expect(result.bills[0]!.policyArea).toBe("Housing and Community Development");
   });
 
+  it("does not re-hydrate bills with other detail fields but no policyArea (API has answered)", async () => {
+    // Some bill types — simple/concurrent resolutions — genuinely have no
+    // policyArea per the Congress.gov API. Once detail has been fetched and
+    // returned summary/subjects/sponsors but no policyArea, we should treat
+    // that as the API's authoritative response, not a hydration candidate.
+    const db = openMemoryDb();
+    const list = async () =>
+      ({
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: [baseBill],
+        fetchedAt: Date.now(),
+      }) as AdapterResult<Bill[]>;
+    let getCalls = 0;
+    const get = async (ref: BillRef) => {
+      getCalls += 1;
+      return {
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: {
+          ...baseBill,
+          id: `${ref.congress}-${ref.billType.toLowerCase()}-${ref.number}`,
+          // Detail fields populated, but NO policyArea — mimics a procedural
+          // resolution where the API has nothing to give us for that field.
+          summaryText: "A simple resolution.",
+          subjects: ["Procedural"],
+        },
+        fetchedAt: Date.now(),
+      } as AdapterResult<Bill>;
+    };
+    const resolver = fakeResolver({ list, get });
+
+    await searchBills(db, resolver, { congress: 119, billType: "HR" });
+    expect(getCalls).toBe(1);
+
+    // Cache-path call: bill has summary/subjects but no policyArea. Filter
+    // should NOT select it — re-fetching can't recover what isn't there, and
+    // would create a hot loop on every searchBills call.
+    await searchBills(db, resolver, { congress: 119, billType: "HR" });
+    expect(getCalls).toBe(1);
+  });
+
   it("respects the hydration concurrency cap", async () => {
     const db = openMemoryDb();
     const bills: Bill[] = Array.from({ length: 10 }, (_, i) => ({

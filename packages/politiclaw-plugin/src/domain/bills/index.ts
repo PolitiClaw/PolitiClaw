@@ -1,6 +1,6 @@
 import type { PolitiClawDb } from "../../storage/sqlite.js";
 import type { BillsResolver } from "../../sources/bills/index.js";
-import type { Bill, BillListFilters, BillRef } from "../../sources/bills/types.js";
+import type { Bill, BillListFilters, BillRef, BillSponsor } from "../../sources/bills/types.js";
 
 export type StoredBill = Bill & {
   lastSynced: number;
@@ -80,6 +80,9 @@ export async function searchBills(
 
 type HydrationCandidate = {
   policyArea?: string;
+  summaryText?: string;
+  subjects?: string[];
+  sponsors?: BillSponsor[];
   congress: number;
   billType: string;
   number: string;
@@ -88,6 +91,15 @@ type HydrationCandidate = {
 /**
  * Best-effort detail hydration for bills missing `policyArea`. Skipped when no
  * tier-1 source is wired up; the scraper-only path can't help here anyway.
+ *
+ * Selection mirrors `getBillDetail`'s cache predicate so candidates aren't
+ * silently short-circuited inside the inner cache: a bill is only a candidate
+ * when it lacks `policyArea` AND has no other detail fields. Rows that already
+ * have summary/subjects/sponsors but no policyArea reflect the API's prior
+ * response (some bill types — simple/concurrent resolutions — genuinely have
+ * no policy area), so re-fetching can't recover what isn't there. Any
+ * recovery path for those rows runs through an explicit `refresh: true`.
+ *
  * Returns true when at least one bill was a hydration candidate, so the caller
  * knows whether to re-read the cache to reflect any newly-persisted rows.
  */
@@ -98,7 +110,7 @@ async function hydrateMissingDetailIfPossible(
 ): Promise<boolean> {
   if (!resolver.adapterIds().includes("congressGov")) return false;
   const refs: BillRef[] = bills
-    .filter((bill) => bill.policyArea === undefined)
+    .filter((bill) => bill.policyArea === undefined && !hasDetailFields(bill))
     .map((bill) => ({ congress: bill.congress, billType: bill.billType, number: bill.number }));
   if (refs.length === 0) return false;
   await hydrateBillsDetail(db, resolver, refs);
@@ -140,7 +152,7 @@ export async function getBillDetail(
   if (!opts.refresh) {
     const cached = readCachedBill(db, ref);
     // Only treat a cached row as a detail hit when it has detail-only fields.
-    if (cached && Date.now() - cached.lastSynced < maxAge && hasDetail(cached)) {
+    if (cached && Date.now() - cached.lastSynced < maxAge && hasDetailFields(cached)) {
       return {
         status: "ok",
         bill: cached,
@@ -168,7 +180,11 @@ export async function getBillDetail(
   };
 }
 
-function hasDetail(bill: StoredBill): boolean {
+function hasDetailFields(bill: {
+  summaryText?: string;
+  subjects?: string[];
+  sponsors?: BillSponsor[];
+}): boolean {
   return Boolean(bill.summaryText || (bill.subjects && bill.subjects.length > 0) || bill.sponsors);
 }
 

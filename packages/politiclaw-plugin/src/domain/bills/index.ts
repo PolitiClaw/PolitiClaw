@@ -88,8 +88,8 @@ type HydrationCandidate = {
 /**
  * Best-effort detail hydration for bills missing `policyArea`. Skipped when no
  * tier-1 source is wired up; the scraper-only path can't help here anyway.
- * Returns true iff at least one bill was a hydration candidate (so the caller
- * knows whether to re-read the cache to reflect any newly-persisted rows).
+ * Returns true when at least one bill was a hydration candidate, so the caller
+ * knows whether to re-read the cache to reflect any newly-persisted rows.
  */
 async function hydrateMissingDetailIfPossible(
   db: PolitiClawDb,

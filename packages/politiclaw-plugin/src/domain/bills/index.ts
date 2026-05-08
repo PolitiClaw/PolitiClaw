@@ -31,6 +31,7 @@ export type SearchOptions = {
 
 const DEFAULT_LIST_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_DETAIL_MAX_AGE_MS = 60 * 60 * 1000;
+const HYDRATION_CONCURRENCY = 3;
 
 export async function searchBills(
   db: PolitiClawDb,
@@ -58,12 +59,50 @@ export async function searchBills(
   }
 
   persistBills(db, result.data, result.adapterId, result.tier, result.fetchedAt);
+
+  // The Congress.gov list endpoint omits policyArea/summary/subjects/sponsors —
+  // those only arrive on detail. Hydrate them now so downstream scoring (which
+  // weights policyArea matches highest) has the full record. Skipped when no
+  // tier-1 source is wired up; the scraper-only path can't help here anyway.
+  const tier1Available = resolver.adapterIds().includes("congressGov");
+  if (tier1Available) {
+    const refs = result.data
+      .filter((bill) => bill.policyArea === undefined)
+      .map((bill) => ({ congress: bill.congress, billType: bill.billType, number: bill.number }));
+    if (refs.length > 0) {
+      await hydrateBillsDetail(db, resolver, refs);
+    }
+  }
+
   return {
     status: "ok",
     bills: listCachedBills(db, filters),
     fromCache: false,
     source: { adapterId: result.adapterId, tier: result.tier },
   };
+}
+
+async function hydrateBillsDetail(
+  db: PolitiClawDb,
+  resolver: BillsResolver,
+  refs: BillRef[],
+): Promise<void> {
+  const queue = [...refs];
+  const workerCount = Math.min(HYDRATION_CONCURRENCY, queue.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (queue.length > 0) {
+      const ref = queue.shift();
+      if (!ref) return;
+      try {
+        await getBillDetail(db, resolver, ref, { refresh: false });
+      } catch {
+        // Swallow: hydration is best-effort. The list call already succeeded;
+        // missing detail leaves policy_area NULL and will be retried on the
+        // next list call past DEFAULT_DETAIL_MAX_AGE_MS.
+      }
+    }
+  });
+  await Promise.all(workers);
 }
 
 export type DetailOptions = { refresh?: boolean; maxAgeMs?: number };

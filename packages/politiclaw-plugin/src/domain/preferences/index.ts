@@ -2,18 +2,23 @@ import type { PolitiClawDb } from "../../storage/sqlite.js";
 import { parse } from "../../validation/typebox.js";
 import {
   ACTION_PROMPTING_VALUES,
+  AUTO_DIRECTION_MODE_VALUES,
   AccountabilityModeSchema,
   ActionPromptingSchema,
+  AutoDirectionModeSchema,
   IssueStanceSchema,
+  LegislationReviewModelSchema,
   MONITORING_MODE_VALUES,
   MonitoringModeSchema,
   PreferencesSchema,
   StanceSignalSchema,
   type AccountabilityMode,
   type ActionPrompting,
+  type AutoDirectionMode,
   type IssueStance,
   type IssueStanceInput,
   type IssueStanceRow,
+  type LegislationReviewModel,
   type MonitoringMode,
   type Preferences,
   type PreferencesRow,
@@ -39,9 +44,12 @@ function normalizeIssueKey(issue: string): string {
 
 export {
   ACTION_PROMPTING_VALUES,
+  AUTO_DIRECTION_MODE_VALUES,
   AccountabilityModeSchema,
   ActionPromptingSchema,
+  AutoDirectionModeSchema,
   IssueStanceSchema,
+  LegislationReviewModelSchema,
   MONITORING_MODE_VALUES,
   MonitoringModeSchema,
   PreferencesSchema,
@@ -50,9 +58,11 @@ export {
 export type {
   AccountabilityMode,
   ActionPrompting,
+  AutoDirectionMode,
   IssueStance,
   IssueStanceInput,
   IssueStanceRow,
+  LegislationReviewModel,
   MonitoringMode,
   Preferences,
   PreferencesRow,
@@ -74,14 +84,17 @@ type PrefsColumnsRow = {
   monitoring_mode: MonitoringMode;
   accountability: AccountabilityMode | null;
   action_prompting: ActionPrompting;
+  auto_direction_mode: AutoDirectionMode;
+  legislation_review_model: LegislationReviewModel;
   updated_at: number;
 };
 
+const PREFS_SELECT_COLUMNS =
+  "address, zip, state, district, monitoring_mode, accountability, action_prompting, auto_direction_mode, legislation_review_model, updated_at";
+
 export function getPreferences(db: PolitiClawDb): PreferencesRow | null {
   const row = db
-    .prepare(
-      "SELECT address, zip, state, district, monitoring_mode, accountability, action_prompting, updated_at FROM preferences WHERE id = 1",
-    )
+    .prepare(`SELECT ${PREFS_SELECT_COLUMNS} FROM preferences WHERE id = 1`)
     .get() as PrefsColumnsRow | undefined;
   if (!row) return null;
   return {
@@ -92,6 +105,8 @@ export function getPreferences(db: PolitiClawDb): PreferencesRow | null {
     monitoringMode: row.monitoring_mode,
     accountability: row.accountability ?? DEFAULT_ACCOUNTABILITY,
     actionPrompting: row.action_prompting,
+    autoDirectionMode: row.auto_direction_mode,
+    legislationReviewModel: row.legislation_review_model,
     updatedAt: row.updated_at,
   };
 }
@@ -100,13 +115,15 @@ export function upsertPreferences(db: PolitiClawDb, input: Preferences): Prefere
   const parsed = parse(PreferencesSchema, normalizePreferencesInput(input));
   const existing = db
     .prepare(
-      "SELECT monitoring_mode, accountability, action_prompting FROM preferences WHERE id = 1",
+      "SELECT monitoring_mode, accountability, action_prompting, auto_direction_mode, legislation_review_model FROM preferences WHERE id = 1",
     )
     .get() as
     | {
         monitoring_mode: MonitoringMode;
         accountability: AccountabilityMode | null;
         action_prompting: ActionPrompting;
+        auto_direction_mode: AutoDirectionMode;
+        legislation_review_model: LegislationReviewModel;
       }
     | undefined;
   const mode = parsed.monitoringMode ?? existing?.monitoring_mode ?? "action_only";
@@ -114,19 +131,25 @@ export function upsertPreferences(db: PolitiClawDb, input: Preferences): Prefere
     parsed.accountability ?? existing?.accountability ?? DEFAULT_ACCOUNTABILITY;
   const actionPrompting =
     parsed.actionPrompting ?? existing?.action_prompting ?? "on";
+  const autoDirectionMode =
+    parsed.autoDirectionMode ?? existing?.auto_direction_mode ?? "off";
+  const legislationReviewModel =
+    parsed.legislationReviewModel ?? existing?.legislation_review_model ?? "";
   const now = Date.now();
   db.prepare(
-    `INSERT INTO preferences (id, address, zip, state, district, monitoring_mode, accountability, action_prompting, updated_at)
-     VALUES (1, @address, @zip, @state, @district, @monitoring_mode, @accountability, @action_prompting, @updated_at)
+    `INSERT INTO preferences (id, address, zip, state, district, monitoring_mode, accountability, action_prompting, auto_direction_mode, legislation_review_model, updated_at)
+     VALUES (1, @address, @zip, @state, @district, @monitoring_mode, @accountability, @action_prompting, @auto_direction_mode, @legislation_review_model, @updated_at)
      ON CONFLICT(id) DO UPDATE SET
-       address          = excluded.address,
-       zip              = excluded.zip,
-       state            = excluded.state,
-       district         = excluded.district,
-       monitoring_mode  = excluded.monitoring_mode,
-       accountability   = excluded.accountability,
-       action_prompting = excluded.action_prompting,
-       updated_at       = excluded.updated_at`,
+       address                  = excluded.address,
+       zip                      = excluded.zip,
+       state                    = excluded.state,
+       district                 = excluded.district,
+       monitoring_mode          = excluded.monitoring_mode,
+       accountability           = excluded.accountability,
+       action_prompting         = excluded.action_prompting,
+       auto_direction_mode      = excluded.auto_direction_mode,
+       legislation_review_model = excluded.legislation_review_model,
+       updated_at               = excluded.updated_at`,
   ).run({
     address: parsed.address,
     zip: parsed.zip ?? null,
@@ -135,6 +158,8 @@ export function upsertPreferences(db: PolitiClawDb, input: Preferences): Prefere
     monitoring_mode: mode,
     accountability,
     action_prompting: actionPrompting,
+    auto_direction_mode: autoDirectionMode,
+    legislation_review_model: legislationReviewModel,
     updated_at: now,
   });
   return {
@@ -142,15 +167,15 @@ export function upsertPreferences(db: PolitiClawDb, input: Preferences): Prefere
     monitoringMode: mode,
     accountability,
     actionPrompting,
+    autoDirectionMode,
+    legislationReviewModel,
     updatedAt: now,
   };
 }
 
 function requirePrefsRow(db: PolitiClawDb, label: string): PrefsColumnsRow {
   const existing = db
-    .prepare(
-      "SELECT address, zip, state, district, monitoring_mode, accountability, action_prompting, updated_at FROM preferences WHERE id = 1",
-    )
+    .prepare(`SELECT ${PREFS_SELECT_COLUMNS} FROM preferences WHERE id = 1`)
     .get() as PrefsColumnsRow | undefined;
   if (!existing) {
     throw new Error(
@@ -169,6 +194,8 @@ function rowFromColumns(row: PrefsColumnsRow, overrides: Partial<PreferencesRow>
     monitoringMode: row.monitoring_mode,
     accountability: row.accountability ?? DEFAULT_ACCOUNTABILITY,
     actionPrompting: row.action_prompting,
+    autoDirectionMode: row.auto_direction_mode,
+    legislationReviewModel: row.legislation_review_model,
     updatedAt: row.updated_at,
   };
   return { ...base, ...overrides };
@@ -220,6 +247,41 @@ export function setActionPrompting(
      WHERE id = 1`,
   ).run({ value: parsed, updated_at: now });
   return rowFromColumns(existing, { actionPrompting: parsed, updatedAt: now });
+}
+
+export function setAutoDirectionMode(
+  db: PolitiClawDb,
+  mode: AutoDirectionMode,
+): PreferencesRow {
+  const parsed = parse(AutoDirectionModeSchema, mode);
+  const existing = requirePrefsRow(db, "auto direction mode");
+  const now = Date.now();
+  db.prepare(
+    `UPDATE preferences
+       SET auto_direction_mode = @mode,
+           updated_at = @updated_at
+     WHERE id = 1`,
+  ).run({ mode: parsed, updated_at: now });
+  return rowFromColumns(existing, { autoDirectionMode: parsed, updatedAt: now });
+}
+
+export function setLegislationReviewModel(
+  db: PolitiClawDb,
+  modelRef: LegislationReviewModel,
+): PreferencesRow {
+  const parsed = parse(LegislationReviewModelSchema, modelRef.trim());
+  const existing = requirePrefsRow(db, "legislation review model");
+  const now = Date.now();
+  db.prepare(
+    `UPDATE preferences
+       SET legislation_review_model = @value,
+           updated_at = @updated_at
+     WHERE id = 1`,
+  ).run({ value: parsed, updated_at: now });
+  return rowFromColumns(existing, {
+    legislationReviewModel: parsed,
+    updatedAt: now,
+  });
 }
 
 export function recordStanceSignal(db: PolitiClawDb, input: StanceSignal): number {

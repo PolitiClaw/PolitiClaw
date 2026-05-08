@@ -68,7 +68,7 @@ describe("migrations", () => {
       .prepare("SELECT version FROM schema_version ORDER BY version")
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     ]);
   });
 
@@ -271,5 +271,30 @@ describe("migrations", () => {
          VALUES (1, '123 Main', null, null, null, 'shouty', 0)`,
       ).run(),
     ).toThrow(/CHECK/);
+  });
+
+  it("migration 0021 defaults preferences.legislation_review_model to empty string", () => {
+    const db = openMemoryDb();
+    db.prepare(
+      `INSERT INTO preferences (id, address, zip, state, district, updated_at)
+       VALUES (1, '123 Main', '94110', 'CA', 'CA-12', 0)`,
+    ).run();
+    const row = db
+      .prepare("SELECT legislation_review_model FROM preferences WHERE id = 1")
+      .get() as { legislation_review_model: string };
+    expect(row.legislation_review_model).toBe("");
+  });
+
+  it("migration 0021 accepts arbitrary modelRef strings", () => {
+    const db = openMemoryDb();
+    db.prepare(
+      `INSERT INTO preferences (id, address, zip, state, district,
+                                legislation_review_model, updated_at)
+       VALUES (1, '123 Main', null, null, null, 'anthropic/claude-haiku-4-5', 0)`,
+    ).run();
+    const row = db
+      .prepare("SELECT legislation_review_model FROM preferences WHERE id = 1")
+      .get() as { legislation_review_model: string };
+    expect(row.legislation_review_model).toBe("anthropic/claude-haiku-4-5");
   });
 });

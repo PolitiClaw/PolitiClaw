@@ -32,6 +32,32 @@ export const ActionPromptingSchema = Type.Union([
 
 export type ActionPrompting = Static<typeof ActionPromptingSchema>;
 
+export const AUTO_DIRECTION_MODE_VALUES = [
+  "off",
+  "supplement",
+  "co-equal",
+  "advisory",
+] as const;
+
+export const AutoDirectionModeSchema = Type.Union([
+  Type.Literal("off"),
+  Type.Literal("supplement"),
+  Type.Literal("co-equal"),
+  Type.Literal("advisory"),
+]);
+
+export type AutoDirectionMode = Static<typeof AutoDirectionModeSchema>;
+
+/**
+ * Optional override for the model used to classify whether a bill advances
+ * or obstructs a user's stance. Empty string means "use OpenClaw's resolved
+ * default model"; non-empty is passed through to OpenClaw as `modelRef`,
+ * e.g. "anthropic/claude-haiku-4-5".
+ */
+export const LegislationReviewModelSchema = Type.String();
+
+export type LegislationReviewModel = Static<typeof LegislationReviewModelSchema>;
+
 /**
  * Schema for user preferences. Validates the *normalized* shape:
  * `zip`, `state`, and `district` are expected pre-trimmed, and `state`
@@ -52,6 +78,8 @@ export const PreferencesSchema = Type.Object({
   monitoringMode: Type.Optional(MonitoringModeSchema),
   accountability: Type.Optional(AccountabilityModeSchema),
   actionPrompting: Type.Optional(ActionPromptingSchema),
+  autoDirectionMode: Type.Optional(AutoDirectionModeSchema),
+  legislationReviewModel: Type.Optional(LegislationReviewModelSchema),
 });
 
 export type Preferences = Static<typeof PreferencesSchema>;
@@ -60,6 +88,8 @@ export type PreferencesRow = Preferences & {
   monitoringMode: MonitoringMode;
   accountability: AccountabilityMode;
   actionPrompting: ActionPrompting;
+  autoDirectionMode: AutoDirectionMode;
+  legislationReviewModel: LegislationReviewModel;
   updatedAt: number;
 };
 

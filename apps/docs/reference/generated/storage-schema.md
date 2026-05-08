@@ -2,7 +2,7 @@
 
 This page is generated from a real in-memory SQLite database after migrations run.
 
-Migration count: 20.
+Migration count: 21.
 
 ## Schema overview
 
@@ -186,6 +186,7 @@ erDiagram
     TEXT accountability
     TEXT action_prompting
     TEXT auto_direction_mode
+    TEXT legislation_review_model
   }
   reminders {
     INTEGER id PK
@@ -300,6 +301,7 @@ erDiagram
 - `packages/politiclaw-plugin/src/storage/migrations/0018_issue_stance_notes.sql`
 - `packages/politiclaw-plugin/src/storage/migrations/0019_stance_signals_drop_issue.sql`
 - `packages/politiclaw-plugin/src/storage/migrations/0020_auto_direction.sql`
+- `packages/politiclaw-plugin/src/storage/migrations/0021_legislation_review_model.sql`
 
 ## Tables
 
@@ -756,6 +758,7 @@ CREATE TABLE mute_list (
 | `accountability` | `TEXT` | yes | no | `'self_serve'` |
 | `action_prompting` | `TEXT` | yes | no | `'on'` |
 | `auto_direction_mode` | `TEXT` | yes | no | `'off'` |
+| `legislation_review_model` | `TEXT` | yes | no | `''` |
 
 ```sql
 CREATE TABLE "preferences" (
@@ -770,7 +773,7 @@ CREATE TABLE "preferences" (
 , accountability TEXT NOT NULL DEFAULT 'self_serve'
   CHECK (accountability IN ('self_serve','nudge_me','draft_for_me')), action_prompting TEXT NOT NULL DEFAULT 'on'
   CHECK (action_prompting IN ('off','on')), auto_direction_mode TEXT NOT NULL DEFAULT 'off'
-  CHECK (auto_direction_mode IN ('off','supplement','co-equal','advisory')))
+  CHECK (auto_direction_mode IN ('off','supplement','co-equal','advisory')), legislation_review_model TEXT NOT NULL DEFAULT '')
 ```
 
 ### reminders

@@ -1007,17 +1007,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function collectManifestAndPackagingIssues(): PublishedDocPolicyIssue[] {
-  // Catches the five kinds of drift surfaced over the last few PRs:
+  // Catches the five kinds of drift surfaced over the last few PRs, listed
+  // in the order they are checked below:
   //   (1) openclaw.plugin.json:version falling behind package.json:version,
   //   (2) hidden-doc shorthand (tier-N, ADR-N, §N, Phase Na) sneaking back
   //       into the user-visible manifest, banned by AGENTS.md,
-  //   (3) the openclaw.compat / openclaw.build / openclaw.runtimeExtensions
-  //       fields required by docs.openclaw.ai/plugins/building-plugins
-  //       getting dropped during a refactor,
-  //   (4) plugin-owned tools registered at runtime but omitted from
+  //   (3) plugin-owned tools registered at runtime but omitted from
   //       openclaw.plugin.json:contracts.tools, which breaks tool discovery
   //       per docs.openclaw.ai/plugins/building-plugins and
   //       docs.openclaw.ai/plugins/manifest,
+  //   (4) the openclaw.compat / openclaw.build / openclaw.runtimeExtensions
+  //       fields required by docs.openclaw.ai/plugins/building-plugins
+  //       getting dropped during a refactor,
   //   (5) source files reverting to the deprecated monolithic
   //       `from "openclaw/plugin-sdk"` root import.
   const issues: PublishedDocPolicyIssue[] = [];

@@ -1,6 +1,12 @@
 import { Type } from "@sinclair/typebox";
-import type { AnyAgentTool } from "openclaw/plugin-sdk/plugin-entry";
+import type {
+  AnyAgentTool,
+  OpenClawPluginToolContext,
+  OpenClawPluginToolFactory,
+} from "openclaw/plugin-sdk/plugin-entry";
 
+import { getPreferences } from "../domain/preferences/index.js";
+import { buildDirectionLlmClient } from "../domain/scoring/directionLlm.js";
 import {
   ALIGNMENT_DISCLAIMER,
   CONFIDENCE_FLOOR,
@@ -15,10 +21,11 @@ import { getPluginConfig, getStorage } from "../storage/context.js";
 import { safeParse } from "../validation/typebox.js";
 
 /**
- * Test seam: production currently has no LLM transport wired, so by default
- * `scoreBill` runs without direction classification. Tests inject a fake
- * client via `setDirectionLlmForTests` to exercise the directional-framing
- * output without coupling to a real LLM SDK.
+ * Test seam: tests inject a fake client via `setDirectionLlmForTests` to
+ * exercise the directional-framing output without coupling to a real LLM
+ * SDK or OpenClaw's runtime. When unset and a runtime context is available,
+ * the factory pulls a real LLM client from OpenClaw's simple-completion API
+ * scoped to the user's `legislation_review_model` preference.
  */
 let directionLlmOverride: LlmClient | null = null;
 
@@ -166,50 +173,105 @@ function renderDirectionSection(direction: readonly DirectionForStance[]): strin
   return lines;
 }
 
+const SCORE_BILL_DESCRIPTION =
+  "Compute how much a federal bill touches the user's declared issue stances. " +
+  "Deterministic (no LLM): matches policy area, subjects, title, and summary against " +
+  "each declared stance. Reports relevance and confidence; confidence below the " +
+  `${CONFIDENCE_FLOOR} floor renders as "insufficient data". ` +
+  "Rationale names specific matched subjects (never abstract generalities). " +
+  "Requires declared issue stances (see politiclaw_issue_stances with action='set') and " +
+  "plugins.entries.politiclaw.config.apiKeys.apiDataGov for the bill source.";
+
+async function executeScoreBill(
+  rawParams: unknown,
+  llm: LlmClient | undefined,
+): Promise<ReturnType<typeof textResult<ScoreBillResult | { status: "invalid" }>>> {
+  const parsed = safeParse(ScoreBillParams, rawParams);
+  if (!parsed.ok) {
+    return textResult(
+      `Invalid input: ${parsed.messages.join("; ")}`,
+      { status: "invalid" },
+    );
+  }
+
+  // Cross-field "billId, or congress+billType+number" was a Zod refine;
+  // parseBillRef returns null for either-shape failures and we report it.
+  const ref = parseBillRef(parsed.data);
+  if (!ref) {
+    return textResult(
+      "Could not parse bill reference. Use billId like '119-hr-1234' or congress + billType + number.",
+      { status: "invalid" },
+    );
+  }
+
+  const { db } = getStorage();
+  const cfg = getPluginConfig();
+  const resolver = createBillsResolver({
+    apiDataGovKey: cfg.apiKeys?.apiDataGov,
+    scraperBaseUrl: cfg.sources?.bills?.scraperBaseUrl,
+  });
+
+  const result = await scoreBill(db, resolver, ref, {
+    refresh: parsed.data.refresh,
+    llm,
+  });
+  return textResult(renderScoreBillOutput(result), result);
+}
+
+/**
+ * Static tool metadata. The runtime registers the factory below so the
+ * tool's execute can close over per-call OpenClaw context (config, agentId)
+ * for the directional classifier. Tests still call this object's execute
+ * directly to exercise the test seam.
+ */
 export const scoreBillTool: AnyAgentTool = {
   name: "politiclaw_score_bill",
   label: "Score a bill against your declared stances",
-  description:
-    "Compute how much a federal bill touches the user's declared issue stances. " +
-    "Deterministic (no LLM): matches policy area, subjects, title, and summary against " +
-    "each declared stance. Reports relevance and confidence; confidence below the " +
-    `${CONFIDENCE_FLOOR} floor renders as "insufficient data". ` +
-    "Rationale names specific matched subjects (never abstract generalities). " +
-    "Requires declared issue stances (see politiclaw_issue_stances with action='set') and " +
-    "plugins.entries.politiclaw.config.apiKeys.apiDataGov for the bill source.",
+  description: SCORE_BILL_DESCRIPTION,
   parameters: ScoreBillParams,
   async execute(_toolCallId, rawParams) {
-    const parsed = safeParse(ScoreBillParams, rawParams);
-    if (!parsed.ok) {
-      return textResult(
-        `Invalid input: ${parsed.messages.join("; ")}`,
-        { status: "invalid" },
-      );
-    }
-
-    // Cross-field "billId, or congress+billType+number" was a Zod refine;
-    // parseBillRef returns null for either-shape failures and we report it.
-    const ref = parseBillRef(parsed.data);
-    if (!ref) {
-      return textResult(
-        "Could not parse bill reference. Use billId like '119-hr-1234' or congress + billType + number.",
-        { status: "invalid" },
-      );
-    }
-
-    const { db } = getStorage();
-    const cfg = getPluginConfig();
-    const resolver = createBillsResolver({
-      apiDataGovKey: cfg.apiKeys?.apiDataGov,
-      scraperBaseUrl: cfg.sources?.bills?.scraperBaseUrl,
-    });
-
-    const result = await scoreBill(db, resolver, ref, {
-      refresh: parsed.data.refresh,
-      llm: directionLlmOverride ?? undefined,
-    });
-    return textResult(renderScoreBillOutput(result), result);
+    return executeScoreBill(rawParams, directionLlmOverride ?? undefined);
   },
 };
 
+/**
+ * Per-call resolver for an LLM client used by the directional classifier.
+ * Returns null when:
+ * - the user has `auto_direction_mode = 'off'`,
+ * - the OpenClaw context is missing config or agentId,
+ * - or OpenClaw can't resolve a usable provider (no auth, no default
+ *   model, etc.).
+ *
+ * Returning null causes `scoreBill` to skip direction classification for
+ * this call without erroring.
+ */
+async function resolveDirectionLlm(
+  ctx: OpenClawPluginToolContext,
+): Promise<LlmClient | null> {
+  const { db } = getStorage();
+  const prefs = getPreferences(db);
+  if (!prefs || prefs.autoDirectionMode === "off") return null;
+  return buildDirectionLlmClient({
+    config: ctx.config,
+    agentId: ctx.agentId,
+    modelRef: prefs.legislationReviewModel,
+  });
+}
+
+export const scoreBillToolFactory: OpenClawPluginToolFactory = (ctx) => ({
+  name: "politiclaw_score_bill",
+  label: "Score a bill against your declared stances",
+  description: SCORE_BILL_DESCRIPTION,
+  parameters: ScoreBillParams,
+  async execute(_toolCallId, rawParams) {
+    const llm = directionLlmOverride ?? (await resolveDirectionLlm(ctx)) ?? undefined;
+    return executeScoreBill(rawParams, llm);
+  },
+});
+
 export const scoringTools: AnyAgentTool[] = [scoreBillTool];
+
+export const scoringToolFactoryPairs: ReadonlyArray<{
+  tool: AnyAgentTool;
+  factory: OpenClawPluginToolFactory;
+}> = [{ tool: scoreBillTool, factory: scoreBillToolFactory }];

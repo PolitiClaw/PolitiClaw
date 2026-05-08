@@ -3,6 +3,29 @@
   "name": "PolitiClaw",
   "description": "Local-first civic copilot that holds your representatives accountable to the values you declare. Learns the stances you care about, watches federal legislation and elections for you, and flags when your reps' votes and actions align — or don't — with those stances. Drafts letters you send yourself; never speaks on your behalf and never tells you how to vote.",
   "version": "0.0.14",
+  "contracts": {
+    "tools": [
+      "politiclaw_configure",
+      "politiclaw_issue_stances",
+      "politiclaw_record_stance_signal",
+      "politiclaw_get_my_reps",
+      "politiclaw_score_representative",
+      "politiclaw_rep_report",
+      "politiclaw_search_bills",
+      "politiclaw_get_bill_details",
+      "politiclaw_score_bill",
+      "politiclaw_ingest_votes",
+      "politiclaw_get_my_ballot",
+      "politiclaw_election_brief",
+      "politiclaw_check_upcoming_votes",
+      "politiclaw_mutes",
+      "politiclaw_create_reminder",
+      "politiclaw_action_moments",
+      "politiclaw_research_finance",
+      "politiclaw_draft_outreach",
+      "politiclaw_doctor"
+    ]
+  },
   "skills": [
     "skills"
   ],

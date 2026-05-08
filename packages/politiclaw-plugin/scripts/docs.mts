@@ -1007,14 +1007,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function collectManifestAndPackagingIssues(): PublishedDocPolicyIssue[] {
-  // Catches the four kinds of drift surfaced over the last few PRs:
+  // Catches the five kinds of drift surfaced over the last few PRs:
   //   (1) openclaw.plugin.json:version falling behind package.json:version,
   //   (2) hidden-doc shorthand (tier-N, ADR-N, §N, Phase Na) sneaking back
   //       into the user-visible manifest, banned by AGENTS.md,
   //   (3) the openclaw.compat / openclaw.build / openclaw.runtimeExtensions
   //       fields required by docs.openclaw.ai/plugins/building-plugins
   //       getting dropped during a refactor,
-  //   (4) source files reverting to the deprecated monolithic
+  //   (4) plugin-owned tools registered at runtime but omitted from
+  //       openclaw.plugin.json:contracts.tools, which breaks tool discovery
+  //       per docs.openclaw.ai/plugins/building-plugins and
+  //       docs.openclaw.ai/plugins/manifest,
+  //   (5) source files reverting to the deprecated monolithic
   //       `from "openclaw/plugin-sdk"` root import.
   const issues: PublishedDocPolicyIssue[] = [];
   const manifestPath = join(pluginRoot, "openclaw.plugin.json");
@@ -1079,6 +1083,35 @@ function collectManifestAndPackagingIssues(): PublishedDocPolicyIssue[] {
           `is user-visible and must be self-contained per AGENTS.md`,
       });
     }
+  }
+
+  const expectedToolContracts = REGISTERED_POLITICLAW_TOOL_DOCS.map((entry) => entry.tool.name).sort();
+  const contractsBlock = isRecord(manifest.contracts) ? manifest.contracts : {};
+  const manifestToolContracts = Array.isArray(contractsBlock.tools)
+    ? contractsBlock.tools.filter((value): value is string => typeof value === "string").sort()
+    : [];
+  const missingToolContracts = expectedToolContracts.filter(
+    (toolName) => !manifestToolContracts.includes(toolName),
+  );
+  const extraToolContracts = manifestToolContracts.filter(
+    (toolName) => !expectedToolContracts.includes(toolName),
+  );
+  if (missingToolContracts.length > 0 || extraToolContracts.length > 0) {
+    const detail = [
+      missingToolContracts.length > 0
+        ? `missing: ${missingToolContracts.join(", ")}`
+        : null,
+      extraToolContracts.length > 0 ? `extra: ${extraToolContracts.join(", ")}` : null,
+    ]
+      .filter(Boolean)
+      .join("; ");
+    issues.push({
+      file: manifestRel,
+      message:
+        `contracts.tools must match the runtime tool registry per ` +
+        `docs.openclaw.ai/plugins/building-plugins and ` +
+        `docs.openclaw.ai/plugins/manifest (${detail})`,
+    });
   }
 
   const openclawBlock = isRecord(packageJson.openclaw) ? packageJson.openclaw : {};

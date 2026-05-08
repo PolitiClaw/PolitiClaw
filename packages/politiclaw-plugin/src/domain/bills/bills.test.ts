@@ -261,6 +261,56 @@ describe("searchBills", () => {
     expect(getCalls).toBe(1);
   });
 
+  it("heals stale cached bills missing policy_area on a subsequent cache-hit call", async () => {
+    const db = openMemoryDb();
+
+    // First call: list returns the bill, but the default fake `get` is unavailable
+    // so hydration silently fails. Bill lands in cache with policy_area = NULL.
+    const list = async () =>
+      ({
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: [baseBill],
+        fetchedAt: Date.now(),
+      }) as AdapterResult<Bill[]>;
+    await searchBills(db, fakeResolver({ list }), { congress: 119, billType: "HR" });
+
+    const cachedBefore = listCachedBills(db, { congress: 119, billType: "HR" });
+    expect(cachedBefore[0]!.policyArea).toBeUndefined();
+
+    // Second call hits the list cache (no list re-fetch) but a working `get` is now
+    // available — cached-path hydration should repair the row before returning.
+    let getCalls = 0;
+    const get = async (ref: BillRef) => {
+      getCalls += 1;
+      return {
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: {
+          ...baseBill,
+          id: `${ref.congress}-${ref.billType.toLowerCase()}-${ref.number}`,
+          policyArea: "Housing and Community Development",
+          subjects: ["Affordable housing"],
+          summaryText: "Authorizes grants.",
+        },
+        fetchedAt: Date.now(),
+      } as AdapterResult<Bill>;
+    };
+
+    const result = await searchBills(db, fakeResolver({ get }), {
+      congress: 119,
+      billType: "HR",
+    });
+
+    expect(getCalls).toBe(1);
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    expect(result.fromCache).toBe(true);
+    expect(result.bills[0]!.policyArea).toBe("Housing and Community Development");
+  });
+
   it("respects the hydration concurrency cap", async () => {
     const db = openMemoryDb();
     const bills: Bill[] = Array.from({ length: 10 }, (_, i) => ({

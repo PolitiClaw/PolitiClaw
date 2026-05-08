@@ -44,9 +44,14 @@ export async function searchBills(
     const cached = listCachedBills(db, filters);
     if (cached.length > 0 && cached.every((row) => Date.now() - row.lastSynced < maxAge)) {
       const first = cached[0]!;
+      // Heal stale rows that pre-date this code path (or whose detail-fetch
+      // previously failed). Without this, bills cached within the 6h list TTL
+      // would never get their policy_area / summary / subjects / sponsors
+      // populated until that TTL expired or the caller passed refresh=true.
+      const hydrated = await hydrateMissingDetailIfPossible(db, resolver, cached);
       return {
         status: "ok",
-        bills: cached,
+        bills: hydrated ? listCachedBills(db, filters) : cached,
         fromCache: true,
         source: { adapterId: first.sourceAdapterId, tier: first.sourceTier },
       };
@@ -62,17 +67,8 @@ export async function searchBills(
 
   // The Congress.gov list endpoint omits policyArea/summary/subjects/sponsors —
   // those only arrive on detail. Hydrate them now so downstream scoring (which
-  // weights policyArea matches highest) has the full record. Skipped when no
-  // tier-1 source is wired up; the scraper-only path can't help here anyway.
-  const tier1Available = resolver.adapterIds().includes("congressGov");
-  if (tier1Available) {
-    const refs = result.data
-      .filter((bill) => bill.policyArea === undefined)
-      .map((bill) => ({ congress: bill.congress, billType: bill.billType, number: bill.number }));
-    if (refs.length > 0) {
-      await hydrateBillsDetail(db, resolver, refs);
-    }
-  }
+  // weights policyArea matches highest) has the full record.
+  await hydrateMissingDetailIfPossible(db, resolver, result.data);
 
   return {
     status: "ok",
@@ -80,6 +76,33 @@ export async function searchBills(
     fromCache: false,
     source: { adapterId: result.adapterId, tier: result.tier },
   };
+}
+
+type HydrationCandidate = {
+  policyArea?: string;
+  congress: number;
+  billType: string;
+  number: string;
+};
+
+/**
+ * Best-effort detail hydration for bills missing `policyArea`. Skipped when no
+ * tier-1 source is wired up; the scraper-only path can't help here anyway.
+ * Returns true iff at least one bill was a hydration candidate (so the caller
+ * knows whether to re-read the cache to reflect any newly-persisted rows).
+ */
+async function hydrateMissingDetailIfPossible(
+  db: PolitiClawDb,
+  resolver: BillsResolver,
+  bills: ReadonlyArray<HydrationCandidate>,
+): Promise<boolean> {
+  if (!resolver.adapterIds().includes("congressGov")) return false;
+  const refs: BillRef[] = bills
+    .filter((bill) => bill.policyArea === undefined)
+    .map((bill) => ({ congress: bill.congress, billType: bill.billType, number: bill.number }));
+  if (refs.length === 0) return false;
+  await hydrateBillsDetail(db, resolver, refs);
+  return true;
 }
 
 async function hydrateBillsDetail(

@@ -1,6 +1,6 @@
 import type { PolitiClawDb } from "../../storage/sqlite.js";
 import type { BillsResolver } from "../../sources/bills/index.js";
-import type { Bill, BillListFilters, BillRef } from "../../sources/bills/types.js";
+import type { Bill, BillListFilters, BillRef, BillSponsor } from "../../sources/bills/types.js";
 
 export type StoredBill = Bill & {
   lastSynced: number;
@@ -31,6 +31,7 @@ export type SearchOptions = {
 
 const DEFAULT_LIST_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_DETAIL_MAX_AGE_MS = 60 * 60 * 1000;
+const HYDRATION_CONCURRENCY = 3;
 
 export async function searchBills(
   db: PolitiClawDb,
@@ -43,9 +44,14 @@ export async function searchBills(
     const cached = listCachedBills(db, filters);
     if (cached.length > 0 && cached.every((row) => Date.now() - row.lastSynced < maxAge)) {
       const first = cached[0]!;
+      // Heal stale rows that pre-date this code path (or whose detail-fetch
+      // previously failed). Without this, bills cached within the 6h list TTL
+      // would never get their policy_area / summary / subjects / sponsors
+      // populated until that TTL expired or the caller passed refresh=true.
+      const hydrated = await hydrateMissingDetailIfPossible(db, resolver, cached);
       return {
         status: "ok",
-        bills: cached,
+        bills: hydrated ? listCachedBills(db, filters) : cached,
         fromCache: true,
         source: { adapterId: first.sourceAdapterId, tier: first.sourceTier },
       };
@@ -58,12 +64,80 @@ export async function searchBills(
   }
 
   persistBills(db, result.data, result.adapterId, result.tier, result.fetchedAt);
+
+  // The Congress.gov list endpoint omits policyArea/summary/subjects/sponsors —
+  // those only arrive on detail. Hydrate them now so downstream scoring (which
+  // weights policyArea matches highest) has the full record.
+  await hydrateMissingDetailIfPossible(db, resolver, result.data);
+
   return {
     status: "ok",
     bills: listCachedBills(db, filters),
     fromCache: false,
     source: { adapterId: result.adapterId, tier: result.tier },
   };
+}
+
+type HydrationCandidate = {
+  policyArea?: string;
+  summaryText?: string;
+  subjects?: string[];
+  sponsors?: BillSponsor[];
+  congress: number;
+  billType: string;
+  number: string;
+};
+
+/**
+ * Best-effort detail hydration for bills missing `policyArea`. Skipped when no
+ * tier-1 source is wired up; the scraper-only path can't help here anyway.
+ *
+ * Selection mirrors `getBillDetail`'s cache predicate so candidates aren't
+ * silently short-circuited inside the inner cache: a bill is only a candidate
+ * when it lacks `policyArea` AND has no other detail fields. Rows that already
+ * have summary/subjects/sponsors but no policyArea reflect the API's prior
+ * response (some bill types — simple/concurrent resolutions — genuinely have
+ * no policy area), so re-fetching can't recover what isn't there. Any
+ * recovery path for those rows runs through an explicit `refresh: true`.
+ *
+ * Returns true when at least one bill was a hydration candidate, so the caller
+ * knows whether to re-read the cache to reflect any newly-persisted rows.
+ */
+async function hydrateMissingDetailIfPossible(
+  db: PolitiClawDb,
+  resolver: BillsResolver,
+  bills: ReadonlyArray<HydrationCandidate>,
+): Promise<boolean> {
+  if (!resolver.adapterIds().includes("congressGov")) return false;
+  const refs: BillRef[] = bills
+    .filter((bill) => bill.policyArea === undefined && !hasDetailFields(bill))
+    .map((bill) => ({ congress: bill.congress, billType: bill.billType, number: bill.number }));
+  if (refs.length === 0) return false;
+  await hydrateBillsDetail(db, resolver, refs);
+  return true;
+}
+
+async function hydrateBillsDetail(
+  db: PolitiClawDb,
+  resolver: BillsResolver,
+  refs: BillRef[],
+): Promise<void> {
+  const queue = [...refs];
+  const workerCount = Math.min(HYDRATION_CONCURRENCY, queue.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (queue.length > 0) {
+      const ref = queue.shift();
+      if (!ref) return;
+      try {
+        await getBillDetail(db, resolver, ref, { refresh: false });
+      } catch {
+        // Swallow: hydration is best-effort. The list call already succeeded;
+        // missing detail leaves policy_area NULL and will be retried on the
+        // next list call past DEFAULT_DETAIL_MAX_AGE_MS.
+      }
+    }
+  });
+  await Promise.all(workers);
 }
 
 export type DetailOptions = { refresh?: boolean; maxAgeMs?: number };
@@ -78,7 +152,7 @@ export async function getBillDetail(
   if (!opts.refresh) {
     const cached = readCachedBill(db, ref);
     // Only treat a cached row as a detail hit when it has detail-only fields.
-    if (cached && Date.now() - cached.lastSynced < maxAge && hasDetail(cached)) {
+    if (cached && Date.now() - cached.lastSynced < maxAge && hasDetailFields(cached)) {
       return {
         status: "ok",
         bill: cached,
@@ -106,7 +180,11 @@ export async function getBillDetail(
   };
 }
 
-function hasDetail(bill: StoredBill): boolean {
+function hasDetailFields(bill: {
+  summaryText?: string;
+  subjects?: string[];
+  sponsors?: BillSponsor[];
+}): boolean {
   return Boolean(bill.summaryText || (bill.subjects && bill.subjects.length > 0) || bill.sponsors);
 }
 

@@ -13,7 +13,16 @@ function fakeResolver(overrides: {
   // then replace its methods with test doubles.
   const resolver = createBillsResolver({ apiDataGovKey: "k" });
   if (overrides.list) resolver.list = overrides.list;
-  if (overrides.get) resolver.get = overrides.get;
+  // Default `get` to a hermetic unavailable so detail-hydration in searchBills
+  // never reaches the real network when a test doesn't supply its own get.
+  resolver.get =
+    overrides.get ??
+    (async () =>
+      ({
+        status: "unavailable",
+        adapterId: "congressGov",
+        reason: "test fake: get not stubbed",
+      }) as AdapterResult<Bill>);
   return resolver;
 }
 
@@ -126,6 +135,271 @@ describe("searchBills", () => {
     });
     expect(cached).toHaveLength(1);
     expect(cached[0]!.id).toBe("119-hr-1234");
+  });
+
+  it("hydrates detail-only fields (policy_area, summary, subjects, sponsors) for list-shape bills", async () => {
+    const db = openMemoryDb();
+    const list = async () =>
+      ({
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: [baseBill],
+        fetchedAt: Date.now(),
+      }) as AdapterResult<Bill[]>;
+    const get = async (ref: BillRef) =>
+      ({
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: {
+          ...baseBill,
+          id: `${ref.congress}-${ref.billType.toLowerCase()}-${ref.number}`,
+          policyArea: "Housing and Community Development",
+          subjects: ["Affordable housing"],
+          summaryText: "Authorizes grants for affordable housing.",
+          sponsors: [{ bioguideId: "P000197", fullName: "Rep. Pelosi" }],
+        },
+        fetchedAt: Date.now(),
+      }) as AdapterResult<Bill>;
+
+    const result = await searchBills(db, fakeResolver({ list, get }), {
+      congress: 119,
+      billType: "HR",
+    });
+
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    expect(result.bills[0]!.policyArea).toBe("Housing and Community Development");
+    expect(result.bills[0]!.subjects).toEqual(["Affordable housing"]);
+    expect(result.bills[0]!.summaryText).toContain("housing");
+    expect(result.bills[0]!.sponsors?.[0]?.bioguideId).toBe("P000197");
+  });
+
+  it("treats hydration failures as non-fatal — list still succeeds for the rest", async () => {
+    const db = openMemoryDb();
+    const otherBill: Bill = {
+      ...baseBill,
+      id: "119-hr-5678",
+      number: "5678",
+      title: "Carbon Border Adjustment Act",
+    };
+    const list = async () =>
+      ({
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: [baseBill, otherBill],
+        fetchedAt: Date.now(),
+      }) as AdapterResult<Bill[]>;
+    const get = async (ref: BillRef) => {
+      if (ref.number === "5678") {
+        return {
+          status: "unavailable",
+          adapterId: "congressGov",
+          reason: "404 not found",
+        } as AdapterResult<Bill>;
+      }
+      return {
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: { ...baseBill, policyArea: "Housing and Community Development" },
+        fetchedAt: Date.now(),
+      } as AdapterResult<Bill>;
+    };
+
+    const result = await searchBills(db, fakeResolver({ list, get }), {
+      congress: 119,
+      billType: "HR",
+    });
+
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    expect(result.bills).toHaveLength(2);
+    const hydrated = result.bills.find((b) => b.number === "1234");
+    const failed = result.bills.find((b) => b.number === "5678");
+    expect(hydrated?.policyArea).toBe("Housing and Community Development");
+    expect(failed?.policyArea).toBeUndefined();
+  });
+
+  it("does not re-hydrate bills already populated within DEFAULT_DETAIL_MAX_AGE_MS", async () => {
+    const db = openMemoryDb();
+    const list = async () =>
+      ({
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: [baseBill],
+        fetchedAt: Date.now(),
+      }) as AdapterResult<Bill[]>;
+    let getCalls = 0;
+    const get = async (ref: BillRef) => {
+      getCalls += 1;
+      return {
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: {
+          ...baseBill,
+          id: `${ref.congress}-${ref.billType.toLowerCase()}-${ref.number}`,
+          policyArea: "Housing and Community Development",
+          subjects: ["Affordable housing"],
+          summaryText: "Summary text.",
+        },
+        fetchedAt: Date.now(),
+      } as AdapterResult<Bill>;
+    };
+    const resolver = fakeResolver({ list, get });
+
+    await searchBills(db, resolver, { congress: 119, billType: "HR" });
+    expect(getCalls).toBe(1);
+
+    // Force a refresh on the list path; cached detail should still be honored
+    // by getBillDetail's own freshness check (1h TTL), so no extra get call.
+    await searchBills(db, resolver, { congress: 119, billType: "HR" }, { refresh: true });
+    expect(getCalls).toBe(1);
+  });
+
+  it("heals stale cached bills missing policy_area on a subsequent cache-hit call", async () => {
+    const db = openMemoryDb();
+
+    // First call: list returns the bill, but the default fake `get` is unavailable
+    // so hydration silently fails. Bill lands in cache with policy_area = NULL.
+    const list = async () =>
+      ({
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: [baseBill],
+        fetchedAt: Date.now(),
+      }) as AdapterResult<Bill[]>;
+    await searchBills(db, fakeResolver({ list }), { congress: 119, billType: "HR" });
+
+    const cachedBefore = listCachedBills(db, { congress: 119, billType: "HR" });
+    expect(cachedBefore[0]!.policyArea).toBeUndefined();
+
+    // Second call hits the list cache (no list re-fetch) but a working `get` is now
+    // available — cached-path hydration should repair the row before returning.
+    let getCalls = 0;
+    const get = async (ref: BillRef) => {
+      getCalls += 1;
+      return {
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: {
+          ...baseBill,
+          id: `${ref.congress}-${ref.billType.toLowerCase()}-${ref.number}`,
+          policyArea: "Housing and Community Development",
+          subjects: ["Affordable housing"],
+          summaryText: "Authorizes grants.",
+        },
+        fetchedAt: Date.now(),
+      } as AdapterResult<Bill>;
+    };
+
+    const result = await searchBills(db, fakeResolver({ get }), {
+      congress: 119,
+      billType: "HR",
+    });
+
+    expect(getCalls).toBe(1);
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    expect(result.fromCache).toBe(true);
+    expect(result.bills[0]!.policyArea).toBe("Housing and Community Development");
+  });
+
+  it("does not re-hydrate bills with other detail fields but no policyArea (API has answered)", async () => {
+    // Some bill types — simple/concurrent resolutions — genuinely have no
+    // policyArea per the Congress.gov API. Once detail has been fetched and
+    // returned summary/subjects/sponsors but no policyArea, we should treat
+    // that as the API's authoritative response, not a hydration candidate.
+    const db = openMemoryDb();
+    const list = async () =>
+      ({
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: [baseBill],
+        fetchedAt: Date.now(),
+      }) as AdapterResult<Bill[]>;
+    let getCalls = 0;
+    const get = async (ref: BillRef) => {
+      getCalls += 1;
+      return {
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: {
+          ...baseBill,
+          id: `${ref.congress}-${ref.billType.toLowerCase()}-${ref.number}`,
+          // Detail fields populated, but NO policyArea — mimics a procedural
+          // resolution where the API has nothing to give us for that field.
+          summaryText: "A simple resolution.",
+          subjects: ["Procedural"],
+        },
+        fetchedAt: Date.now(),
+      } as AdapterResult<Bill>;
+    };
+    const resolver = fakeResolver({ list, get });
+
+    await searchBills(db, resolver, { congress: 119, billType: "HR" });
+    expect(getCalls).toBe(1);
+
+    // Cache-path call: bill has summary/subjects but no policyArea. Filter
+    // should NOT select it — re-fetching can't recover what isn't there, and
+    // would create a hot loop on every searchBills call.
+    await searchBills(db, resolver, { congress: 119, billType: "HR" });
+    expect(getCalls).toBe(1);
+  });
+
+  it("respects the hydration concurrency cap", async () => {
+    const db = openMemoryDb();
+    const bills: Bill[] = Array.from({ length: 10 }, (_, i) => ({
+      ...baseBill,
+      id: `119-hr-${1000 + i}`,
+      number: String(1000 + i),
+    }));
+    const list = async () =>
+      ({
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: bills,
+        fetchedAt: Date.now(),
+      }) as AdapterResult<Bill[]>;
+
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const get = async (ref: BillRef) => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      inFlight -= 1;
+      return {
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: {
+          ...baseBill,
+          id: `${ref.congress}-${ref.billType.toLowerCase()}-${ref.number}`,
+          number: ref.number,
+          policyArea: "Housing and Community Development",
+          summaryText: "s",
+        },
+        fetchedAt: Date.now(),
+      } as AdapterResult<Bill>;
+    };
+
+    await searchBills(db, fakeResolver({ list, get }), {
+      congress: 119,
+      billType: "HR",
+    });
+
+    expect(maxInFlight).toBeLessThanOrEqual(3);
+    expect(maxInFlight).toBeGreaterThan(0);
   });
 
   it("surfaces adapter unavailability with actionable guidance", async () => {

@@ -376,10 +376,10 @@ describe("buildStatusPayload", () => {
       });
       // Seed bill_alignment the scorer needs to see the bill as issue-relevant.
       db.prepare(
-        `INSERT INTO bill_alignment (bill_id, stance_snapshot_hash, relevance,
-                                     confidence, matched_json, rationale,
+        `INSERT INTO bill_alignment (bill_id, bill_update_date, stance_snapshot_hash,
+                                     relevance, confidence, matched_json, rationale,
                                      computed_at, source_adapter_id, source_tier)
-         VALUES (@bill, @hash, 0.8, 0.7, @matched, 'r', @now, 'congressGov', 1)`,
+         VALUES (@bill, '', @hash, 0.8, 0.7, @matched, 'r', @now, 'congressGov', 1)`,
       ).run({
         bill: billId,
         // hash must match scoreRepresentative's computed hash for the active

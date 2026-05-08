@@ -37,9 +37,9 @@ function seedSingleRepScenario(db: PolitiClawDb, bioguide: string): void {
   ).run({ id: billId, synced: Date.now() });
   db.prepare(
     `INSERT INTO bill_alignment
-       (bill_id, stance_snapshot_hash, relevance, confidence,
+       (bill_id, bill_update_date, stance_snapshot_hash, relevance, confidence,
         matched_json, rationale, computed_at, source_adapter_id, source_tier)
-     VALUES (@bill_id, @hash, 0.8, 0.6, @matches, 'test', @now, 'congressGov', 1)`,
+     VALUES (@bill_id, '', @hash, 0.8, 0.6, @matches, 'test', @now, 'congressGov', 1)`,
   ).run({
     bill_id: billId,
     hash,

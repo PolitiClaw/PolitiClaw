@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
 import type { Bill } from "../../sources/bills/types.js";
 import type { IssueStance } from "../preferences/types.js";
+import { hashStanceSnapshot } from "./stanceHash.js";
 
 /**
  * Any alignment score with confidence < {@link CONFIDENCE_FLOOR} must render
@@ -241,8 +241,5 @@ function buildRationale(
 }
 
 function hashStances(stances: readonly IssueStance[]): string {
-  const normalized = [...stances]
-    .map((s) => ({ issue: s.issue, stance: s.stance, weight: s.weight }))
-    .sort((a, b) => a.issue.localeCompare(b.issue));
-  return createHash("sha256").update(JSON.stringify(normalized)).digest("hex").slice(0, 16);
+  return hashStanceSnapshot(stances);
 }

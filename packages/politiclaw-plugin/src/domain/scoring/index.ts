@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import type { PolitiClawDb } from "../../storage/sqlite.js";
 import type { BillsResolver } from "../../sources/bills/index.js";
 import type { BillRef } from "../../sources/bills/types.js";
@@ -26,6 +25,7 @@ import {
   type BillEvidence,
   type RepIssueAlignment,
 } from "./repAlignment.js";
+import { hashStanceSnapshot } from "./stanceHash.js";
 
 export {
   ALIGNMENT_DISCLAIMER,
@@ -91,7 +91,7 @@ export async function scoreBill(
   }
 
   const alignment = computeBillAlignment(detail.bill, stances);
-  persistAlignment(db, detail.bill.id, alignment, detail.source);
+  persistAlignment(db, detail.bill.id, detail.bill.updateDate ?? "", alignment, detail.source);
 
   let direction: DirectionForStance[] | null = null;
   if (opts.llm && !alignment.belowConfidenceFloor) {
@@ -111,16 +111,17 @@ export async function scoreBill(
 function persistAlignment(
   db: PolitiClawDb,
   billId: string,
+  billUpdateDate: string,
   alignment: AlignmentResult,
   source: { adapterId: string; tier: number },
 ): void {
   db.prepare(
-    `INSERT INTO bill_alignment (bill_id, stance_snapshot_hash, relevance, confidence,
-                                 matched_json, rationale, computed_at,
-                                 source_adapter_id, source_tier)
-     VALUES (@bill_id, @hash, @relevance, @confidence, @matched, @rationale,
-             @computed_at, @adapter_id, @tier)
-     ON CONFLICT(bill_id, stance_snapshot_hash) DO UPDATE SET
+    `INSERT INTO bill_alignment (bill_id, bill_update_date, stance_snapshot_hash,
+                                 relevance, confidence, matched_json, rationale,
+                                 computed_at, source_adapter_id, source_tier)
+     VALUES (@bill_id, @bill_update_date, @hash, @relevance, @confidence, @matched,
+             @rationale, @computed_at, @adapter_id, @tier)
+     ON CONFLICT(bill_id, bill_update_date, stance_snapshot_hash) DO UPDATE SET
        relevance         = excluded.relevance,
        confidence        = excluded.confidence,
        matched_json      = excluded.matched_json,
@@ -130,6 +131,7 @@ function persistAlignment(
        source_tier       = excluded.source_tier`,
   ).run({
     bill_id: billId,
+    bill_update_date: billUpdateDate,
     hash: alignment.stanceSnapshotHash,
     relevance: alignment.relevance,
     confidence: alignment.confidence,
@@ -501,16 +503,12 @@ function persistRepScores(
 }
 
 /**
- * Stance snapshot hash for rep scoring. Must be deterministic and stable
- * across calls so a re-score under an unchanged stance set updates the same
- * `rep_scores` row rather than inserting a duplicate. Mirrors the bill-score
- * hash convention (sorted by issue, sha256, truncated to 16 chars).
+ * Stance snapshot hash for rep scoring. Must produce identical output to the
+ * hash used for `bill_alignment` rows, since `rep_scores` joins those tables
+ * on `stance_snapshot_hash`.
  */
 export function hashStancesForRepScoring(stances: readonly IssueStance[]): string {
-  const normalized = [...stances]
-    .map((s) => ({ issue: s.issue, stance: s.stance, weight: s.weight }))
-    .sort((a, b) => a.issue.localeCompare(b.issue));
-  return createHash("sha256").update(JSON.stringify(normalized)).digest("hex").slice(0, 16);
+  return hashStanceSnapshot(stances);
 }
 
 export type StoredRepScore = {
@@ -586,6 +584,7 @@ export function readStoredRepScores(
 export function readStoredAlignment(
   db: PolitiClawDb,
   billId: string,
+  billUpdateDate: string,
   stanceSnapshotHash: string,
 ): StoredAlignment | null {
   const row = db
@@ -593,9 +592,15 @@ export function readStoredAlignment(
       `SELECT bill_id, stance_snapshot_hash, relevance, confidence, matched_json,
               rationale, computed_at, source_adapter_id, source_tier
          FROM bill_alignment
-         WHERE bill_id = @bill_id AND stance_snapshot_hash = @hash`,
+         WHERE bill_id = @bill_id
+           AND bill_update_date = @bill_update_date
+           AND stance_snapshot_hash = @hash`,
     )
-    .get({ bill_id: billId, hash: stanceSnapshotHash }) as
+    .get({
+      bill_id: billId,
+      bill_update_date: billUpdateDate,
+      hash: stanceSnapshotHash,
+    }) as
     | {
         bill_id: string;
         stance_snapshot_hash: string;

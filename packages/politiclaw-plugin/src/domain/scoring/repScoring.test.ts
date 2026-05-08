@@ -6,15 +6,18 @@ import {
   readStoredRepScores,
   scoreRepresentative,
 } from "./index.js";
-import { createHash } from "node:crypto";
+import { hashStanceSnapshot } from "./stanceHash.js";
 
 function stanceHash(
-  stances: Array<{ issue: string; stance: "support" | "oppose" | "neutral"; weight: number }>,
+  stances: Array<{
+    issue: string;
+    stance: "support" | "oppose" | "neutral";
+    weight: number;
+    note?: string;
+    sourceText?: string;
+  }>,
 ): string {
-  const normalized = [...stances]
-    .map((stance) => ({ issue: stance.issue, stance: stance.stance, weight: stance.weight }))
-    .sort((a, b) => a.issue.localeCompare(b.issue));
-  return createHash("sha256").update(JSON.stringify(normalized)).digest("hex").slice(0, 16);
+  return hashStanceSnapshot(stances);
 }
 
 function insertRep(
@@ -79,10 +82,10 @@ function insertBillAlignment(
 ): void {
   db.prepare(
     `INSERT INTO bill_alignment
-       (bill_id, stance_snapshot_hash, relevance, confidence,
+       (bill_id, bill_update_date, stance_snapshot_hash, relevance, confidence,
         matched_json, rationale, computed_at, source_adapter_id, source_tier)
      VALUES
-       (@bill_id, @hash, @relevance, 0.6,
+       (@bill_id, '', @hash, @relevance, 0.6,
         @matched, 'test rationale', @computed_at, 'congressGov', 1)`,
   ).run({
     bill_id: opts.billId,

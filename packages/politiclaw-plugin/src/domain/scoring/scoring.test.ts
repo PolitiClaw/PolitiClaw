@@ -72,6 +72,7 @@ describe("scoreBill", () => {
     const stored = readStoredAlignment(
       db,
       result.bill.id,
+      result.bill.updateDate ?? "",
       result.alignment.stanceSnapshotHash,
     );
     expect(stored).not.toBeNull();

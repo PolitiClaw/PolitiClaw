@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createHash } from "node:crypto";
 
 import { openMemoryDb, type PolitiClawDb } from "../storage/sqlite.js";
 import { Kv } from "../storage/kv.js";
@@ -9,15 +8,19 @@ import {
   setStorageForTests,
 } from "../storage/context.js";
 import { recordStanceSignal, upsertIssueStance } from "../domain/preferences/index.js";
+import { hashStanceSnapshot } from "../domain/scoring/stanceHash.js";
 import { repReportTool } from "./repReport.js";
 
 function stanceHash(
-  stances: Array<{ issue: string; stance: "support" | "oppose" | "neutral"; weight: number }>,
+  stances: Array<{
+    issue: string;
+    stance: "support" | "oppose" | "neutral";
+    weight: number;
+    note?: string;
+    sourceText?: string;
+  }>,
 ): string {
-  const normalized = [...stances]
-    .map((stance) => ({ issue: stance.issue, stance: stance.stance, weight: stance.weight }))
-    .sort((a, b) => a.issue.localeCompare(b.issue));
-  return createHash("sha256").update(JSON.stringify(normalized)).digest("hex").slice(0, 16);
+  return hashStanceSnapshot(stances);
 }
 
 function withMemoryStorage(): PolitiClawDb {
@@ -55,9 +58,9 @@ function seedAlignedRep(database: PolitiClawDb): void {
     database
       .prepare(
         `INSERT INTO bill_alignment
-           (bill_id, stance_snapshot_hash, relevance, confidence,
+           (bill_id, bill_update_date, stance_snapshot_hash, relevance, confidence,
             matched_json, rationale, computed_at, source_adapter_id, source_tier)
-         VALUES (@bill_id, @hash, 0.8, 0.6, @matches, 'test', @now, 'congressGov', 1)`,
+         VALUES (@bill_id, '', @hash, 0.8, 0.6, @matches, 'test', @now, 'congressGov', 1)`,
       )
       .run({
         bill_id: billId,

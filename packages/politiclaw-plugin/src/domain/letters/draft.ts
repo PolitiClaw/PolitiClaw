@@ -1,8 +1,7 @@
-import { createHash } from "node:crypto";
-
 import { getBillDetail, type StoredBill } from "../bills/index.js";
 import { listIssueStances, type IssueStanceRow } from "../preferences/index.js";
 import { listReps, type StoredRep } from "../reps/index.js";
+import { hashStanceSnapshot } from "../scoring/stanceHash.js";
 import type { BillsResolver } from "../../sources/bills/index.js";
 import type { BillRef } from "../../sources/bills/types.js";
 import { congressGovPublicBillUrl } from "../../sources/bills/types.js";
@@ -408,10 +407,7 @@ function countWords(text: string): number {
 }
 
 function hashStances(stances: readonly IssueStanceRow[]): string {
-  const canonical = [...stances]
-    .map((s) => ({ issue: s.issue, stance: s.stance, weight: s.weight }))
-    .sort((a, b) => a.issue.localeCompare(b.issue));
-  return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
+  return hashStanceSnapshot(stances, { truncated: false });
 }
 
 function persistLetter(

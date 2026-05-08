@@ -116,6 +116,131 @@ describe("scoreBill", () => {
     expect(rowCount).toBe(2);
   });
 
+  it("persists direction rows when an LLM is provided and re-reads them on cache hit", async () => {
+    const db = openMemoryDb();
+    upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });
+
+    const llmCalls: number[] = [];
+    const llm = {
+      reason: async () => {
+        llmCalls.push(Date.now());
+        return {
+          kind: "advances",
+          confidence: 0.82,
+          rationale: "matched housing investment",
+          quotedText: "Authorizes grants for affordable housing.",
+          counterConsideration: "Some sponsors describe this as preempting state authority.",
+        };
+      },
+    };
+
+    const get = async () =>
+      ({
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: housingBill,
+        fetchedAt: Date.now(),
+      }) as AdapterResult<Bill>;
+
+    const first = await scoreBill(db, fakeResolver(get), {
+      congress: 119,
+      billType: "HR",
+      number: "1234",
+    }, { llm });
+    expect(first.status).toBe("ok");
+    if (first.status !== "ok") return;
+    expect(first.direction).not.toBeNull();
+    expect(first.direction?.[0]?.direction.kind).toBe("advances");
+    expect(llmCalls).toHaveLength(1);
+
+    const stored = (
+      db.prepare("SELECT COUNT(*) AS n FROM bill_direction").get() as { n: number }
+    ).n;
+    expect(stored).toBeGreaterThan(0);
+
+    // Second call hits cache — LLM is not invoked again.
+    const second = await scoreBill(db, fakeResolver(get), {
+      congress: 119,
+      billType: "HR",
+      number: "1234",
+    }, { llm });
+    expect(second.status).toBe("ok");
+    if (second.status !== "ok") return;
+    expect(second.direction?.[0]?.direction.kind).toBe("advances");
+    expect(llmCalls).toHaveLength(1);
+  });
+
+  it("re-classifies when the bill's update_date advances (amendment)", async () => {
+    const db = openMemoryDb();
+    upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });
+
+    let llmCallCount = 0;
+    const llm = {
+      reason: async () => {
+        llmCallCount += 1;
+        return {
+          kind: "advances",
+          confidence: 0.7,
+          rationale: "matched",
+          quotedText: "Authorizes grants for affordable housing.",
+          counterConsideration: "Some sponsors describe this as preempting state authority.",
+        };
+      },
+    };
+
+    const billV1: Bill = { ...housingBill, updateDate: "2026-01-15" };
+    const billV2: Bill = { ...housingBill, updateDate: "2026-03-22" };
+
+    await scoreBill(db, fakeResolver(async () => ({
+      status: "ok", adapterId: "congressGov", tier: 1, data: billV1, fetchedAt: Date.now(),
+    } as AdapterResult<Bill>)), { congress: 119, billType: "HR", number: "1234" }, { llm });
+    expect(llmCallCount).toBe(1);
+
+    await scoreBill(db, fakeResolver(async () => ({
+      status: "ok", adapterId: "congressGov", tier: 1, data: billV2, fetchedAt: Date.now(),
+    } as AdapterResult<Bill>)), { congress: 119, billType: "HR", number: "1234" }, { llm, refresh: true });
+    expect(llmCallCount).toBe(2);
+
+    const rows = db
+      .prepare("SELECT bill_update_date FROM bill_direction WHERE bill_id = '119-hr-1234' ORDER BY bill_update_date")
+      .all() as Array<{ bill_update_date: string }>;
+    expect(rows.map((r) => r.bill_update_date)).toEqual(["2026-01-15", "2026-03-22"]);
+  });
+
+  it("re-classifies when stance notes change (new snapshot hash)", async () => {
+    const db = openMemoryDb();
+    upsertIssueStance(db, {
+      issue: "housing", stance: "support", weight: 4, note: "rent stabilization",
+    });
+
+    let llmCallCount = 0;
+    const llm = {
+      reason: async () => {
+        llmCallCount += 1;
+        return {
+          kind: "advances", confidence: 0.7, rationale: "matched",
+          quotedText: "Authorizes grants for affordable housing.",
+          counterConsideration: "Some sponsors describe this as preempting state authority.",
+        };
+      },
+    };
+
+    const get = async () => ({
+      status: "ok", adapterId: "congressGov", tier: 1, data: housingBill, fetchedAt: Date.now(),
+    } as AdapterResult<Bill>);
+
+    await scoreBill(db, fakeResolver(get), { congress: 119, billType: "HR", number: "1234" }, { llm });
+    expect(llmCallCount).toBe(1);
+
+    upsertIssueStance(db, {
+      issue: "housing", stance: "support", weight: 4, note: "single-room occupancy",
+    });
+
+    await scoreBill(db, fakeResolver(get), { congress: 119, billType: "HR", number: "1234" }, { llm });
+    expect(llmCallCount).toBe(2);
+  });
+
   it("surfaces unavailable from the resolver with actionable guidance", async () => {
     const db = openMemoryDb();
     upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });

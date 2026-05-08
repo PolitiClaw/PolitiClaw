@@ -58,6 +58,12 @@ export type ScoreBillOptions = {
    * preserves today's behavior — alignment only, no direction.
    */
   llm?: LlmClient;
+  /**
+   * Identifier of the LLM model used by `llm`, persisted to `bill_direction`
+   * for audit attribution. Defaults to `"openclaw"` so cached rows always
+   * have a non-empty source. Has no effect when `llm` is not provided.
+   */
+  llmModelId?: string;
 };
 
 export async function scoreBill(
@@ -91,11 +97,31 @@ export async function scoreBill(
   }
 
   const alignment = computeBillAlignment(detail.bill, stances);
-  persistAlignment(db, detail.bill.id, detail.bill.updateDate ?? "", alignment, detail.source);
+  const billUpdateDate = detail.bill.updateDate ?? "";
+  persistAlignment(db, detail.bill.id, billUpdateDate, alignment, detail.source);
 
   let direction: DirectionForStance[] | null = null;
   if (opts.llm && !alignment.belowConfidenceFloor) {
-    direction = await computeBillDirection(detail.bill, stances, opts.llm);
+    const cached = readCachedDirections(
+      db,
+      detail.bill.id,
+      billUpdateDate,
+      alignment.stanceSnapshotHash,
+      stances,
+    );
+    if (cached !== null) {
+      direction = cached;
+    } else {
+      direction = await computeBillDirection(detail.bill, stances, opts.llm);
+      persistDirections(
+        db,
+        detail.bill.id,
+        billUpdateDate,
+        alignment.stanceSnapshotHash,
+        opts.llmModelId ?? "openclaw",
+        direction,
+      );
+    }
   }
 
   return {
@@ -141,6 +167,139 @@ function persistAlignment(
     adapter_id: source.adapterId,
     tier: source.tier,
   });
+}
+
+type StoredDirectionRow = {
+  stance_slug: string;
+  kind: "advances" | "obstructs" | "mixed" | "unclear";
+  confidence: number;
+  rationale: string;
+  evidence_json: string;
+};
+
+type DirectionEvidence = {
+  quotedText?: string;
+  counterConsideration?: string;
+  advancesQuote?: string;
+  obstructsQuote?: string;
+};
+
+function readCachedDirections(
+  db: PolitiClawDb,
+  billId: string,
+  billUpdateDate: string,
+  stanceSnapshotHash: string,
+  stances: readonly IssueStance[],
+): DirectionForStance[] | null {
+  const rows = db
+    .prepare(
+      `SELECT stance_slug, kind, confidence, rationale, evidence_json
+         FROM bill_direction
+         WHERE bill_id = @bill_id
+           AND bill_update_date = @bill_update_date
+           AND stance_snapshot_hash = @hash`,
+    )
+    .all({
+      bill_id: billId,
+      bill_update_date: billUpdateDate,
+      hash: stanceSnapshotHash,
+    }) as StoredDirectionRow[];
+  if (rows.length === 0) return null;
+
+  const stanceByIssue = new Map(stances.map((stance) => [stance.issue, stance]));
+  const directions: DirectionForStance[] = [];
+  for (const row of rows) {
+    const stance = stanceByIssue.get(row.stance_slug);
+    if (!stance) continue;
+    directions.push({
+      issue: stance.issue,
+      stance: stance.stance,
+      direction: deserializeDirection(row),
+    });
+  }
+  return directions;
+}
+
+function persistDirections(
+  db: PolitiClawDb,
+  billId: string,
+  billUpdateDate: string,
+  stanceSnapshotHash: string,
+  modelId: string,
+  directions: readonly DirectionForStance[],
+): void {
+  db.prepare(
+    `DELETE FROM bill_direction
+       WHERE bill_id = @bill_id
+         AND bill_update_date = @bill_update_date
+         AND stance_snapshot_hash = @hash`,
+  ).run({
+    bill_id: billId,
+    bill_update_date: billUpdateDate,
+    hash: stanceSnapshotHash,
+  });
+  if (directions.length === 0) return;
+
+  const insert = db.prepare(
+    `INSERT INTO bill_direction
+       (bill_id, bill_update_date, stance_snapshot_hash, stance_slug, kind,
+        confidence, rationale, evidence_json, computed_at, model_id)
+     VALUES
+       (@bill_id, @bill_update_date, @hash, @stance_slug, @kind, @confidence,
+        @rationale, @evidence_json, @computed_at, @model_id)`,
+  );
+  const now = Date.now();
+  for (const dirEntry of directions) {
+    const dir = dirEntry.direction;
+    const evidence: DirectionEvidence = {};
+    if (dir.kind === "advances" || dir.kind === "obstructs") {
+      evidence.quotedText = dir.quotedText;
+      evidence.counterConsideration = dir.counterConsideration;
+    } else if (dir.kind === "mixed") {
+      evidence.advancesQuote = dir.advancesQuote;
+      evidence.obstructsQuote = dir.obstructsQuote;
+    }
+    insert.run({
+      bill_id: billId,
+      bill_update_date: billUpdateDate,
+      hash: stanceSnapshotHash,
+      stance_slug: dirEntry.issue,
+      kind: dir.kind,
+      confidence: dir.kind === "unclear" ? 0 : dir.confidence,
+      rationale: dir.rationale,
+      evidence_json: JSON.stringify(evidence),
+      computed_at: now,
+      model_id: modelId,
+    });
+  }
+}
+
+function deserializeDirection(row: StoredDirectionRow): DirectionForStance["direction"] {
+  if (row.kind === "unclear") {
+    return { kind: "unclear", rationale: row.rationale };
+  }
+  let evidence: DirectionEvidence;
+  try {
+    evidence = JSON.parse(row.evidence_json) as DirectionEvidence;
+  } catch {
+    evidence = {};
+  }
+  if (row.kind === "mixed") {
+    return {
+      kind: "mixed",
+      confidence: row.confidence,
+      rationale: row.rationale,
+      advancesQuote: evidence.advancesQuote ?? "",
+      obstructsQuote: evidence.obstructsQuote ?? "",
+    };
+  }
+  return {
+    kind: row.kind,
+    confidence: row.confidence,
+    rationale: row.rationale,
+    quotedText: evidence.quotedText ?? "",
+    counterConsideration: evidence.counterConsideration ?? "",
+  };
 }
 
 export type StoredAlignment = {

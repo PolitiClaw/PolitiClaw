@@ -190,8 +190,9 @@ describe("politiclaw_score_bill tool", () => {
     );
     const text = (result.content[0] as { type: "text"; text: string }).text;
 
-    expect(text).toContain("Direction against your stances:");
+    expect(text).toContain("Direction against your stances [AI-rated]:");
     expect(text).toContain("appears to advance");
+    expect(text).toContain("confidence");
     expect(text).toContain("Counter-consideration:");
   });
 

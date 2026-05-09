@@ -2,7 +2,7 @@
 
 This page is generated from a real in-memory SQLite database after migrations run.
 
-Migration count: 19.
+Migration count: 22.
 
 ## Schema overview
 
@@ -73,6 +73,7 @@ erDiagram
   }
   bill_alignment {
     TEXT bill_id PK,FK
+    TEXT bill_update_date PK
     TEXT stance_snapshot_hash PK
     REAL relevance
     REAL confidence
@@ -81,6 +82,18 @@ erDiagram
     INTEGER computed_at
     TEXT source_adapter_id
     INTEGER source_tier
+  }
+  bill_direction {
+    TEXT bill_id PK,FK
+    TEXT bill_update_date PK
+    TEXT stance_snapshot_hash PK
+    TEXT stance_slug PK
+    TEXT kind
+    REAL confidence
+    TEXT rationale
+    TEXT evidence_json
+    INTEGER computed_at
+    TEXT model_id
   }
   bills {
     TEXT id PK
@@ -172,6 +185,8 @@ erDiagram
     INTEGER updated_at
     TEXT accountability
     TEXT action_prompting
+    TEXT auto_direction_mode
+    TEXT legislation_review_model
   }
   reminders {
     INTEGER id PK
@@ -256,9 +271,11 @@ erDiagram
     REAL weight
     TEXT source
     INTEGER created_at
+    TEXT stance_slug
   }
   action_packages ||--o{ action_package_feedback : "package_id -> action_packages.id"
   bills ||--o{ bill_alignment : "bill_id -> bills.id"
+  bills ||--o{ bill_direction : "bill_id -> bills.id"
   roll_call_votes ||--o{ member_votes : "vote_id -> roll_call_votes.id"
   reps ||--o{ rep_scores : "rep_id -> reps.id"
 ```
@@ -284,6 +301,9 @@ erDiagram
 - `packages/politiclaw-plugin/src/storage/migrations/0017_preferences_action_prompting.sql`
 - `packages/politiclaw-plugin/src/storage/migrations/0018_issue_stance_notes.sql`
 - `packages/politiclaw-plugin/src/storage/migrations/0019_stance_signals_drop_issue.sql`
+- `packages/politiclaw-plugin/src/storage/migrations/0020_auto_direction.sql`
+- `packages/politiclaw-plugin/src/storage/migrations/0021_legislation_review_model.sql`
+- `packages/politiclaw-plugin/src/storage/migrations/0022_stance_signals_per_stance.sql`
 
 ## Tables
 
@@ -465,6 +485,7 @@ CREATE TABLE ballots (
 | Column | Type | Not Null | Primary Key | Default |
 | --- | --- | --- | --- | --- |
 | `bill_id` | `TEXT` | yes | yes | n/a |
+| `bill_update_date` | `TEXT` | yes | yes | n/a |
 | `stance_snapshot_hash` | `TEXT` | yes | yes | n/a |
 | `relevance` | `REAL` | yes | no | n/a |
 | `confidence` | `REAL` | yes | no | n/a |
@@ -475,8 +496,9 @@ CREATE TABLE ballots (
 | `source_tier` | `INTEGER` | yes | no | n/a |
 
 ```sql
-CREATE TABLE bill_alignment (
+CREATE TABLE "bill_alignment" (
   bill_id              TEXT NOT NULL,
+  bill_update_date     TEXT NOT NULL,
   stance_snapshot_hash TEXT NOT NULL,
   relevance            REAL NOT NULL CHECK (relevance BETWEEN 0 AND 1),
   confidence           REAL NOT NULL CHECK (confidence BETWEEN 0 AND 1),
@@ -485,7 +507,39 @@ CREATE TABLE bill_alignment (
   computed_at          INTEGER NOT NULL,
   source_adapter_id    TEXT NOT NULL,
   source_tier          INTEGER NOT NULL CHECK (source_tier BETWEEN 1 AND 5),
-  PRIMARY KEY (bill_id, stance_snapshot_hash),
+  PRIMARY KEY (bill_id, bill_update_date, stance_snapshot_hash),
+  FOREIGN KEY (bill_id) REFERENCES bills(id) ON DELETE CASCADE
+)
+```
+
+### bill_direction
+
+| Column | Type | Not Null | Primary Key | Default |
+| --- | --- | --- | --- | --- |
+| `bill_id` | `TEXT` | yes | yes | n/a |
+| `bill_update_date` | `TEXT` | yes | yes | n/a |
+| `stance_snapshot_hash` | `TEXT` | yes | yes | n/a |
+| `stance_slug` | `TEXT` | yes | yes | n/a |
+| `kind` | `TEXT` | yes | no | n/a |
+| `confidence` | `REAL` | yes | no | n/a |
+| `rationale` | `TEXT` | yes | no | n/a |
+| `evidence_json` | `TEXT` | yes | no | n/a |
+| `computed_at` | `INTEGER` | yes | no | n/a |
+| `model_id` | `TEXT` | yes | no | n/a |
+
+```sql
+CREATE TABLE bill_direction (
+  bill_id              TEXT NOT NULL,
+  bill_update_date     TEXT NOT NULL,
+  stance_snapshot_hash TEXT NOT NULL,
+  stance_slug          TEXT NOT NULL,
+  kind                 TEXT NOT NULL CHECK (kind IN ('advances','obstructs','mixed','unclear')),
+  confidence           REAL NOT NULL CHECK (confidence BETWEEN 0 AND 1),
+  rationale            TEXT NOT NULL,
+  evidence_json        TEXT NOT NULL,
+  computed_at          INTEGER NOT NULL,
+  model_id             TEXT NOT NULL,
+  PRIMARY KEY (bill_id, bill_update_date, stance_snapshot_hash, stance_slug),
   FOREIGN KEY (bill_id) REFERENCES bills(id) ON DELETE CASCADE
 )
 ```
@@ -705,6 +759,8 @@ CREATE TABLE mute_list (
 | `updated_at` | `INTEGER` | yes | no | n/a |
 | `accountability` | `TEXT` | yes | no | `'self_serve'` |
 | `action_prompting` | `TEXT` | yes | no | `'on'` |
+| `auto_direction_mode` | `TEXT` | yes | no | `'off'` |
+| `legislation_review_model` | `TEXT` | yes | no | `''` |
 
 ```sql
 CREATE TABLE "preferences" (
@@ -718,7 +774,8 @@ CREATE TABLE "preferences" (
   updated_at         INTEGER NOT NULL
 , accountability TEXT NOT NULL DEFAULT 'self_serve'
   CHECK (accountability IN ('self_serve','nudge_me','draft_for_me')), action_prompting TEXT NOT NULL DEFAULT 'on'
-  CHECK (action_prompting IN ('off','on')))
+  CHECK (action_prompting IN ('off','on')), auto_direction_mode TEXT NOT NULL DEFAULT 'off'
+  CHECK (auto_direction_mode IN ('off','supplement','co-equal','advisory')), legislation_review_model TEXT NOT NULL DEFAULT '')
 ```
 
 ### reminders
@@ -923,6 +980,7 @@ CREATE TABLE snapshots (
 | `weight` | `REAL` | yes | no | `1.0` |
 | `source` | `TEXT` | yes | no | n/a |
 | `created_at` | `INTEGER` | yes | no | n/a |
+| `stance_slug` | `TEXT` | no | no | n/a |
 
 ```sql
 CREATE TABLE stance_signals (
@@ -932,7 +990,7 @@ CREATE TABLE stance_signals (
   weight          REAL NOT NULL DEFAULT 1.0,
   source          TEXT NOT NULL,
   created_at      INTEGER NOT NULL
-)
+, stance_slug TEXT)
 ```
 
 ## Indexes
@@ -950,6 +1008,8 @@ CREATE TABLE stance_signals (
 | `bill_alignment_bill` | `bill_alignment` | `CREATE INDEX bill_alignment_bill ON bill_alignment(bill_id)` |
 | `bill_alignment_computed` | `bill_alignment` | `CREATE INDEX bill_alignment_computed ON bill_alignment(computed_at)` |
 | `bill_alignment_stance_snapshot` | `bill_alignment` | `CREATE INDEX bill_alignment_stance_snapshot   ON bill_alignment(stance_snapshot_hash)` |
+| `bill_direction_bill` | `bill_direction` | `CREATE INDEX bill_direction_bill   ON bill_direction(bill_id)` |
+| `bill_direction_review_queue` | `bill_direction` | `CREATE INDEX bill_direction_review_queue   ON bill_direction(stance_snapshot_hash, kind, confidence)` |
 | `bills_congress_type` | `bills` | `CREATE INDEX bills_congress_type ON bills(congress, bill_type)` |
 | `bills_latest_action` | `bills` | `CREATE INDEX bills_latest_action ON bills(latest_action_date)` |
 | `call_scripts_created` | `call_scripts` | `CREATE INDEX call_scripts_created ON call_scripts(created_at DESC)` |
@@ -974,3 +1034,4 @@ CREATE TABLE stance_signals (
 | `snapshots_kind` | `snapshots` | `CREATE INDEX snapshots_kind ON snapshots(entity_kind)` |
 | `stance_signals_bill` | `stance_signals` | `CREATE INDEX stance_signals_bill  ON stance_signals(bill_id)` |
 | `stance_signals_bill_dir_created` | `stance_signals` | `CREATE INDEX stance_signals_bill_dir_created   ON stance_signals(bill_id, direction, created_at DESC)` |
+| `stance_signals_bill_stance_dir_created` | `stance_signals` | `CREATE INDEX stance_signals_bill_stance_dir_created   ON stance_signals(bill_id, stance_slug, direction, created_at DESC)` |

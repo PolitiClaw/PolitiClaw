@@ -15,6 +15,15 @@ import type { Bill } from "../../sources/bills/types.js";
 import type { IssueStance } from "../preferences/types.js";
 import { CONFIDENCE_FLOOR } from "./alignment.js";
 
+/**
+ * Above this confidence value, an `advances` or `obstructs` classification
+ * is allowed to count automatically toward representative alignment scoring
+ * (subject to the user's `auto_direction_mode` preference). Below this value
+ * but above the absolute confidence floor, the row is surfaced in the
+ * review tool so the user can promote, override, or skip explicitly.
+ */
+export const HIGH_CONFIDENCE_THRESHOLD = 0.75;
+
 export type AdvancesObstructs = {
   kind: "advances" | "obstructs";
   confidence: number;

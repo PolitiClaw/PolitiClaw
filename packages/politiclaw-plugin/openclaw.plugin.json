@@ -23,7 +23,9 @@
       "politiclaw_action_moments",
       "politiclaw_research_finance",
       "politiclaw_draft_outreach",
-      "politiclaw_doctor"
+      "politiclaw_doctor",
+      "politiclaw_review_auto_ratings",
+      "politiclaw_resolve_auto_rating"
     ]
   },
   "skills": [

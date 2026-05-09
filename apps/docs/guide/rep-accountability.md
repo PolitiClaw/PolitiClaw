@@ -19,7 +19,7 @@ Each arrow is a tool or cron job, not a marketing promise:
 1. **Declare stances.** [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure) saves your address, issue stances, and monitoring cadence.
 2. **Score on demand or on schedule.** [`politiclaw_score_bill`](../reference/generated/tools/politiclaw_score_bill) and [`politiclaw_score_representative`](../reference/generated/tools/politiclaw_score_representative) score against your declared stances. Recurring jobs keep the picture current.
 3. **Signals are recorded locally.** Stance signals land in plugin-owned SQLite on your machine. [Generated Storage Schema](../reference/generated/storage-schema) is the source of truth for layout.
-4. **Periodic digest.** The monthly [`politiclaw_rep_report`](../reference/generated/tools/politiclaw_rep_report) re-scores every stored rep deterministically from recorded votes and alignment signals, with blind spots called out.
+4. **Periodic digest.** The monthly [`politiclaw_rep_report`](../reference/generated/tools/politiclaw_rep_report) re-scores every stored rep from recorded votes and alignment signals, with blind spots called out. Scoring is deterministic when the optional [auto-direction](./auto-rated-direction) feature is off (the default); when on, AI-derived direction can supply implied agree/disagree for unrated bills, and the score output discloses how many counted votes were AI-rated.
 5. **Close the loop with a draft.** [`politiclaw_draft_outreach`](../reference/generated/tools/politiclaw_draft_outreach) grounds outreach in bill text and your saved stance. You read it, edit it, and send it yourself.
 
 ## What "aligned" and "against" actually mean
@@ -28,8 +28,9 @@ Alignment here is a recorded claim, not a gut rating.
 
 - **Input is your declared stance set.** If you didn't say you care about a topic, the scorer does not invent a preference for you. Stance `note` fields preserve the concrete concern inside a broader issue bucket so reports can say more than the slug alone.
 - **Evidence comes from primary sources.** Bill text, status, roll-call votes, and committee activity flow from `api.congress.gov` via the shared `api.data.gov` key. See [Generated Source Coverage](../reference/generated/source-coverage).
-- **Scoring carries a confidence floor.** When the scorer can't quote the bill's own text to justify a direction, it reports `direction unclear` rather than guessing.
+- **Scoring carries a confidence floor.** When the scorer can't quote the bill's own text to justify a direction, it reports `direction unclear` rather than guessing. When [auto-direction](./auto-rated-direction) is enabled, the AI classifier follows the same rule — every directional claim must quote the bill's own text or it gets coerced to `unclear`.
 - **The alignment disclaimer stays attached.** `politiclaw_check_upcoming_votes` emits it whenever scores appear. The monitoring skill is explicit: don't strip it.
+- **AI involvement is disclosed in-band.** When the auto-direction feature contributes to a rep score, the score's own output names the count and the bills involved — there is no hidden path where AI-derived direction silently shapes a percentage.
 
 That means rep scores on a PolitiClaw report are reproducible from the same inputs, not editorial. If you disagree with a score, the path is to read the cited bill text and either adjust your stance or flag the signal rather than argue with a number.
 

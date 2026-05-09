@@ -31,6 +31,7 @@ export default withMermaid(defineConfig({
           { text: "Draft Outreach", link: "/guide/draft-outreach" },
           { text: "Recurring Monitoring", link: "/guide/recurring-monitoring" },
           { text: "How Accountability Works", link: "/guide/rep-accountability" },
+          { text: "Auto-Rated Direction", link: "/guide/auto-rated-direction" },
           { text: "Example Alerts", link: "/guide/example-alerts" },
           { text: "Manage Monitoring", link: "/guide/monitoring" },
           { text: "Installation and Verification", link: "/guide/installation-and-verification" },

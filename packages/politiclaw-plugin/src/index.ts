@@ -2,7 +2,10 @@ import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 
 import { REGISTERED_POLITICLAW_COMMANDS } from "./commands/index.js";
 import { getGatewayCronAdapter } from "./cron/gatewayAdapter.js";
-import { REGISTERED_POLITICLAW_TOOLS } from "./docs/toolRegistry.js";
+import {
+  REGISTERED_POLITICLAW_TOOLS,
+  REGISTERED_POLITICLAW_TOOL_REGISTRATIONS,
+} from "./docs/toolRegistry.js";
 import { createDashboardRoute } from "./http/routes.js";
 import { configureStorage, getStorage, type PluginConfigSnapshot } from "./storage/context.js";
 
@@ -28,7 +31,9 @@ export default definePluginEntry({
       () => api.runtime.state.resolveStateDir(),
       () => (api.pluginConfig ?? {}) as PluginConfigSnapshot,
     );
-    for (const tool of REGISTERED_POLITICLAW_TOOLS) api.registerTool(tool);
+    for (const registration of REGISTERED_POLITICLAW_TOOL_REGISTRATIONS) {
+      api.registerTool(registration);
+    }
 
     // Auto-reply commands. These bypass the LLM entirely and return canned
     // text the user can use to navigate the plugin without burning model

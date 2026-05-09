@@ -1,10 +1,9 @@
-import { createHash } from "node:crypto";
 import type { PolitiClawDb } from "../../storage/sqlite.js";
 import type { BillsResolver } from "../../sources/bills/index.js";
 import type { BillRef } from "../../sources/bills/types.js";
 import { getBillDetail, type StoredBill } from "../bills/index.js";
-import { listIssueStances } from "../preferences/index.js";
-import type { IssueStance } from "../preferences/types.js";
+import { getPreferences, listIssueStances } from "../preferences/index.js";
+import type { AutoDirectionMode, IssueStance } from "../preferences/types.js";
 import { listReps, type StoredRep } from "../reps/index.js";
 import {
   ALIGNMENT_DISCLAIMER,
@@ -18,6 +17,7 @@ import {
 } from "./alignment.js";
 import {
   computeBillDirection,
+  type BillDirection,
   type DirectionForStance,
   type LlmClient,
 } from "./direction.js";
@@ -26,6 +26,13 @@ import {
   type BillEvidence,
   type RepIssueAlignment,
 } from "./repAlignment.js";
+import { resolveEffectiveDirection } from "./directionResolution.js";
+import {
+  lookupUserSignal,
+  readSignalIndex,
+  type SignalIndex,
+} from "./signalIndex.js";
+import { hashStanceSnapshot } from "./stanceHash.js";
 
 export {
   ALIGNMENT_DISCLAIMER,
@@ -58,6 +65,12 @@ export type ScoreBillOptions = {
    * preserves today's behavior — alignment only, no direction.
    */
   llm?: LlmClient;
+  /**
+   * Identifier of the LLM model used by `llm`, persisted to `bill_direction`
+   * for audit attribution. Defaults to `"openclaw"` so cached rows always
+   * have a non-empty source. Has no effect when `llm` is not provided.
+   */
+  llmModelId?: string;
 };
 
 export async function scoreBill(
@@ -71,6 +84,7 @@ export async function scoreBill(
     stance: row.stance,
     weight: row.weight,
     ...(row.note ? { note: row.note } : {}),
+    ...(row.sourceText ? { sourceText: row.sourceText } : {}),
   }));
 
   const detail = await getBillDetail(db, resolver, ref, { refresh: opts.refresh });
@@ -91,11 +105,31 @@ export async function scoreBill(
   }
 
   const alignment = computeBillAlignment(detail.bill, stances);
-  persistAlignment(db, detail.bill.id, alignment, detail.source);
+  const billUpdateDate = detail.bill.updateDate ?? "";
+  persistAlignment(db, detail.bill.id, billUpdateDate, alignment, detail.source);
 
   let direction: DirectionForStance[] | null = null;
   if (opts.llm && !alignment.belowConfidenceFloor) {
-    direction = await computeBillDirection(detail.bill, stances, opts.llm);
+    const cached = readCachedDirections(
+      db,
+      detail.bill.id,
+      billUpdateDate,
+      alignment.stanceSnapshotHash,
+      stances,
+    );
+    if (cached !== null) {
+      direction = cached;
+    } else {
+      direction = await computeBillDirection(detail.bill, stances, opts.llm);
+      persistDirections(
+        db,
+        detail.bill.id,
+        billUpdateDate,
+        alignment.stanceSnapshotHash,
+        opts.llmModelId ?? "openclaw",
+        direction,
+      );
+    }
   }
 
   return {
@@ -111,16 +145,17 @@ export async function scoreBill(
 function persistAlignment(
   db: PolitiClawDb,
   billId: string,
+  billUpdateDate: string,
   alignment: AlignmentResult,
   source: { adapterId: string; tier: number },
 ): void {
   db.prepare(
-    `INSERT INTO bill_alignment (bill_id, stance_snapshot_hash, relevance, confidence,
-                                 matched_json, rationale, computed_at,
-                                 source_adapter_id, source_tier)
-     VALUES (@bill_id, @hash, @relevance, @confidence, @matched, @rationale,
-             @computed_at, @adapter_id, @tier)
-     ON CONFLICT(bill_id, stance_snapshot_hash) DO UPDATE SET
+    `INSERT INTO bill_alignment (bill_id, bill_update_date, stance_snapshot_hash,
+                                 relevance, confidence, matched_json, rationale,
+                                 computed_at, source_adapter_id, source_tier)
+     VALUES (@bill_id, @bill_update_date, @hash, @relevance, @confidence, @matched,
+             @rationale, @computed_at, @adapter_id, @tier)
+     ON CONFLICT(bill_id, bill_update_date, stance_snapshot_hash) DO UPDATE SET
        relevance         = excluded.relevance,
        confidence        = excluded.confidence,
        matched_json      = excluded.matched_json,
@@ -130,6 +165,7 @@ function persistAlignment(
        source_tier       = excluded.source_tier`,
   ).run({
     bill_id: billId,
+    bill_update_date: billUpdateDate,
     hash: alignment.stanceSnapshotHash,
     relevance: alignment.relevance,
     confidence: alignment.confidence,
@@ -139,6 +175,139 @@ function persistAlignment(
     adapter_id: source.adapterId,
     tier: source.tier,
   });
+}
+
+type StoredDirectionRow = {
+  stance_slug: string;
+  kind: "advances" | "obstructs" | "mixed" | "unclear";
+  confidence: number;
+  rationale: string;
+  evidence_json: string;
+};
+
+type DirectionEvidence = {
+  quotedText?: string;
+  counterConsideration?: string;
+  advancesQuote?: string;
+  obstructsQuote?: string;
+};
+
+function readCachedDirections(
+  db: PolitiClawDb,
+  billId: string,
+  billUpdateDate: string,
+  stanceSnapshotHash: string,
+  stances: readonly IssueStance[],
+): DirectionForStance[] | null {
+  const rows = db
+    .prepare(
+      `SELECT stance_slug, kind, confidence, rationale, evidence_json
+         FROM bill_direction
+         WHERE bill_id = @bill_id
+           AND bill_update_date = @bill_update_date
+           AND stance_snapshot_hash = @hash`,
+    )
+    .all({
+      bill_id: billId,
+      bill_update_date: billUpdateDate,
+      hash: stanceSnapshotHash,
+    }) as StoredDirectionRow[];
+  if (rows.length === 0) return null;
+
+  const stanceByIssue = new Map(stances.map((stance) => [stance.issue, stance]));
+  const directions: DirectionForStance[] = [];
+  for (const row of rows) {
+    const stance = stanceByIssue.get(row.stance_slug);
+    if (!stance) continue;
+    directions.push({
+      issue: stance.issue,
+      stance: stance.stance,
+      direction: deserializeDirection(row),
+    });
+  }
+  return directions;
+}
+
+function persistDirections(
+  db: PolitiClawDb,
+  billId: string,
+  billUpdateDate: string,
+  stanceSnapshotHash: string,
+  modelId: string,
+  directions: readonly DirectionForStance[],
+): void {
+  db.prepare(
+    `DELETE FROM bill_direction
+       WHERE bill_id = @bill_id
+         AND bill_update_date = @bill_update_date
+         AND stance_snapshot_hash = @hash`,
+  ).run({
+    bill_id: billId,
+    bill_update_date: billUpdateDate,
+    hash: stanceSnapshotHash,
+  });
+  if (directions.length === 0) return;
+
+  const insert = db.prepare(
+    `INSERT INTO bill_direction
+       (bill_id, bill_update_date, stance_snapshot_hash, stance_slug, kind,
+        confidence, rationale, evidence_json, computed_at, model_id)
+     VALUES
+       (@bill_id, @bill_update_date, @hash, @stance_slug, @kind, @confidence,
+        @rationale, @evidence_json, @computed_at, @model_id)`,
+  );
+  const now = Date.now();
+  for (const dirEntry of directions) {
+    const dir = dirEntry.direction;
+    const evidence: DirectionEvidence = {};
+    if (dir.kind === "advances" || dir.kind === "obstructs") {
+      evidence.quotedText = dir.quotedText;
+      evidence.counterConsideration = dir.counterConsideration;
+    } else if (dir.kind === "mixed") {
+      evidence.advancesQuote = dir.advancesQuote;
+      evidence.obstructsQuote = dir.obstructsQuote;
+    }
+    insert.run({
+      bill_id: billId,
+      bill_update_date: billUpdateDate,
+      hash: stanceSnapshotHash,
+      stance_slug: dirEntry.issue,
+      kind: dir.kind,
+      confidence: dir.kind === "unclear" ? 0 : dir.confidence,
+      rationale: dir.rationale,
+      evidence_json: JSON.stringify(evidence),
+      computed_at: now,
+      model_id: modelId,
+    });
+  }
+}
+
+function deserializeDirection(row: StoredDirectionRow): DirectionForStance["direction"] {
+  if (row.kind === "unclear") {
+    return { kind: "unclear", rationale: row.rationale };
+  }
+  let evidence: DirectionEvidence;
+  try {
+    evidence = JSON.parse(row.evidence_json) as DirectionEvidence;
+  } catch {
+    evidence = {};
+  }
+  if (row.kind === "mixed") {
+    return {
+      kind: "mixed",
+      confidence: row.confidence,
+      rationale: row.rationale,
+      advancesQuote: evidence.advancesQuote ?? "",
+      obstructsQuote: evidence.obstructsQuote ?? "",
+    };
+  }
+  return {
+    kind: row.kind,
+    confidence: row.confidence,
+    rationale: row.rationale,
+    quotedText: evidence.quotedText ?? "",
+    counterConsideration: evidence.counterConsideration ?? "",
+  };
 }
 
 export type StoredAlignment = {
@@ -170,6 +339,14 @@ export type ScoreRepresentativeResult =
       stanceSnapshotHash: string;
       perIssue: RepIssueAlignment[];
       consideredVoteCount: number;
+      /**
+       * Subset of `consideredVoteCount` whose direction was sourced from the
+       * LLM classifier rather than an explicit user signal. Surfaced to the
+       * user so the AI's contribution to the score is never invisible.
+       */
+      aiRatedVoteCount: number;
+      /** Auto-direction mode in effect for this scoring run. */
+      autoDirectionMode: AutoDirectionMode;
       skippedProceduralCount: number;
       skippedNeutralPositionCount: number;
       missingSignalBillCount: number;
@@ -187,11 +364,18 @@ export type ScoreRepresentativeResult =
  * Composition:
  *   - `issue_stances` — what the user cares about.
  *   - `stance_signals` — how the user would have voted on specific bills
- *     (`agree` → Yea; `disagree` → Nay; `skip` is ignored). This is the only
- *     source of direction for rep scoring; the LLM-sourced directional
- *     framing from `./direction.ts` is used elsewhere (bill scoring, ballot
- *     measures) but is deliberately excluded here so the rep's record is
- *     counted against user-declared signals, not narrated.
+ *     (`agree` → Yea; `disagree` → Nay; `skip` is ignored). When present,
+ *     a user signal always wins over any LLM-derived direction.
+ *   - `bill_direction` — LLM-derived classification of whether a bill
+ *     advances or obstructs each declared stance. Whether and how this
+ *     contributes to scoring is gated by the user's `auto_direction_mode`
+ *     preference: `off` ignores it entirely; `supplement` and `co-equal`
+ *     count high-confidence (≥ HIGH_CONFIDENCE_THRESHOLD)
+ *     `advances`/`obstructs` calls when no explicit user signal exists;
+ *     `advisory` never auto-counts the classifier. Mid-confidence,
+ *     `mixed`, and `unclear` calls are dropped from scoring (surfaced
+ *     elsewhere via the review tool). See `./directionResolution.ts` for
+ *     the full truth table.
  *   - `bill_alignment` (current `stance_snapshot_hash`) — which bills touch
  *     which issues. Bills that have not been scored under the current stance
  *     set are invisible to this function; call `politiclaw_score_bill` or
@@ -218,6 +402,7 @@ export function scoreRepresentative(
     stance: row.stance,
     weight: row.weight,
     ...(row.note ? { note: row.note } : {}),
+    ...(row.sourceText ? { sourceText: row.sourceText } : {}),
   }));
   if (stances.length === 0) {
     return {
@@ -239,9 +424,21 @@ export function scoreRepresentative(
 
   const stanceSnapshotHash = hashStancesForRepScoring(stances);
   const excludeProcedural = opts.excludeProcedural ?? true;
+  const mode: AutoDirectionMode = getPreferences(db)?.autoDirectionMode ?? "off";
 
   const rawEvidence = readEvidenceRows(db, repId, stanceSnapshotHash);
-  const evidence = expandEvidence(rawEvidence, stances);
+  const signalIndex = readSignalIndex(db);
+  const directionMap =
+    mode === "off"
+      ? new Map<string, Map<string, BillDirection>>()
+      : readDirectionMap(db, stanceSnapshotHash);
+  const evidence = expandEvidence(
+    rawEvidence,
+    stances,
+    mode,
+    directionMap,
+    signalIndex,
+  );
   const alignment = computeRepAlignment(stances, evidence, { excludeProcedural });
   const coverage = computeCoverage(db, repId, stanceSnapshotHash, {
     includeZeroVoteDiagnostics: alignment.consideredVoteCount === 0,
@@ -255,6 +452,8 @@ export function scoreRepresentative(
     stanceSnapshotHash,
     perIssue: alignment.perIssue,
     consideredVoteCount: alignment.consideredVoteCount,
+    aiRatedVoteCount: alignment.aiRatedVoteCount,
+    autoDirectionMode: mode,
     skippedProceduralCount: alignment.skippedProceduralCount,
     skippedNeutralPositionCount: alignment.skippedNeutralPositionCount,
     missingSignalBillCount: coverage.missingSignalBillCount,
@@ -269,8 +468,6 @@ type EvidenceRow = {
   bill_id: string;
   relevance: number;
   matched_json: string;
-  user_direction: "agree" | "disagree";
-  user_signal_weight: number;
   rep_position: "Yea" | "Nay" | "Present" | "Not Voting";
   vote_id: string;
   is_procedural: number | null;
@@ -283,30 +480,21 @@ function readEvidenceRows(
   repId: string,
   stanceSnapshotHash: string,
 ): EvidenceRow[] {
+  // Signals are resolved separately (see `readSignalIndex`) so a single
+  // bill row can produce per-stance-scoped resolution downstream — pulling
+  // a single bill-level signal in this query would force the same
+  // direction across every matched stance on the bill.
   return db
     .prepare(
-      `WITH latest_signals AS (
-         SELECT bill_id, direction, weight, created_at,
-                ROW_NUMBER() OVER (
-                  PARTITION BY bill_id
-                  ORDER BY created_at DESC, id DESC
-                ) AS rn
-           FROM stance_signals
-          WHERE bill_id IS NOT NULL AND direction IN ('agree','disagree')
-       )
-       SELECT ba.bill_id,
+      `SELECT ba.bill_id,
               ba.relevance,
               ba.matched_json,
               ba.source_adapter_id,
               ba.source_tier,
-              ls.direction AS user_direction,
-              ls.weight    AS user_signal_weight,
               mv.position  AS rep_position,
               rcv.id       AS vote_id,
               rcv.is_procedural
          FROM bill_alignment ba
-         JOIN latest_signals ls
-           ON ls.bill_id = ba.bill_id AND ls.rn = 1
          JOIN roll_call_votes rcv
            ON rcv.bill_id = ba.bill_id
          JOIN member_votes mv
@@ -319,32 +507,103 @@ function readEvidenceRows(
 function expandEvidence(
   rows: readonly EvidenceRow[],
   stances: readonly IssueStance[],
+  mode: AutoDirectionMode,
+  directionByBill: ReadonlyMap<string, ReadonlyMap<string, BillDirection>>,
+  signalIndex: SignalIndex,
 ): BillEvidence[] {
   const stanceByIssue = new Map(stances.map((stance) => [stance.issue, stance]));
   const evidence: BillEvidence[] = [];
   for (const row of rows) {
     const matches = safeParseMatches(row.matched_json);
+    const billDirections = directionByBill.get(row.bill_id);
     for (const match of matches) {
       const stance = stanceByIssue.get(match.issue);
       // If the user removed this issue after the bill was scored, skip it —
       // the primitive only scores against *currently declared* stances.
       if (!stance || stance.stance === "neutral") continue;
+      const classifier = billDirections?.get(match.issue) ?? null;
+      const userSignal = lookupUserSignal(signalIndex, row.bill_id, match.issue);
+      const effective = resolveEffectiveDirection({
+        mode,
+        userDirection: userSignal?.direction ?? null,
+        classifier,
+      });
+      if (!effective) continue;
+      // Classifier-derived rows have no per-bill user weight — fall back to
+      // the same default the user signal path uses (1.0). Real user signals
+      // keep their recorded weight.
+      const userSignalWeight = userSignal?.weight ?? 1.0;
+      const directionSource: "user" | "classifier" =
+        userSignal !== null ? "user" : "classifier";
       evidence.push({
         billId: row.bill_id,
         issue: match.issue,
         stance: stance.stance,
         stanceWeight: stance.weight,
         relevance: row.relevance,
-        userDirection: row.user_direction,
-        userSignalWeight: row.user_signal_weight,
+        userDirection: effective,
+        userSignalWeight,
         repPosition: row.rep_position,
         isProcedural:
           row.is_procedural === null ? null : row.is_procedural === 1,
         voteId: row.vote_id,
+        directionSource,
       });
     }
   }
   return evidence;
+}
+
+type DirectionMapRow = {
+  bill_id: string;
+  stance_slug: string;
+  kind: "advances" | "obstructs" | "mixed" | "unclear";
+  confidence: number;
+  rationale: string;
+  evidence_json: string;
+};
+
+function readDirectionMap(
+  db: PolitiClawDb,
+  stanceSnapshotHash: string,
+): Map<string, Map<string, BillDirection>> {
+  // Only consider direction rows for each bill's CURRENT update_date —
+  // older classifications (from before an amendment) are stale by design.
+  const rows = db
+    .prepare(
+      `SELECT bd.bill_id,
+              bd.stance_slug,
+              bd.kind,
+              bd.confidence,
+              bd.rationale,
+              bd.evidence_json
+         FROM bill_direction bd
+         JOIN bills b
+           ON b.id = bd.bill_id
+          AND COALESCE(b.update_date, '') = bd.bill_update_date
+        WHERE bd.stance_snapshot_hash = @hash`,
+    )
+    .all({ hash: stanceSnapshotHash }) as DirectionMapRow[];
+
+  const out = new Map<string, Map<string, BillDirection>>();
+  for (const row of rows) {
+    let bucket = out.get(row.bill_id);
+    if (!bucket) {
+      bucket = new Map<string, BillDirection>();
+      out.set(row.bill_id, bucket);
+    }
+    bucket.set(
+      row.stance_slug,
+      deserializeDirection({
+        stance_slug: row.stance_slug,
+        kind: row.kind,
+        confidence: row.confidence,
+        rationale: row.rationale,
+        evidence_json: row.evidence_json,
+      }),
+    );
+  }
+  return out;
 }
 
 function safeParseMatches(matchedJson: string): StanceMatch[] {
@@ -501,16 +760,12 @@ function persistRepScores(
 }
 
 /**
- * Stance snapshot hash for rep scoring. Must be deterministic and stable
- * across calls so a re-score under an unchanged stance set updates the same
- * `rep_scores` row rather than inserting a duplicate. Mirrors the bill-score
- * hash convention (sorted by issue, sha256, truncated to 16 chars).
+ * Stance snapshot hash for rep scoring. Must produce identical output to the
+ * hash used for `bill_alignment` rows, since `rep_scores` joins those tables
+ * on `stance_snapshot_hash`.
  */
 export function hashStancesForRepScoring(stances: readonly IssueStance[]): string {
-  const normalized = [...stances]
-    .map((s) => ({ issue: s.issue, stance: s.stance, weight: s.weight }))
-    .sort((a, b) => a.issue.localeCompare(b.issue));
-  return createHash("sha256").update(JSON.stringify(normalized)).digest("hex").slice(0, 16);
+  return hashStanceSnapshot(stances);
 }
 
 export type StoredRepScore = {
@@ -586,6 +841,7 @@ export function readStoredRepScores(
 export function readStoredAlignment(
   db: PolitiClawDb,
   billId: string,
+  billUpdateDate: string,
   stanceSnapshotHash: string,
 ): StoredAlignment | null {
   const row = db
@@ -593,9 +849,15 @@ export function readStoredAlignment(
       `SELECT bill_id, stance_snapshot_hash, relevance, confidence, matched_json,
               rationale, computed_at, source_adapter_id, source_tier
          FROM bill_alignment
-         WHERE bill_id = @bill_id AND stance_snapshot_hash = @hash`,
+         WHERE bill_id = @bill_id
+           AND bill_update_date = @bill_update_date
+           AND stance_snapshot_hash = @hash`,
     )
-    .get({ bill_id: billId, hash: stanceSnapshotHash }) as
+    .get({
+      bill_id: billId,
+      bill_update_date: billUpdateDate,
+      hash: stanceSnapshotHash,
+    }) as
     | {
         bill_id: string;
         stance_snapshot_hash: string;

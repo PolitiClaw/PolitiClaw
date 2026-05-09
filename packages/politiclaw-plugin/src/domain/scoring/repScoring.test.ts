@@ -6,15 +6,18 @@ import {
   readStoredRepScores,
   scoreRepresentative,
 } from "./index.js";
-import { createHash } from "node:crypto";
+import { hashStanceSnapshot } from "./stanceHash.js";
 
 function stanceHash(
-  stances: Array<{ issue: string; stance: "support" | "oppose" | "neutral"; weight: number }>,
+  stances: Array<{
+    issue: string;
+    stance: "support" | "oppose" | "neutral";
+    weight: number;
+    note?: string;
+    sourceText?: string;
+  }>,
 ): string {
-  const normalized = [...stances]
-    .map((stance) => ({ issue: stance.issue, stance: stance.stance, weight: stance.weight }))
-    .sort((a, b) => a.issue.localeCompare(b.issue));
-  return createHash("sha256").update(JSON.stringify(normalized)).digest("hex").slice(0, 16);
+  return hashStanceSnapshot(stances);
 }
 
 function insertRep(
@@ -79,10 +82,10 @@ function insertBillAlignment(
 ): void {
   db.prepare(
     `INSERT INTO bill_alignment
-       (bill_id, stance_snapshot_hash, relevance, confidence,
+       (bill_id, bill_update_date, stance_snapshot_hash, relevance, confidence,
         matched_json, rationale, computed_at, source_adapter_id, source_tier)
      VALUES
-       (@bill_id, @hash, @relevance, 0.6,
+       (@bill_id, '', @hash, @relevance, 0.6,
         @matched, 'test rationale', @computed_at, 'congressGov', 1)`,
   ).run({
     bill_id: opts.billId,
@@ -635,6 +638,420 @@ describe("scoreRepresentative", () => {
     // Both bills should count as aligned (latest signal on bill 10 was 'agree' + repPosition Yea).
     expect(result.perIssue[0]!.alignedCount).toBe(2);
     expect(result.perIssue[0]!.conflictedCount).toBe(0);
+  });
+
+  describe("auto_direction_mode integration", () => {
+    function seedClassifiedBill(
+      db: PolitiClawDb,
+      params: {
+        billId: string;
+        hash: string;
+        stanceSlug: string;
+        repId: string;
+        repPosition: "Yea" | "Nay";
+        kind: "advances" | "obstructs" | "mixed" | "unclear";
+        confidence: number;
+      },
+    ): void {
+      insertBill(db, params.billId);
+      insertBillAlignment(db, {
+        billId: params.billId,
+        hash: params.hash,
+        relevance: 0.8,
+        matches: [
+          {
+            issue: params.stanceSlug,
+            stance: "support",
+            stanceWeight: 4,
+            location: "subject",
+            matchedText: `subject '${params.stanceSlug}'`,
+          },
+        ],
+      });
+      db.prepare(
+        `INSERT INTO bill_direction
+           (bill_id, bill_update_date, stance_snapshot_hash, stance_slug,
+            kind, confidence, rationale, evidence_json, computed_at, model_id)
+         VALUES (@bill_id, '', @hash, @slug, @kind, @conf, 'r', '{}', @now, 'test')`,
+      ).run({
+        bill_id: params.billId,
+        hash: params.hash,
+        slug: params.stanceSlug,
+        kind: params.kind,
+        conf: params.confidence,
+        now: Date.now(),
+      });
+      const voteRoll = parseInt(params.billId.split("-").pop() ?? "0", 10);
+      insertRollCallAndVote(db, {
+        voteId: `House-119-1-${voteRoll}`,
+        billId: params.billId,
+        rollCall: voteRoll,
+        bioguideId: params.repId,
+        position: params.repPosition,
+        isProcedural: false,
+      });
+    }
+
+    function setMode(db: PolitiClawDb, mode: "off" | "supplement" | "co-equal" | "advisory"): void {
+      db.prepare(
+        `INSERT INTO preferences (id, address, updated_at, auto_direction_mode)
+         VALUES (1, '123 Main', 0, @mode)
+         ON CONFLICT(id) DO UPDATE SET auto_direction_mode = excluded.auto_direction_mode`,
+      ).run({ mode });
+    }
+
+    it("mode='off' ignores bill_direction rows even when present (preserves legacy behavior)", () => {
+      const db = openMemoryDb();
+      const stance = { issue: "housing", stance: "support" as const, weight: 4 };
+      upsertIssueStance(db, stance);
+      insertRep(db, { id: "B000020", name: "Rep Test" });
+      setMode(db, "off");
+      const hash = stanceHash([stance]);
+      seedClassifiedBill(db, {
+        billId: "119-hr-1",
+        hash,
+        stanceSlug: "housing",
+        repId: "B000020",
+        repPosition: "Yea",
+        kind: "advances",
+        confidence: 0.9,
+      });
+      // No user signal — with mode='off' the bill should not count.
+      const result = scoreRepresentative(db, "B000020");
+      expect(result.status).toBe("ok");
+      if (result.status !== "ok") return;
+      expect(result.perIssue[0]!.consideredCount).toBe(0);
+    });
+
+    it("mode='co-equal' counts a high-confidence advances classification as 'agree' when no user signal exists", () => {
+      const db = openMemoryDb();
+      const stance = { issue: "housing", stance: "support" as const, weight: 4 };
+      upsertIssueStance(db, stance);
+      insertRep(db, { id: "B000021", name: "Rep Test" });
+      setMode(db, "co-equal");
+      const hash = stanceHash([stance]);
+      seedClassifiedBill(db, {
+        billId: "119-hr-2",
+        hash,
+        stanceSlug: "housing",
+        repId: "B000021",
+        repPosition: "Yea",
+        kind: "advances",
+        confidence: 0.85,
+      });
+      const result = scoreRepresentative(db, "B000021");
+      expect(result.status).toBe("ok");
+      if (result.status !== "ok") return;
+      expect(result.perIssue[0]!.alignedCount).toBe(1);
+      expect(result.perIssue[0]!.conflictedCount).toBe(0);
+    });
+
+    it("mode='co-equal' counts high-confidence obstructs as 'disagree' (rep voting Nay aligns)", () => {
+      const db = openMemoryDb();
+      const stance = { issue: "housing", stance: "support" as const, weight: 4 };
+      upsertIssueStance(db, stance);
+      insertRep(db, { id: "B000022", name: "Rep Test" });
+      setMode(db, "co-equal");
+      const hash = stanceHash([stance]);
+      seedClassifiedBill(db, {
+        billId: "119-hr-3",
+        hash,
+        stanceSlug: "housing",
+        repId: "B000022",
+        repPosition: "Nay",
+        kind: "obstructs",
+        confidence: 0.9,
+      });
+      const result = scoreRepresentative(db, "B000022");
+      expect(result.status).toBe("ok");
+      if (result.status !== "ok") return;
+      // Rep voted Nay; classifier said obstructs (so user-implied is disagree/Nay).
+      // Rep agrees with user-implied position → aligned.
+      expect(result.perIssue[0]!.alignedCount).toBe(1);
+      expect(result.perIssue[0]!.conflictedCount).toBe(0);
+    });
+
+    it("mode='co-equal' does not count mid-confidence classifications", () => {
+      const db = openMemoryDb();
+      const stance = { issue: "housing", stance: "support" as const, weight: 4 };
+      upsertIssueStance(db, stance);
+      insertRep(db, { id: "B000023", name: "Rep Test" });
+      setMode(db, "co-equal");
+      const hash = stanceHash([stance]);
+      seedClassifiedBill(db, {
+        billId: "119-hr-4",
+        hash,
+        stanceSlug: "housing",
+        repId: "B000023",
+        repPosition: "Yea",
+        kind: "advances",
+        confidence: 0.6,
+      });
+      const result = scoreRepresentative(db, "B000023");
+      expect(result.status).toBe("ok");
+      if (result.status !== "ok") return;
+      expect(result.perIssue[0]!.consideredCount).toBe(0);
+    });
+
+    it("mode='advisory' never counts the classifier — only user signals", () => {
+      const db = openMemoryDb();
+      const stance = { issue: "housing", stance: "support" as const, weight: 4 };
+      upsertIssueStance(db, stance);
+      insertRep(db, { id: "B000024", name: "Rep Test" });
+      setMode(db, "advisory");
+      const hash = stanceHash([stance]);
+      seedClassifiedBill(db, {
+        billId: "119-hr-5",
+        hash,
+        stanceSlug: "housing",
+        repId: "B000024",
+        repPosition: "Yea",
+        kind: "advances",
+        confidence: 0.9,
+      });
+      const result = scoreRepresentative(db, "B000024");
+      expect(result.status).toBe("ok");
+      if (result.status !== "ok") return;
+      expect(result.perIssue[0]!.consideredCount).toBe(0);
+    });
+
+    it("user signal overrides classifier in supplement mode", () => {
+      const db = openMemoryDb();
+      const stance = { issue: "housing", stance: "support" as const, weight: 4 };
+      upsertIssueStance(db, stance);
+      insertRep(db, { id: "B000025", name: "Rep Test" });
+      setMode(db, "supplement");
+      const hash = stanceHash([stance]);
+      seedClassifiedBill(db, {
+        billId: "119-hr-6",
+        hash,
+        stanceSlug: "housing",
+        repId: "B000025",
+        repPosition: "Yea",
+        kind: "advances",  // classifier would say agree
+        confidence: 0.9,
+      });
+      // User explicitly disagrees — overrides the classifier.
+      recordStanceSignal(db, {
+        billId: "119-hr-6",
+        direction: "disagree",
+        weight: 1,
+        source: "dashboard",
+      });
+      const result = scoreRepresentative(db, "B000025");
+      expect(result.status).toBe("ok");
+      if (result.status !== "ok") return;
+      // User said disagree → expected Nay; rep voted Yea → conflicted.
+      expect(result.perIssue[0]!.conflictedCount).toBe(1);
+      expect(result.perIssue[0]!.alignedCount).toBe(0);
+    });
+
+    it("ignores stale direction rows from prior bill_update_date (only current version classifications count)", () => {
+      const db = openMemoryDb();
+      const stance = { issue: "housing", stance: "support" as const, weight: 4 };
+      upsertIssueStance(db, stance);
+      insertRep(db, { id: "B000026", name: "Rep Test" });
+      setMode(db, "co-equal");
+      const hash = stanceHash([stance]);
+
+      // Insert bill with an update_date.
+      db.prepare(
+        `UPDATE bills SET update_date = '2026-03-01' WHERE id = '119-hr-7'`,
+      ).run();
+      insertBill(db, "119-hr-7");
+      db.prepare(
+        `UPDATE bills SET update_date = '2026-03-01' WHERE id = '119-hr-7'`,
+      ).run();
+      insertBillAlignment(db, {
+        billId: "119-hr-7",
+        hash,
+        relevance: 0.8,
+        matches: [
+          {
+            issue: "housing",
+            stance: "support",
+            stanceWeight: 4,
+            location: "subject",
+            matchedText: "subject 'housing'",
+          },
+        ],
+      });
+      // Stale classification row at OLDER update_date.
+      db.prepare(
+        `INSERT INTO bill_direction
+           (bill_id, bill_update_date, stance_snapshot_hash, stance_slug,
+            kind, confidence, rationale, evidence_json, computed_at, model_id)
+         VALUES ('119-hr-7', '2026-01-15', @hash, 'housing', 'advances', 0.9, 'r', '{}', 0, 'test')`,
+      ).run({ hash });
+      insertRollCallAndVote(db, {
+        voteId: "House-119-1-7",
+        billId: "119-hr-7",
+        rollCall: 7,
+        bioguideId: "B000026",
+        position: "Yea",
+        isProcedural: false,
+      });
+
+      const result = scoreRepresentative(db, "B000026");
+      expect(result.status).toBe("ok");
+      if (result.status !== "ok") return;
+      // Stale row should be ignored — bill not counted.
+      expect(result.perIssue[0]!.consideredCount).toBe(0);
+    });
+
+    it("per-stance signals scope correctly when one bill matches two stances with conflicting AI calls", () => {
+      // The reviewer's headline scenario: a bill is `advances` for one
+      // stance and `obstructs` for another. Promoting just the `advances`
+      // call must not stamp `agree` onto the `obstructs` stance too.
+      const db = openMemoryDb();
+      const housing = { issue: "housing", stance: "support" as const, weight: 4 };
+      const taxation = { issue: "taxation", stance: "oppose" as const, weight: 3 };
+      upsertIssueStance(db, housing);
+      upsertIssueStance(db, taxation);
+      insertRep(db, { id: "B000027", name: "Rep Test" });
+      setMode(db, "co-equal");
+      const hash = stanceHash([housing, taxation]);
+
+      insertBill(db, "119-hr-50");
+      insertBillAlignment(db, {
+        billId: "119-hr-50",
+        hash,
+        relevance: 0.8,
+        matches: [
+          {
+            issue: "housing",
+            stance: "support",
+            stanceWeight: 4,
+            location: "subject",
+            matchedText: "subject 'housing'",
+          },
+          {
+            issue: "taxation",
+            stance: "oppose",
+            stanceWeight: 3,
+            location: "subject",
+            matchedText: "subject 'taxation'",
+          },
+        ],
+      });
+      // High-confidence directions in conflicting directions for this bill.
+      db.prepare(
+        `INSERT INTO bill_direction
+           (bill_id, bill_update_date, stance_snapshot_hash, stance_slug,
+            kind, confidence, rationale, evidence_json, computed_at, model_id)
+         VALUES
+           ('119-hr-50', '', @hash, 'housing', 'advances', 0.9, 'r', '{}', 0, 'test'),
+           ('119-hr-50', '', @hash, 'taxation', 'obstructs', 0.85, 'r', '{}', 0, 'test')`,
+      ).run({ hash });
+      insertRollCallAndVote(db, {
+        voteId: "House-119-1-50",
+        billId: "119-hr-50",
+        rollCall: 50,
+        bioguideId: "B000027",
+        position: "Yea",
+        isProcedural: false,
+      });
+
+      // Simulate the user promoting only the `housing` AI call — emulating
+      // a per-stance recordStanceSignal write that politiclaw_resolve_auto_rating
+      // would now produce.
+      recordStanceSignal(db, {
+        billId: "119-hr-50",
+        direction: "agree",
+        weight: 1,
+        source: "review",
+        stanceSlug: "housing",
+      });
+
+      const result = scoreRepresentative(db, "B000027");
+      expect(result.status).toBe("ok");
+      if (result.status !== "ok") return;
+      const housingIssue = result.perIssue.find((i) => i.issue === "housing");
+      const taxationIssue = result.perIssue.find((i) => i.issue === "taxation");
+      // Housing: per-stance user signal `agree` + rep voted Yea → aligned.
+      expect(housingIssue?.alignedCount).toBe(1);
+      expect(housingIssue?.conflictedCount).toBe(0);
+      // Taxation: no per-stance signal exists; classifier said `obstructs`
+      // (high confidence) under co-equal mode → user-implied disagree/Nay.
+      // Rep voted Yea → conflicted. Critically, the housing `agree` does
+      // NOT leak into taxation: the per-stance lookup wins.
+      expect(taxationIssue?.alignedCount).toBe(0);
+      expect(taxationIssue?.conflictedCount).toBe(1);
+    });
+
+    it("per-stance signal preempts bill-level signal for that stance only", () => {
+      // Bill-level signal exists; a per-stance signal also exists. The
+      // per-stance signal must win for its stance; the bill-level signal
+      // must still apply to the other matched stances.
+      const db = openMemoryDb();
+      const housing = { issue: "housing", stance: "support" as const, weight: 4 };
+      const taxation = { issue: "taxation", stance: "oppose" as const, weight: 3 };
+      upsertIssueStance(db, housing);
+      upsertIssueStance(db, taxation);
+      insertRep(db, { id: "B000028", name: "Rep Test" });
+      setMode(db, "off");
+      const hash = stanceHash([housing, taxation]);
+
+      insertBill(db, "119-hr-51");
+      insertBillAlignment(db, {
+        billId: "119-hr-51",
+        hash,
+        relevance: 0.8,
+        matches: [
+          {
+            issue: "housing",
+            stance: "support",
+            stanceWeight: 4,
+            location: "subject",
+            matchedText: "subject 'housing'",
+          },
+          {
+            issue: "taxation",
+            stance: "oppose",
+            stanceWeight: 3,
+            location: "subject",
+            matchedText: "subject 'taxation'",
+          },
+        ],
+      });
+      insertRollCallAndVote(db, {
+        voteId: "House-119-1-51",
+        billId: "119-hr-51",
+        rollCall: 51,
+        bioguideId: "B000028",
+        position: "Yea",
+        isProcedural: false,
+      });
+
+      // Bill-level: agree (applies to every matched stance by default).
+      recordStanceSignal(db, {
+        billId: "119-hr-51",
+        direction: "agree",
+        weight: 1,
+        source: "dashboard",
+      });
+      // Per-stance: user explicitly disagrees on housing only.
+      recordStanceSignal(db, {
+        billId: "119-hr-51",
+        direction: "disagree",
+        weight: 1,
+        source: "review",
+        stanceSlug: "housing",
+      });
+
+      const result = scoreRepresentative(db, "B000028");
+      expect(result.status).toBe("ok");
+      if (result.status !== "ok") return;
+      const housingIssue = result.perIssue.find((i) => i.issue === "housing");
+      const taxationIssue = result.perIssue.find((i) => i.issue === "taxation");
+      // Housing: per-stance disagree → expected Nay; rep voted Yea → conflicted.
+      expect(housingIssue?.conflictedCount).toBe(1);
+      expect(housingIssue?.alignedCount).toBe(0);
+      // Taxation: no per-stance signal → falls back to bill-level agree;
+      // rep voted Yea → aligned.
+      expect(taxationIssue?.alignedCount).toBe(1);
+      expect(taxationIssue?.conflictedCount).toBe(0);
+    });
   });
 });
 

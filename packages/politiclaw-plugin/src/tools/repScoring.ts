@@ -139,16 +139,44 @@ export function renderScoreRepresentativeOutput(
     }
   }
 
+  const aiDisclosureLines = buildAiDisclosureFooter({
+    consideredVoteCount,
+    aiRatedVoteCount: result.aiRatedVoteCount,
+    autoDirectionMode: result.autoDirectionMode,
+  });
+
   return [
     header,
     provenance,
     summaryLine,
+    ...aiDisclosureLines,
     "",
     "Your priorities this rep acted on:",
     ...issueLines,
     "",
     ALIGNMENT_DISCLAIMER,
   ].join("\n");
+}
+
+function buildAiDisclosureFooter(inputs: {
+  consideredVoteCount: number;
+  aiRatedVoteCount: number;
+  autoDirectionMode: ScoreRepresentativeResult extends infer R
+    ? R extends { status: "ok"; autoDirectionMode: infer M }
+      ? M
+      : never
+    : never;
+}): string[] {
+  // Only surface the disclosure when the classifier was actually consulted
+  // for this run AND something was AI-derived; otherwise the line is noise.
+  if (inputs.autoDirectionMode === "off" || inputs.aiRatedVoteCount === 0) {
+    return [];
+  }
+  const userSignaled = inputs.consideredVoteCount - inputs.aiRatedVoteCount;
+  const voteWord = inputs.consideredVoteCount === 1 ? "vote" : "votes";
+  return [
+    `AI involvement: ${inputs.aiRatedVoteCount} of ${inputs.consideredVoteCount} counted ${voteWord} were AI-rated; ${userSignaled} came from your explicit signals.`,
+  ];
 }
 
 function formatBillCitation(billId: string): string {

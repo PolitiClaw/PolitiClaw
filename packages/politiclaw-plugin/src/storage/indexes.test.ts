@@ -17,10 +17,10 @@ function seedAlignmentAndSignals(db: PolitiClawDb): void {
   ).run();
 
   db.prepare(
-    `INSERT INTO bill_alignment (bill_id, stance_snapshot_hash, relevance, confidence,
-                                 matched_json, rationale, computed_at,
-                                 source_adapter_id, source_tier)
-     VALUES ('119-hr-1', 'hash-a', 0.9, 0.8, '[]', 'ok', 0, 'congressgov', 1)`,
+    `INSERT INTO bill_alignment (bill_id, bill_update_date, stance_snapshot_hash,
+                                 relevance, confidence, matched_json, rationale,
+                                 computed_at, source_adapter_id, source_tier)
+     VALUES ('119-hr-1', '', 'hash-a', 0.9, 0.8, '[]', 'ok', 0, 'congressgov', 1)`,
   ).run();
 
   db.prepare(

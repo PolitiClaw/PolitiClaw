@@ -1,4 +1,7 @@
-import type { AnyAgentTool } from "openclaw/plugin-sdk/plugin-entry";
+import type {
+  AnyAgentTool,
+  OpenClawPluginToolFactory,
+} from "openclaw/plugin-sdk/plugin-entry";
 
 import { actionMomentsTools } from "../tools/actionMoments.js";
 import { ballotTools } from "../tools/ballot.js";
@@ -11,12 +14,13 @@ import { issueStancesTools } from "../tools/issueStances.js";
 import { monitoringTools } from "../tools/monitoring.js";
 import { muteTools } from "../tools/mutes.js";
 import { recordStanceSignalTools } from "../tools/preferences.js";
+import { reviewTools } from "../tools/review.js";
 import { reminderTools } from "../tools/reminder.js";
 import { repReportTools } from "../tools/repReport.js";
 import { repScoringTools } from "../tools/repScoring.js";
 import { repsTools } from "../tools/reps.js";
 import { researchFinanceTools } from "../tools/researchFinance.js";
-import { scoringTools } from "../tools/scoring.js";
+import { scoringToolFactoryPairs } from "../tools/scoring.js";
 import { voteIngestTools } from "../tools/voteIngest.js";
 
 export type DocsToolGroupId =
@@ -32,7 +36,20 @@ export type DocsToolEntry = {
   groupId: DocsToolGroupId;
   groupLabel: string;
   sourcePath: string;
+  /**
+   * Static tool metadata. Always populated; used by docs generation. For
+   * tools that need per-call OpenClaw context, this is the docs-only shape;
+   * the runtime registration pulls a context-aware version from `factory`.
+   */
   tool: AnyAgentTool;
+  /**
+   * When set, the runtime registers this factory with OpenClaw instead of
+   * the static `tool`. Lets the tool's `execute` close over per-call
+   * `OpenClawPluginToolContext` (config, agentId, etc.). Docs generation
+   * keeps using `tool` so static metadata stays available without invoking
+   * the factory.
+   */
+  factory?: OpenClawPluginToolFactory;
 };
 
 export type DocsToolGroup = {
@@ -53,6 +70,26 @@ function makeEntries(
     groupLabel,
     sourcePath,
     tool,
+  }));
+}
+
+/**
+ * For tools that need per-call OpenClaw context (e.g. access to
+ * `ctx.config` and `ctx.agentId` to invoke a host LLM). Each pair holds the
+ * static metadata used by docs and the factory used at registration time.
+ */
+function makeFactoryEntries(
+  groupId: DocsToolGroupId,
+  groupLabel: string,
+  sourcePath: string,
+  pairs: readonly { tool: AnyAgentTool; factory: OpenClawPluginToolFactory }[],
+): DocsToolEntry[] {
+  return pairs.map(({ tool, factory }) => ({
+    groupId,
+    groupLabel,
+    sourcePath,
+    tool,
+    factory,
   }));
 }
 
@@ -121,11 +158,17 @@ export const POLITICLAW_TOOL_GROUPS: readonly DocsToolGroup[] = [
         "packages/politiclaw-plugin/src/tools/bills.ts",
         billsTools,
       ),
-      ...makeEntries(
+      ...makeFactoryEntries(
         "bills",
         "Bills and votes",
         "packages/politiclaw-plugin/src/tools/scoring.ts",
-        scoringTools,
+        scoringToolFactoryPairs,
+      ),
+      ...makeEntries(
+        "bills",
+        "Bills and votes",
+        "packages/politiclaw-plugin/src/tools/review.ts",
+        reviewTools,
       ),
       ...makeEntries(
         "bills",
@@ -226,3 +269,16 @@ export const REGISTERED_POLITICLAW_TOOLS: readonly AnyAgentTool[] =
 
 export const REGISTERED_POLITICLAW_TOOL_DOCS: readonly DocsToolEntry[] =
   POLITICLAW_TOOL_GROUPS.flatMap((group) => group.entries);
+
+/**
+ * What the plugin actually hands to OpenClaw at register-time: the factory
+ * when a tool needs per-call context, otherwise the static tool. Docs and
+ * test assertions still iterate `REGISTERED_POLITICLAW_TOOLS` for static
+ * metadata.
+ */
+export const REGISTERED_POLITICLAW_TOOL_REGISTRATIONS: readonly (
+  | AnyAgentTool
+  | OpenClawPluginToolFactory
+)[] = POLITICLAW_TOOL_GROUPS.flatMap((group) =>
+  group.entries.map((entry) => entry.factory ?? entry.tool),
+);

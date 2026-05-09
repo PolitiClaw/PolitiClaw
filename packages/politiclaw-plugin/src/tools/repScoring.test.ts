@@ -558,3 +558,86 @@ describe("computeRepPattern", () => {
     expect(computeRepPattern(perIssue)).toBe("mixed");
   });
 });
+
+describe("renderScoreRepresentativeOutput AI disclosure footer", () => {
+  function buildOkResult(overrides: {
+    autoDirectionMode: "off" | "supplement" | "co-equal" | "advisory";
+    aiRatedVoteCount: number;
+    consideredVoteCount?: number;
+  }) {
+    return {
+      status: "ok" as const,
+      rep: {
+        id: "B000099",
+        name: "Rep Test",
+        office: "US House",
+        party: "D",
+        jurisdiction: "US-CA-12",
+        district: "12",
+        state: "CA",
+        contact: undefined,
+        sourceAdapterId: "congressLegislators",
+        sourceTier: 1 as 1 | 2 | 3 | 4 | 5,
+        lastSynced: 0,
+      },
+      stanceSnapshotHash: "h",
+      perIssue: [
+        makeIssue({
+          issue: "housing",
+          alignmentScore: 0.7,
+          consideredCount: overrides.consideredVoteCount ?? 5,
+          alignedCount: 4,
+          conflictedCount: 1,
+          confidence: 0.8,
+        }),
+      ],
+      consideredVoteCount: overrides.consideredVoteCount ?? 5,
+      aiRatedVoteCount: overrides.aiRatedVoteCount,
+      autoDirectionMode: overrides.autoDirectionMode,
+      skippedProceduralCount: 0,
+      skippedNeutralPositionCount: 0,
+      missingSignalBillCount: 0,
+      billsWithoutRepVotes: 0,
+      signalBillsMissingAlignmentCount: 0,
+      repVoteBillCount: 5,
+      proceduralExcluded: true,
+    };
+  }
+
+  it("includes the AI involvement line when classifier counted at least one vote", async () => {
+    const { renderScoreRepresentativeOutput } = await import("./repScoring.js");
+    const text = renderScoreRepresentativeOutput(
+      buildOkResult({
+        autoDirectionMode: "co-equal",
+        aiRatedVoteCount: 2,
+        consideredVoteCount: 5,
+      }),
+    );
+    expect(text).toContain("AI involvement: 2 of 5 counted votes were AI-rated");
+    expect(text).toContain("3 came from your explicit signals");
+  });
+
+  it("omits the AI line when mode='off'", async () => {
+    const { renderScoreRepresentativeOutput } = await import("./repScoring.js");
+    const text = renderScoreRepresentativeOutput(
+      buildOkResult({
+        autoDirectionMode: "off",
+        aiRatedVoteCount: 0,
+        consideredVoteCount: 5,
+      }),
+    );
+    expect(text).not.toContain("AI involvement");
+  });
+
+  it("omits the AI line when mode is on but no votes were AI-rated", async () => {
+    const { renderScoreRepresentativeOutput } = await import("./repScoring.js");
+    const text = renderScoreRepresentativeOutput(
+      buildOkResult({
+        autoDirectionMode: "co-equal",
+        aiRatedVoteCount: 0,
+        consideredVoteCount: 5,
+      }),
+    );
+    expect(text).not.toContain("AI involvement");
+  });
+});

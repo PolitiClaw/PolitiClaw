@@ -26,6 +26,13 @@ export type BillEvidence = {
   repPosition: "Yea" | "Nay" | "Present" | "Not Voting";
   isProcedural: boolean | null;
   voteId: string;
+  /**
+   * Whether the effective direction for this evidence row came from an
+   * explicit user signal or from the LLM-derived classifier. Used by the
+   * rendering layer to disclose how much of a rep's score is AI-derived
+   * and by the review tool to know which bills the user can still promote.
+   */
+  directionSource: "user" | "classifier";
 };
 
 export type RepAlignmentOptions = {
@@ -55,6 +62,12 @@ export type RepIssueAlignment = {
   alignedCount: number;
   conflictedCount: number;
   consideredCount: number;
+  /**
+   * Subset of `consideredCount` whose effective direction came from the
+   * LLM classifier rather than an explicit user signal. `consideredCount -
+   * aiRatedCount` is the user-signaled portion.
+   */
+  aiRatedCount: number;
   /** Average of `relevance` values across counted (non-neutral, non-procedural) bills. */
   relevance: number;
   confidence: number;
@@ -69,6 +82,12 @@ export type RepAlignmentResult = {
   perIssue: RepIssueAlignment[];
   /** Votes that contributed to at least one issue's tally. */
   consideredVoteCount: number;
+  /**
+   * Subset of `consideredVoteCount` where at least one contributing match's
+   * direction came from the LLM classifier rather than an explicit user
+   * signal. Used by the rendering layer to disclose AI involvement.
+   */
+  aiRatedVoteCount: number;
   /** Votes dropped because they were procedural (or NULL when excludeProcedural=true). */
   skippedProceduralCount: number;
   /** Votes where rep abstained (Present / Not Voting). Excluded from tallies either way. */
@@ -122,7 +141,11 @@ export function computeRepAlignment(
   }
 
   const consideredVoteIds = new Set<string>();
-  for (const row of filtered) consideredVoteIds.add(row.voteId);
+  const aiRatedVoteIds = new Set<string>();
+  for (const row of filtered) {
+    consideredVoteIds.add(row.voteId);
+    if (row.directionSource === "classifier") aiRatedVoteIds.add(row.voteId);
+  }
 
   const perIssue: RepIssueAlignment[] = [];
   for (const stance of activeStances) {
@@ -134,6 +157,7 @@ export function computeRepAlignment(
   return {
     perIssue,
     consideredVoteCount: consideredVoteIds.size,
+    aiRatedVoteCount: aiRatedVoteIds.size,
     skippedProceduralCount,
     skippedNeutralPositionCount,
     proceduralExcluded: options.excludeProcedural,
@@ -152,6 +176,7 @@ function scoreSingleIssue(
   let conflictedWeight = 0;
   let alignedCount = 0;
   let conflictedCount = 0;
+  let aiRatedCount = 0;
   let relevanceSum = 0;
   const citedBills: CitedBill[] = [];
 
@@ -170,6 +195,7 @@ function scoreSingleIssue(
       conflictedWeight += rowWeight;
       conflictedCount += 1;
     }
+    if (row.directionSource === "classifier") aiRatedCount += 1;
     citedBills.push({
       billId: row.billId,
       voteId: row.voteId,
@@ -196,6 +222,7 @@ function scoreSingleIssue(
     alignedCount,
     conflictedCount,
     consideredCount,
+    aiRatedCount,
     relevance: clamp01(avgRelevance),
     confidence,
     alignmentScore: clamp01(alignmentScore),
@@ -214,6 +241,7 @@ function buildEmptyIssue(stance: IssueStance, reason: string): RepIssueAlignment
     alignedCount: 0,
     conflictedCount: 0,
     consideredCount: 0,
+    aiRatedCount: 0,
     relevance: 0,
     confidence: 0,
     alignmentScore: 0,

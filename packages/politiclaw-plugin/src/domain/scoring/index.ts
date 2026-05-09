@@ -333,6 +333,14 @@ export type ScoreRepresentativeResult =
       stanceSnapshotHash: string;
       perIssue: RepIssueAlignment[];
       consideredVoteCount: number;
+      /**
+       * Subset of `consideredVoteCount` whose direction was sourced from the
+       * LLM classifier rather than an explicit user signal. Surfaced to the
+       * user so the AI's contribution to the score is never invisible.
+       */
+      aiRatedVoteCount: number;
+      /** Auto-direction mode in effect for this scoring run. */
+      autoDirectionMode: AutoDirectionMode;
       skippedProceduralCount: number;
       skippedNeutralPositionCount: number;
       missingSignalBillCount: number;
@@ -350,11 +358,18 @@ export type ScoreRepresentativeResult =
  * Composition:
  *   - `issue_stances` — what the user cares about.
  *   - `stance_signals` — how the user would have voted on specific bills
- *     (`agree` → Yea; `disagree` → Nay; `skip` is ignored). This is the only
- *     source of direction for rep scoring; the LLM-sourced directional
- *     framing from `./direction.ts` is used elsewhere (bill scoring, ballot
- *     measures) but is deliberately excluded here so the rep's record is
- *     counted against user-declared signals, not narrated.
+ *     (`agree` → Yea; `disagree` → Nay; `skip` is ignored). When present,
+ *     a user signal always wins over any LLM-derived direction.
+ *   - `bill_direction` — LLM-derived classification of whether a bill
+ *     advances or obstructs each declared stance. Whether and how this
+ *     contributes to scoring is gated by the user's `auto_direction_mode`
+ *     preference: `off` ignores it entirely; `supplement` and `co-equal`
+ *     count high-confidence (≥ HIGH_CONFIDENCE_THRESHOLD)
+ *     `advances`/`obstructs` calls when no explicit user signal exists;
+ *     `advisory` never auto-counts the classifier. Mid-confidence,
+ *     `mixed`, and `unclear` calls are dropped from scoring (surfaced
+ *     elsewhere via the review tool). See `./directionResolution.ts` for
+ *     the full truth table.
  *   - `bill_alignment` (current `stance_snapshot_hash`) — which bills touch
  *     which issues. Bills that have not been scored under the current stance
  *     set are invisible to this function; call `politiclaw_score_bill` or
@@ -423,6 +438,8 @@ export function scoreRepresentative(
     stanceSnapshotHash,
     perIssue: alignment.perIssue,
     consideredVoteCount: alignment.consideredVoteCount,
+    aiRatedVoteCount: alignment.aiRatedVoteCount,
+    autoDirectionMode: mode,
     skippedProceduralCount: alignment.skippedProceduralCount,
     skippedNeutralPositionCount: alignment.skippedNeutralPositionCount,
     missingSignalBillCount: coverage.missingSignalBillCount,
@@ -514,6 +531,8 @@ function expandEvidence(
       // the same default the user signal path uses (1.0). Real user signals
       // keep their recorded weight.
       const userSignalWeight = row.user_signal_weight ?? 1.0;
+      const directionSource: "user" | "classifier" =
+        row.user_direction !== null ? "user" : "classifier";
       evidence.push({
         billId: row.bill_id,
         issue: match.issue,
@@ -526,6 +545,7 @@ function expandEvidence(
         isProcedural:
           row.is_procedural === null ? null : row.is_procedural === 1,
         voteId: row.vote_id,
+        directionSource,
       });
     }
   }

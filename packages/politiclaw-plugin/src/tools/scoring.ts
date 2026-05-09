@@ -151,16 +151,18 @@ export function renderScoreBillOutput(result: ScoreBillResult): string {
 
 function renderDirectionSection(direction: readonly DirectionForStance[]): string[] {
   if (direction.length === 0) return [];
-  const lines: string[] = ["", "Direction against your stances:"];
+  const lines: string[] = ["", "Direction against your stances [AI-rated]:"];
   for (const { issue, stance, direction: dir } of direction) {
     const stanceWord = stance === "support" ? "support" : "opposition";
     const head = `  • ${issue} (${stanceWord})`;
     if (dir.kind === "advances" || dir.kind === "obstructs") {
       const verb = dir.kind === "advances" ? "appears to advance" : "appears to obstruct";
-      lines.push(`${head}: ${verb} — "${dir.quotedText}"`);
+      const confidencePct = Math.round(dir.confidence * 100);
+      lines.push(`${head}: ${verb} (confidence ${confidencePct}%) — "${dir.quotedText}"`);
       lines.push(`      Counter-consideration: ${dir.counterConsideration}`);
     } else if (dir.kind === "mixed") {
-      lines.push(`${head}: mixed signals from bill text.`);
+      const confidencePct = Math.round(dir.confidence * 100);
+      lines.push(`${head}: mixed signals from bill text (confidence ${confidencePct}%).`);
       if (dir.advancesQuote) lines.push(`      Advances side: "${dir.advancesQuote}"`);
       if (dir.obstructsQuote) lines.push(`      Obstructs side: "${dir.obstructsQuote}"`);
       if (!dir.advancesQuote && !dir.obstructsQuote) {

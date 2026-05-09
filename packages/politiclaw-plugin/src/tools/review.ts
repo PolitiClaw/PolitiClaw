@@ -8,6 +8,11 @@ import {
 import type { IssueStance } from "../domain/preferences/types.js";
 import { HIGH_CONFIDENCE_THRESHOLD } from "../domain/scoring/direction.js";
 import { hashStancesForRepScoring } from "../domain/scoring/index.js";
+import {
+  lookupUserSignal,
+  readSignalIndex,
+  type UserSignal,
+} from "../domain/scoring/signalIndex.js";
 import { congressGovPublicBillUrl } from "../sources/bills/types.js";
 import { getStorage } from "../storage/context.js";
 import { safeParse } from "../validation/typebox.js";
@@ -67,7 +72,6 @@ type PendingRow = {
   confidence: number;
   rationale: string;
   evidence_json: string;
-  user_signal_direction: "agree" | "disagree" | "skip" | null;
 };
 
 function classifyTier(row: PendingRow): ReviewTier {
@@ -87,18 +91,12 @@ function listPendingRows(
   // Pull ALL direction rows for the snapshot first, then filter in memory:
   // the tier classification (incl. confidence threshold) lives in TS so we
   // don't repeat the SQL. Snapshot scope keeps the candidate set small.
+  // Existing user signals are resolved separately per (bill, stance) — see
+  // `lookupUserSignal` — so a bill-level signal recorded for a different
+  // stance doesn't bleed onto an unreviewed stance's row.
   const rows = db
     .prepare(
-      `WITH latest_signals AS (
-         SELECT bill_id, direction,
-                ROW_NUMBER() OVER (
-                  PARTITION BY bill_id
-                  ORDER BY created_at DESC, id DESC
-                ) AS rn
-           FROM stance_signals
-          WHERE bill_id IS NOT NULL
-       )
-       SELECT bd.bill_id          AS bill_id,
+      `SELECT bd.bill_id          AS bill_id,
               b.title             AS bill_title,
               b.congress          AS bill_congress,
               b.bill_type         AS bill_type,
@@ -108,14 +106,11 @@ function listPendingRows(
               bd.kind             AS kind,
               bd.confidence       AS confidence,
               bd.rationale        AS rationale,
-              bd.evidence_json    AS evidence_json,
-              ls.direction        AS user_signal_direction
+              bd.evidence_json    AS evidence_json
          FROM bill_direction bd
          JOIN bills b
            ON b.id = bd.bill_id
           AND COALESCE(b.update_date, '') = bd.bill_update_date
-         LEFT JOIN latest_signals ls
-           ON ls.bill_id = bd.bill_id AND ls.rn = 1
         WHERE bd.stance_snapshot_hash = @hash`,
     )
     .all({ hash: stanceSnapshotHash }) as PendingRow[];
@@ -139,6 +134,7 @@ function listPendingRows(
 function renderPending(
   rows: readonly PendingRow[],
   stances: readonly IssueStance[],
+  signalLookup: (billId: string, stanceSlug: string) => UserSignal | null,
 ): string {
   if (rows.length === 0) {
     return "No bills pending AI-rating review for the current stance snapshot.";
@@ -171,9 +167,14 @@ function renderPending(
     } else {
       lines.push(`    AI call: unclear — ${row.rationale}`);
     }
-    if (row.user_signal_direction) {
+    const existing = signalLookup(row.bill_id, row.stance_slug);
+    if (existing) {
+      const scopeNote =
+        existing.scope === "stance"
+          ? "applies to this stance"
+          : "bill-level — currently applies to this stance and every other matched stance on this bill";
       lines.push(
-        `    You already signaled: ${row.user_signal_direction}. Promote/override updates that signal.`,
+        `    You already signaled: ${existing.direction} (${scopeNote}). Promote/override updates that signal.`,
       );
     }
     if (row.latest_action_text) {
@@ -231,16 +232,23 @@ export const reviewAutoRatingsTool: AnyAgentTool = {
       stanceSlug: parsed.data.stanceSlug,
       limit: parsed.data.limit ?? 25,
     });
-    return textResult(renderPending(rows, stances), {
+    const signals = readSignalIndex(db);
+    const signalLookup = (billId: string, stanceSlug: string) =>
+      lookupUserSignal(signals, billId, stanceSlug);
+    return textResult(renderPending(rows, stances, signalLookup), {
       status: "ok",
-      pending: rows.map((row) => ({
-        billId: row.bill_id,
-        stanceSlug: row.stance_slug,
-        tier: classifyTier(row),
-        kind: row.kind,
-        confidence: row.confidence,
-        userSignalDirection: row.user_signal_direction,
-      })),
+      pending: rows.map((row) => {
+        const existing = signalLookup(row.bill_id, row.stance_slug);
+        return {
+          billId: row.bill_id,
+          stanceSlug: row.stance_slug,
+          tier: classifyTier(row),
+          kind: row.kind,
+          confidence: row.confidence,
+          userSignalDirection: existing?.direction ?? null,
+          userSignalScope: existing?.scope ?? null,
+        };
+      }),
     });
   },
 };

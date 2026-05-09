@@ -27,6 +27,11 @@ import {
   type RepIssueAlignment,
 } from "./repAlignment.js";
 import { resolveEffectiveDirection } from "./directionResolution.js";
+import {
+  lookupUserSignal,
+  readSignalIndex,
+  type SignalIndex,
+} from "./signalIndex.js";
 import { hashStanceSnapshot } from "./stanceHash.js";
 
 export {
@@ -497,65 +502,6 @@ function readEvidenceRows(
         WHERE ba.stance_snapshot_hash = @hash`,
     )
     .all({ bioguide: repId, hash: stanceSnapshotHash }) as EvidenceRow[];
-}
-
-type SignalIndexEntry = {
-  byStance: Map<string, { direction: "agree" | "disagree"; weight: number }>;
-  billLevel: { direction: "agree" | "disagree"; weight: number } | null;
-};
-
-type SignalIndex = ReadonlyMap<string, SignalIndexEntry>;
-
-function readSignalIndex(db: PolitiClawDb): SignalIndex {
-  // ORDER BY recency means the first row we see for a (bill, stance_slug)
-  // pair is the latest user-recorded signal; later rows for the same
-  // pair are older edits and ignored.
-  const rows = db
-    .prepare(
-      `SELECT bill_id, stance_slug, direction, weight
-         FROM stance_signals
-        WHERE bill_id IS NOT NULL
-          AND direction IN ('agree','disagree')
-        ORDER BY created_at DESC, id DESC`,
-    )
-    .all() as Array<{
-      bill_id: string;
-      stance_slug: string | null;
-      direction: "agree" | "disagree";
-      weight: number;
-    }>;
-
-  const out = new Map<string, SignalIndexEntry>();
-  for (const row of rows) {
-    let bucket = out.get(row.bill_id);
-    if (!bucket) {
-      bucket = { byStance: new Map(), billLevel: null };
-      out.set(row.bill_id, bucket);
-    }
-    if (row.stance_slug) {
-      // First (and therefore latest) per (bill, stance) wins; skip older.
-      if (!bucket.byStance.has(row.stance_slug)) {
-        bucket.byStance.set(row.stance_slug, {
-          direction: row.direction,
-          weight: row.weight,
-        });
-      }
-    } else if (bucket.billLevel === null) {
-      // First (and therefore latest) bill-level signal per bill wins.
-      bucket.billLevel = { direction: row.direction, weight: row.weight };
-    }
-  }
-  return out;
-}
-
-function lookupUserSignal(
-  signals: SignalIndex,
-  billId: string,
-  stanceSlug: string,
-): { direction: "agree" | "disagree"; weight: number } | null {
-  const bucket = signals.get(billId);
-  if (!bucket) return null;
-  return bucket.byStance.get(stanceSlug) ?? bucket.billLevel ?? null;
 }
 
 function expandEvidence(

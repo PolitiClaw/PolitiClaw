@@ -217,6 +217,110 @@ describe("politiclaw_review_auto_ratings", () => {
     expect(text).not.toContain("119-hr-6");
   });
 
+  it("does not show 'already signaled' when the only existing signal is scoped to a different stance", async () => {
+    upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });
+    upsertIssueStance(db, { issue: "taxation", stance: "oppose", weight: 3 });
+    const hash = currentHash();
+    seedBill(db, "119-hr-50", "Multi-stance bill");
+    seedDirection(db, {
+      billId: "119-hr-50",
+      hash,
+      stanceSlug: "housing",
+      kind: "advances",
+      confidence: 0.9, // auto-counts, won't appear in review
+    });
+    seedDirection(db, {
+      billId: "119-hr-50",
+      hash,
+      stanceSlug: "taxation",
+      kind: "mixed",
+      confidence: 0.85,
+    });
+    // User signaled per-stance on housing only.
+    db.prepare(
+      `INSERT INTO stance_signals (bill_id, stance_slug, direction, weight, source, created_at)
+       VALUES ('119-hr-50', 'housing', 'agree', 1.0, 'review', 0)`,
+    ).run();
+
+    const result = await reviewAutoRatingsTool.execute!(
+      "call-1",
+      {},
+      undefined,
+      undefined,
+    );
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    // The pending row is for taxation. The housing signal must not appear
+    // as "you already signaled" on the taxation row.
+    expect(text).toContain("119-hr-50");
+    expect(text).toContain("Stance: taxation");
+    expect(text).not.toContain("You already signaled");
+  });
+
+  it("shows 'already signaled' on the same stance the per-stance signal scopes to", async () => {
+    upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });
+    const hash = currentHash();
+    seedBill(db, "119-hr-51", "Same-stance bill");
+    seedDirection(db, {
+      billId: "119-hr-51",
+      hash,
+      stanceSlug: "housing",
+      kind: "mixed",
+      confidence: 0.7,
+    });
+    db.prepare(
+      `INSERT INTO stance_signals (bill_id, stance_slug, direction, weight, source, created_at)
+       VALUES ('119-hr-51', 'housing', 'disagree', 1.0, 'review', 0)`,
+    ).run();
+
+    const result = await reviewAutoRatingsTool.execute!(
+      "call-1",
+      {},
+      undefined,
+      undefined,
+    );
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    expect(text).toContain("You already signaled: disagree");
+    expect(text).toContain("applies to this stance");
+  });
+
+  it("shows bill-level 'already signaled' with explicit scope disclosure on every stance review row", async () => {
+    upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });
+    upsertIssueStance(db, { issue: "taxation", stance: "oppose", weight: 3 });
+    const hash = currentHash();
+    seedBill(db, "119-hr-52", "Bill with bill-level signal");
+    seedDirection(db, {
+      billId: "119-hr-52",
+      hash,
+      stanceSlug: "housing",
+      kind: "mixed",
+      confidence: 0.7,
+    });
+    seedDirection(db, {
+      billId: "119-hr-52",
+      hash,
+      stanceSlug: "taxation",
+      kind: "mixed",
+      confidence: 0.7,
+    });
+    // Bill-level signal — applies to both matched stances.
+    db.prepare(
+      `INSERT INTO stance_signals (bill_id, direction, weight, source, created_at)
+       VALUES ('119-hr-52', 'agree', 1.0, 'dashboard', 0)`,
+    ).run();
+
+    const result = await reviewAutoRatingsTool.execute!(
+      "call-1",
+      {},
+      undefined,
+      undefined,
+    );
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    // Both pending rows should disclose the bill-level scope so the user
+    // isn't misled into thinking they signaled per-stance.
+    expect(text).toContain("You already signaled: agree");
+    expect(text).toContain("bill-level");
+  });
+
   it("includes user note when present", async () => {
     upsertIssueStance(db, {
       issue: "housing",

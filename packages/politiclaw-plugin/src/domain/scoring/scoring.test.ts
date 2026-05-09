@@ -241,6 +241,52 @@ describe("scoreBill", () => {
     expect(llmCallCount).toBe(2);
   });
 
+  it("re-classifies when stance sourceText changes (new snapshot hash)", async () => {
+    const db = openMemoryDb();
+    upsertIssueStance(db, {
+      issue: "housing",
+      stance: "support",
+      weight: 4,
+      sourceText: "I want rent stabilization across all metros",
+    });
+
+    let llmCallCount = 0;
+    const llm = {
+      reason: async () => {
+        llmCallCount += 1;
+        return {
+          kind: "advances",
+          confidence: 0.7,
+          rationale: "matched",
+          quotedText: "Authorizes grants for affordable housing.",
+          counterConsideration: "Some sponsors describe this as preempting state authority.",
+        };
+      },
+    };
+
+    const get = async () =>
+      ({
+        status: "ok",
+        adapterId: "congressGov",
+        tier: 1,
+        data: housingBill,
+        fetchedAt: Date.now(),
+      }) as AdapterResult<Bill>;
+
+    await scoreBill(db, fakeResolver(get), { congress: 119, billType: "HR", number: "1234" }, { llm });
+    expect(llmCallCount).toBe(1);
+
+    upsertIssueStance(db, {
+      issue: "housing",
+      stance: "support",
+      weight: 4,
+      sourceText: "I want SRO protections in dense urban cores",
+    });
+
+    await scoreBill(db, fakeResolver(get), { congress: 119, billType: "HR", number: "1234" }, { llm });
+    expect(llmCallCount).toBe(2);
+  });
+
   it("surfaces unavailable from the resolver with actionable guidance", async () => {
     const db = openMemoryDb();
     upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });

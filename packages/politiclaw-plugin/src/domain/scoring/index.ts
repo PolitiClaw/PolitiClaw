@@ -79,6 +79,7 @@ export async function scoreBill(
     stance: row.stance,
     weight: row.weight,
     ...(row.note ? { note: row.note } : {}),
+    ...(row.sourceText ? { sourceText: row.sourceText } : {}),
   }));
 
   const detail = await getBillDetail(db, resolver, ref, { refresh: opts.refresh });
@@ -396,6 +397,7 @@ export function scoreRepresentative(
     stance: row.stance,
     weight: row.weight,
     ...(row.note ? { note: row.note } : {}),
+    ...(row.sourceText ? { sourceText: row.sourceText } : {}),
   }));
   if (stances.length === 0) {
     return {

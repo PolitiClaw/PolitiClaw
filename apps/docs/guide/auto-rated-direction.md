@@ -36,7 +36,7 @@ flowchart TD
 
 - The classifier is the same module that the bill-scoring path uses ([`politiclaw_score_bill`](../reference/generated/tools/politiclaw_score_bill)). It's required to ground every directional claim in a literal quote from the bill's title, policy area, subjects, or summary; ungrounded claims are coerced to `unclear`.
 - High-confidence (≥ 0.75) `advances` becomes an implied `agree`; high-confidence `obstructs` becomes an implied `disagree`. Lower-confidence calls, `mixed` calls, and `unclear` calls don't auto-count — they land in the review queue so you can decide.
-- Your explicit `stance_signals` always win when present. The classifier only fills in for bills you haven't rated (and only under the modes that allow it).
+- The classifier runs once per relevant `(bill, stance)` pair under any non-`off` mode — an existing user signal does not suppress the call. Whether the classifier's output then counts in rep scoring is gated by your `auto_direction_mode` (see the Modes table below); in any mode that admits classifier output, an explicit `stance_signals` entry for the matching `(bill, stance)` pair always wins.
 - Classifier output is cached per `(bill, bill_update_date, stance_snapshot, stance_slug)`. Bill amendments and stance edits both invalidate the cache.
 
 ## Modes
@@ -46,11 +46,11 @@ Set with [`politiclaw_configure`](../reference/generated/tools/politiclaw_config
 | Mode | High-conf classifier | Mid-conf / mixed / unclear | Your explicit signal |
 |---|---|---|---|
 | `off` *(default)* | not run | not run | counts |
-| `supplement` | counts only when no user signal exists | review queue | always wins |
-| `co-equal` | counts; your signal overrides per-bill | review queue | overrides classifier |
+| `supplement` | counts only for `(bill, stance)` pairs with no user signal | review queue | always wins per `(bill, stance)` |
+| `co-equal` | counts; user signal wins per `(bill, stance)` | review queue | overrides classifier per `(bill, stance)` |
 | `advisory` | review queue (never auto-counts) | review queue | always counts |
 
-`supplement` and `co-equal` produce the same rep-score math (user signals always preempt the classifier per bill); they're separated so future surfaces can present audit trails differently for "AI ran but you overrode" vs "AI never ran because you'd already signaled."
+In the current implementation `supplement` and `co-equal` produce **identical** rep-scoring math: in both, an existing per-stance (or fallback bill-level) user signal preempts the classifier for that stance, and the classifier auto-counts only where no user signal exists. The names exist to express different intents, not different behavior — pick whichever framing makes sense to you. The classifier itself runs the same way under both modes (once per `(bill, stance)` pair on first `score_bill` call, then cached).
 
 ## Picking the model
 

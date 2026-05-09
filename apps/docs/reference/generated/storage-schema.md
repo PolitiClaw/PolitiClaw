@@ -2,7 +2,7 @@
 
 This page is generated from a real in-memory SQLite database after migrations run.
 
-Migration count: 21.
+Migration count: 22.
 
 ## Schema overview
 
@@ -271,6 +271,7 @@ erDiagram
     REAL weight
     TEXT source
     INTEGER created_at
+    TEXT stance_slug
   }
   action_packages ||--o{ action_package_feedback : "package_id -> action_packages.id"
   bills ||--o{ bill_alignment : "bill_id -> bills.id"
@@ -302,6 +303,7 @@ erDiagram
 - `packages/politiclaw-plugin/src/storage/migrations/0019_stance_signals_drop_issue.sql`
 - `packages/politiclaw-plugin/src/storage/migrations/0020_auto_direction.sql`
 - `packages/politiclaw-plugin/src/storage/migrations/0021_legislation_review_model.sql`
+- `packages/politiclaw-plugin/src/storage/migrations/0022_stance_signals_per_stance.sql`
 
 ## Tables
 
@@ -978,6 +980,7 @@ CREATE TABLE snapshots (
 | `weight` | `REAL` | yes | no | `1.0` |
 | `source` | `TEXT` | yes | no | n/a |
 | `created_at` | `INTEGER` | yes | no | n/a |
+| `stance_slug` | `TEXT` | no | no | n/a |
 
 ```sql
 CREATE TABLE stance_signals (
@@ -987,7 +990,7 @@ CREATE TABLE stance_signals (
   weight          REAL NOT NULL DEFAULT 1.0,
   source          TEXT NOT NULL,
   created_at      INTEGER NOT NULL
-)
+, stance_slug TEXT)
 ```
 
 ## Indexes
@@ -1031,3 +1034,4 @@ CREATE TABLE stance_signals (
 | `snapshots_kind` | `snapshots` | `CREATE INDEX snapshots_kind ON snapshots(entity_kind)` |
 | `stance_signals_bill` | `stance_signals` | `CREATE INDEX stance_signals_bill  ON stance_signals(bill_id)` |
 | `stance_signals_bill_dir_created` | `stance_signals` | `CREATE INDEX stance_signals_bill_dir_created   ON stance_signals(bill_id, direction, created_at DESC)` |
+| `stance_signals_bill_stance_dir_created` | `stance_signals` | `CREATE INDEX stance_signals_bill_stance_dir_created   ON stance_signals(bill_id, stance_slug, direction, created_at DESC)` |

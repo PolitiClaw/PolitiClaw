@@ -68,7 +68,7 @@ describe("migrations", () => {
       .prepare("SELECT version FROM schema_version ORDER BY version")
       .all() as Array<{ version: number }>;
     expect(versions.map((v) => v.version)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
     ]);
   });
 
@@ -296,5 +296,35 @@ describe("migrations", () => {
       .prepare("SELECT legislation_review_model FROM preferences WHERE id = 1")
       .get() as { legislation_review_model: string };
     expect(row.legislation_review_model).toBe("anthropic/claude-haiku-4-5");
+  });
+
+  it("migration 0022 stance_slug column accepts NULL (legacy bill-level shape)", () => {
+    const db = openMemoryDb();
+    db.prepare(
+      `INSERT INTO stance_signals (bill_id, direction, weight, source, created_at)
+       VALUES ('119-hr-1', 'agree', 1.0, 'dashboard', 0)`,
+    ).run();
+    const row = db
+      .prepare(
+        "SELECT bill_id, stance_slug, direction FROM stance_signals WHERE bill_id = '119-hr-1'",
+      )
+      .get() as { bill_id: string; stance_slug: string | null; direction: string };
+    expect(row.stance_slug).toBeNull();
+    expect(row.direction).toBe("agree");
+  });
+
+  it("migration 0022 stance_slug column accepts an explicit stance value", () => {
+    const db = openMemoryDb();
+    db.prepare(
+      `INSERT INTO stance_signals (bill_id, stance_slug, direction, weight, source, created_at)
+       VALUES ('119-hr-2', 'housing', 'disagree', 1.0, 'review', 0)`,
+    ).run();
+    const row = db
+      .prepare(
+        "SELECT stance_slug, direction FROM stance_signals WHERE bill_id = '119-hr-2'",
+      )
+      .get() as { stance_slug: string | null; direction: string };
+    expect(row.stance_slug).toBe("housing");
+    expect(row.direction).toBe("disagree");
   });
 });

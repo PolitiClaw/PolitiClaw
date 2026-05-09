@@ -112,13 +112,18 @@ const StanceSourceSchema = Type.Union([
 
 /**
  * Schema for stance-signal input *after* the caller has trimmed `billId`.
- * `weight` defaults to 1.0 in the caller when undefined.
+ * `weight` defaults to 1.0 in the caller when undefined. `stanceSlug`
+ * scopes the signal to a specific declared stance — when present, rep
+ * scoring prefers it over a bill-level signal for that stance only;
+ * when absent, the signal applies to every stance the bill matches
+ * (the historical bill-level shape).
  */
 export const StanceSignalSchema = Type.Object({
   billId: Type.String({ minLength: 1 }),
   direction: StanceDirectionSchema,
   weight: Type.Optional(Type.Number({ exclusiveMinimum: 0 })),
   source: StanceSourceSchema,
+  stanceSlug: Type.Optional(Type.String({ minLength: 1 })),
 });
 
 export type StanceSignal = Static<typeof StanceSignalSchema>;

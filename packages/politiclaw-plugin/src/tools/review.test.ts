@@ -301,7 +301,7 @@ describe("politiclaw_resolve_auto_rating", () => {
     });
     const result = await resolveAutoRatingTool.execute!(
       "call-1",
-      { billId: "119-hr-3", action: "promote" },
+      { billId: "119-hr-3", action: "promote", stanceSlug: "housing" },
       undefined,
       undefined,
     );
@@ -328,7 +328,7 @@ describe("politiclaw_resolve_auto_rating", () => {
     });
     const result = await resolveAutoRatingTool.execute!(
       "call-1",
-      { billId: "119-hr-4", action: "promote" },
+      { billId: "119-hr-4", action: "promote", stanceSlug: "housing" },
       undefined,
       undefined,
     );
@@ -353,7 +353,7 @@ describe("politiclaw_resolve_auto_rating", () => {
     });
     const result = await resolveAutoRatingTool.execute!(
       "call-1",
-      { billId: "119-hr-5", action: "promote" },
+      { billId: "119-hr-5", action: "promote", stanceSlug: "housing" },
       undefined,
       undefined,
     );
@@ -378,7 +378,7 @@ describe("politiclaw_resolve_auto_rating", () => {
     });
     const result = await resolveAutoRatingTool.execute!(
       "call-1",
-      { billId: "119-hr-6", action: "promote" },
+      { billId: "119-hr-6", action: "promote", stanceSlug: "housing" },
       undefined,
       undefined,
     );
@@ -390,11 +390,124 @@ describe("politiclaw_resolve_auto_rating", () => {
     upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });
     const result = await resolveAutoRatingTool.execute!(
       "call-1",
-      { billId: "119-hr-99", action: "promote" },
+      { billId: "119-hr-99", action: "promote", stanceSlug: "housing" },
       undefined,
       undefined,
     );
     const text = (result.content[0] as { type: "text"; text: string }).text;
     expect(text).toContain("No AI rating exists");
+  });
+
+  it("rejects promote when stanceSlug is omitted (per-stance write required)", async () => {
+    const result = await resolveAutoRatingTool.execute!(
+      "call-1",
+      { billId: "119-hr-1", action: "promote" },
+      undefined,
+      undefined,
+    );
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    expect(text).toContain("Promote requires a stanceSlug");
+    const stored = db
+      .prepare("SELECT COUNT(*) AS n FROM stance_signals WHERE bill_id = '119-hr-1'")
+      .get() as { n: number };
+    expect(stored.n).toBe(0);
+  });
+
+  it("promotes only the per-stance AI call when bill has multiple classifications", async () => {
+    upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });
+    upsertIssueStance(db, { issue: "taxation", stance: "oppose", weight: 3 });
+    const hash = currentHash();
+    seedBill(db, "119-hr-7", "Bill that touches two stances");
+    seedDirection(db, {
+      billId: "119-hr-7",
+      hash,
+      stanceSlug: "housing",
+      kind: "advances",
+      confidence: 0.9,
+    });
+    seedDirection(db, {
+      billId: "119-hr-7",
+      hash,
+      stanceSlug: "taxation",
+      kind: "obstructs",
+      confidence: 0.85,
+    });
+
+    const result = await resolveAutoRatingTool.execute!(
+      "call-1",
+      { billId: "119-hr-7", action: "promote", stanceSlug: "housing" },
+      undefined,
+      undefined,
+    );
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    expect(text).toContain("housing");
+    expect(text).toContain("'agree'");
+
+    const stored = db
+      .prepare(
+        "SELECT direction, stance_slug FROM stance_signals WHERE bill_id = '119-hr-7'",
+      )
+      .all() as Array<{ direction: string; stance_slug: string | null }>;
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toEqual({ direction: "agree", stance_slug: "housing" });
+  });
+
+  it("override with stanceSlug records a per-stance signal", async () => {
+    upsertIssueStance(db, { issue: "housing", stance: "support", weight: 4 });
+    const result = await resolveAutoRatingTool.execute!(
+      "call-1",
+      {
+        billId: "119-hr-8",
+        action: "override",
+        direction: "disagree",
+        stanceSlug: "housing",
+      },
+      undefined,
+      undefined,
+    );
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    expect(text).toContain("for stance 'housing'");
+    const stored = db
+      .prepare(
+        "SELECT direction, stance_slug, source FROM stance_signals WHERE bill_id = '119-hr-8'",
+      )
+      .get() as { direction: string; stance_slug: string | null; source: string };
+    expect(stored).toEqual({
+      direction: "disagree",
+      stance_slug: "housing",
+      source: "review",
+    });
+  });
+
+  it("override without stanceSlug records a bill-level signal (legacy shape)", async () => {
+    const result = await resolveAutoRatingTool.execute!(
+      "call-1",
+      { billId: "119-hr-9", action: "override", direction: "agree" },
+      undefined,
+      undefined,
+    );
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    expect(text).toContain("bill-level");
+    const stored = db
+      .prepare(
+        "SELECT direction, stance_slug FROM stance_signals WHERE bill_id = '119-hr-9'",
+      )
+      .get() as { direction: string; stance_slug: string | null };
+    expect(stored).toEqual({ direction: "agree", stance_slug: null });
+  });
+
+  it("skip writes a bill-level signal even if stanceSlug is provided (skip is bill-scoped by design)", async () => {
+    await resolveAutoRatingTool.execute!(
+      "call-1",
+      { billId: "119-hr-10", action: "skip", stanceSlug: "housing" },
+      undefined,
+      undefined,
+    );
+    const stored = db
+      .prepare(
+        "SELECT direction, stance_slug FROM stance_signals WHERE bill_id = '119-hr-10'",
+      )
+      .get() as { direction: string; stance_slug: string | null };
+    expect(stored).toEqual({ direction: "skip", stance_slug: null });
   });
 });

@@ -288,17 +288,23 @@ export function recordStanceSignal(db: PolitiClawDb, input: StanceSignal): numbe
   const normalized: StanceSignal = {
     ...input,
     billId: input.billId.trim(),
+    ...(input.stanceSlug !== undefined
+      ? { stanceSlug: input.stanceSlug.trim() }
+      : {}),
   };
   const parsed = parse(StanceSignalSchema, normalized);
   const weight = parsed.weight ?? DEFAULT_STANCE_SIGNAL_WEIGHT;
+  const stanceSlug =
+    parsed.stanceSlug && parsed.stanceSlug.length > 0 ? parsed.stanceSlug : null;
   const now = Date.now();
   const res = db
     .prepare(
-      `INSERT INTO stance_signals (bill_id, direction, weight, source, created_at)
-       VALUES (@bill_id, @direction, @weight, @source, @created_at)`,
+      `INSERT INTO stance_signals (bill_id, stance_slug, direction, weight, source, created_at)
+       VALUES (@bill_id, @stance_slug, @direction, @weight, @source, @created_at)`,
     )
     .run({
       bill_id: parsed.billId,
+      stance_slug: stanceSlug,
       direction: parsed.direction,
       weight,
       source: parsed.source,

@@ -422,11 +422,18 @@ export function scoreRepresentative(
   const mode: AutoDirectionMode = getPreferences(db)?.autoDirectionMode ?? "off";
 
   const rawEvidence = readEvidenceRows(db, repId, stanceSnapshotHash);
+  const signalIndex = readSignalIndex(db);
   const directionMap =
     mode === "off"
       ? new Map<string, Map<string, BillDirection>>()
       : readDirectionMap(db, stanceSnapshotHash);
-  const evidence = expandEvidence(rawEvidence, stances, mode, directionMap);
+  const evidence = expandEvidence(
+    rawEvidence,
+    stances,
+    mode,
+    directionMap,
+    signalIndex,
+  );
   const alignment = computeRepAlignment(stances, evidence, { excludeProcedural });
   const coverage = computeCoverage(db, repId, stanceSnapshotHash, {
     includeZeroVoteDiagnostics: alignment.consideredVoteCount === 0,
@@ -456,8 +463,6 @@ type EvidenceRow = {
   bill_id: string;
   relevance: number;
   matched_json: string;
-  user_direction: "agree" | "disagree" | null;
-  user_signal_weight: number | null;
   rep_position: "Yea" | "Nay" | "Present" | "Not Voting";
   vote_id: string;
   is_procedural: number | null;
@@ -470,33 +475,21 @@ function readEvidenceRows(
   repId: string,
   stanceSnapshotHash: string,
 ): EvidenceRow[] {
-  // Signals are LEFT-joined so bills the rep voted on without an explicit
-  // user agree/disagree still appear; downstream resolution decides whether
-  // they count (depends on `auto_direction_mode` and any classifier output).
+  // Signals are resolved separately (see `readSignalIndex`) so a single
+  // bill row can produce per-stance-scoped resolution downstream — pulling
+  // a single bill-level signal in this query would force the same
+  // direction across every matched stance on the bill.
   return db
     .prepare(
-      `WITH latest_signals AS (
-         SELECT bill_id, direction, weight, created_at,
-                ROW_NUMBER() OVER (
-                  PARTITION BY bill_id
-                  ORDER BY created_at DESC, id DESC
-                ) AS rn
-           FROM stance_signals
-          WHERE bill_id IS NOT NULL AND direction IN ('agree','disagree')
-       )
-       SELECT ba.bill_id,
+      `SELECT ba.bill_id,
               ba.relevance,
               ba.matched_json,
               ba.source_adapter_id,
               ba.source_tier,
-              ls.direction AS user_direction,
-              ls.weight    AS user_signal_weight,
               mv.position  AS rep_position,
               rcv.id       AS vote_id,
               rcv.is_procedural
          FROM bill_alignment ba
-         LEFT JOIN latest_signals ls
-           ON ls.bill_id = ba.bill_id AND ls.rn = 1
          JOIN roll_call_votes rcv
            ON rcv.bill_id = ba.bill_id
          JOIN member_votes mv
@@ -506,11 +499,71 @@ function readEvidenceRows(
     .all({ bioguide: repId, hash: stanceSnapshotHash }) as EvidenceRow[];
 }
 
+type SignalIndexEntry = {
+  byStance: Map<string, { direction: "agree" | "disagree"; weight: number }>;
+  billLevel: { direction: "agree" | "disagree"; weight: number } | null;
+};
+
+type SignalIndex = ReadonlyMap<string, SignalIndexEntry>;
+
+function readSignalIndex(db: PolitiClawDb): SignalIndex {
+  // ORDER BY recency means the first row we see for a (bill, stance_slug)
+  // pair is the latest user-recorded signal; later rows for the same
+  // pair are older edits and ignored.
+  const rows = db
+    .prepare(
+      `SELECT bill_id, stance_slug, direction, weight
+         FROM stance_signals
+        WHERE bill_id IS NOT NULL
+          AND direction IN ('agree','disagree')
+        ORDER BY created_at DESC, id DESC`,
+    )
+    .all() as Array<{
+      bill_id: string;
+      stance_slug: string | null;
+      direction: "agree" | "disagree";
+      weight: number;
+    }>;
+
+  const out = new Map<string, SignalIndexEntry>();
+  for (const row of rows) {
+    let bucket = out.get(row.bill_id);
+    if (!bucket) {
+      bucket = { byStance: new Map(), billLevel: null };
+      out.set(row.bill_id, bucket);
+    }
+    if (row.stance_slug) {
+      // First (and therefore latest) per (bill, stance) wins; skip older.
+      if (!bucket.byStance.has(row.stance_slug)) {
+        bucket.byStance.set(row.stance_slug, {
+          direction: row.direction,
+          weight: row.weight,
+        });
+      }
+    } else if (bucket.billLevel === null) {
+      // First (and therefore latest) bill-level signal per bill wins.
+      bucket.billLevel = { direction: row.direction, weight: row.weight };
+    }
+  }
+  return out;
+}
+
+function lookupUserSignal(
+  signals: SignalIndex,
+  billId: string,
+  stanceSlug: string,
+): { direction: "agree" | "disagree"; weight: number } | null {
+  const bucket = signals.get(billId);
+  if (!bucket) return null;
+  return bucket.byStance.get(stanceSlug) ?? bucket.billLevel ?? null;
+}
+
 function expandEvidence(
   rows: readonly EvidenceRow[],
   stances: readonly IssueStance[],
   mode: AutoDirectionMode,
   directionByBill: ReadonlyMap<string, ReadonlyMap<string, BillDirection>>,
+  signalIndex: SignalIndex,
 ): BillEvidence[] {
   const stanceByIssue = new Map(stances.map((stance) => [stance.issue, stance]));
   const evidence: BillEvidence[] = [];
@@ -523,18 +576,19 @@ function expandEvidence(
       // the primitive only scores against *currently declared* stances.
       if (!stance || stance.stance === "neutral") continue;
       const classifier = billDirections?.get(match.issue) ?? null;
+      const userSignal = lookupUserSignal(signalIndex, row.bill_id, match.issue);
       const effective = resolveEffectiveDirection({
         mode,
-        userDirection: row.user_direction ?? null,
+        userDirection: userSignal?.direction ?? null,
         classifier,
       });
       if (!effective) continue;
       // Classifier-derived rows have no per-bill user weight — fall back to
       // the same default the user signal path uses (1.0). Real user signals
       // keep their recorded weight.
-      const userSignalWeight = row.user_signal_weight ?? 1.0;
+      const userSignalWeight = userSignal?.weight ?? 1.0;
       const directionSource: "user" | "classifier" =
-        row.user_direction !== null ? "user" : "classifier";
+        userSignal !== null ? "user" : "classifier";
       evidence.push({
         billId: row.bill_id,
         issue: match.issue,

@@ -40,6 +40,15 @@ const ResolveParams = Type.Object({
   direction: Type.Optional(
     Type.Union([Type.Literal("agree"), Type.Literal("disagree")]),
   ),
+  stanceSlug: Type.Optional(
+    Type.String({
+      minLength: 1,
+      description:
+        "Required for action='promote' (the AI call is per-stance, so promotion needs to know which stance you're accepting). " +
+        "Optional for action='override': when present the override only applies to that stance; when absent it applies to every stance the bill matches. " +
+        "Ignored for action='skip' (skip is bill-level by design).",
+    }),
+  ),
 });
 
 function textResult<T>(text: string, details: T) {
@@ -241,9 +250,9 @@ export const resolveAutoRatingTool: AnyAgentTool = {
   label: "Resolve an AI-rated bill (promote / override / skip)",
   description:
     "Apply human judgment to a bill the AI classifier surfaced for review. " +
-    "promote: accept the AI's call (advances → agree, obstructs → disagree); errors on mixed/unclear. " +
-    "override: record your own agree/disagree on the bill (requires direction). " +
-    "skip: record a 'skip' signal so the bill is excluded from rep scoring.",
+    "promote: accept the AI's call for a single stance (advances → agree, obstructs → disagree); requires stanceSlug; errors on mixed/unclear. " +
+    "override: record your own agree/disagree; pass stanceSlug to scope to one stance, omit it to apply to every stance the bill matches. " +
+    "skip: record a bill-level 'skip' signal so the bill is excluded from rep scoring across all stances.",
   parameters: ResolveParams,
   async execute(_toolCallId, rawParams) {
     const parsed = safeParse(ResolveParams, rawParams);
@@ -253,10 +262,12 @@ export const resolveAutoRatingTool: AnyAgentTool = {
         { status: "invalid" },
       );
     }
-    const { billId, action, direction } = parsed.data;
+    const { billId, action, direction, stanceSlug } = parsed.data;
     const { db } = getStorage();
 
     if (action === "skip") {
+      // Skip stays bill-level by design — "exclude this bill from rep
+      // scoring entirely" doesn't naturally split across stances.
       const id = recordStanceSignal(db, {
         billId,
         direction: "skip",
@@ -280,14 +291,35 @@ export const resolveAutoRatingTool: AnyAgentTool = {
         billId,
         direction,
         source: "review",
+        ...(stanceSlug ? { stanceSlug } : {}),
       });
+      const scopeSuffix = stanceSlug
+        ? ` for stance '${stanceSlug}'`
+        : " (bill-level — applies to every matched stance)";
       return textResult(
-        `Recorded '${direction}' signal on ${billId} from review override (#${id}).`,
-        { status: "ok", action: "override", direction, signalId: id },
+        `Recorded '${direction}' signal on ${billId}${scopeSuffix} from review override (#${id}).`,
+        {
+          status: "ok",
+          action: "override",
+          direction,
+          stanceSlug: stanceSlug ?? null,
+          signalId: id,
+        },
       );
     }
 
-    // promote: read the latest AI call for this bill and translate to a signal.
+    // promote requires stanceSlug — the AI call is per-stance, and writing
+    // a bill-level signal would silently apply that direction to every
+    // other matched stance on the bill (incorrect when the bill is
+    // 'advances' for one stance and 'obstructs' for another).
+    if (!stanceSlug) {
+      return textResult(
+        "Promote requires a stanceSlug. The AI rates each bill per-declared-stance, so promotion needs to know which stance you're accepting. " +
+          "Look up the stanceSlug in politiclaw_review_auto_ratings output, or use action='override' to record a bill-level signal explicitly.",
+        { status: "invalid" },
+      );
+    }
+
     const stances = listIssueStances(db).map<IssueStance>((stance) => ({
       issue: stance.issue,
       stance: stance.stance,
@@ -311,16 +343,16 @@ export const resolveAutoRatingTool: AnyAgentTool = {
             AND COALESCE(b.update_date, '') = bd.bill_update_date
           WHERE bd.bill_id = @bill_id
             AND bd.stance_snapshot_hash = @hash
-          ORDER BY bd.confidence DESC
+            AND bd.stance_slug = @stance_slug
           LIMIT 1`,
       )
-      .get({ bill_id: billId, hash: snapshotHash }) as
+      .get({ bill_id: billId, hash: snapshotHash, stance_slug: stanceSlug }) as
       | { kind: "advances" | "obstructs" | "mixed" | "unclear"; confidence: number; rationale: string }
       | undefined;
 
     if (!directionRow) {
       return textResult(
-        `No AI rating exists for bill ${billId} under your current stance snapshot. ` +
+        `No AI rating exists for bill ${billId} on stance '${stanceSlug}' under your current stance snapshot. ` +
           `Run politiclaw_score_bill on it first, or use action='override' to record your own direction.`,
         { status: "no_rating" },
       );
@@ -338,15 +370,17 @@ export const resolveAutoRatingTool: AnyAgentTool = {
       billId,
       direction: promotedDirection,
       source: "review",
+      stanceSlug,
     });
     return textResult(
       `Promoted AI '${directionRow.kind}' call (confidence ${Math.round(
         directionRow.confidence * 100,
-      )}%) on ${billId} → recorded '${promotedDirection}' signal (#${id}).`,
+      )}%) on ${billId} for stance '${stanceSlug}' → recorded '${promotedDirection}' signal (#${id}).`,
       {
         status: "ok",
         action: "promote",
         direction: promotedDirection,
+        stanceSlug,
         signalId: id,
       },
     );

@@ -30,7 +30,7 @@ One message, readable in about a minute: headline, bills that moved on your stan
 
 ### Rep report (every 30 days)
 
-A deterministic alignment digest of your stored representatives against your declared stances and recorded bill signals. It preserves the alignment disclaimer, flags blind spots explicitly, and never uses narrative web search for vote positions.
+An alignment digest of your stored representatives against your declared stances and recorded bill signals. It preserves the alignment disclaimer, flags blind spots explicitly, and never uses narrative web search for vote positions. Scoring is deterministic by default; if you've enabled the optional [Auto-Rated Direction](./auto-rated-direction) feature, the digest also names how many counted votes were AI-rated under your chosen mode.
 
 ### Election proximity alert (daily, mostly silent)
 

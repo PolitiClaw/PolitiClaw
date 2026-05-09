@@ -7,7 +7,7 @@ graph TB
   tier3["Tier 3 — internal / operator-facing<br/>setup, plumbing, background"]
 
   tier1 --> tools1["politiclaw_doctor<br/>politiclaw_configure<br/>politiclaw_issue_stances<br/>politiclaw_election_brief<br/>politiclaw_get_my_reps<br/>politiclaw_score_representative<br/>politiclaw_search_bills<br/>politiclaw_score_bill<br/>politiclaw_research_finance<br/>politiclaw_draft_outreach"]
-  tier2 --> tools2["politiclaw_get_bill_details<br/>politiclaw_rep_report<br/>politiclaw_check_upcoming_votes<br/>politiclaw_create_reminder<br/>politiclaw_mutes<br/>politiclaw_action_moments"]
+  tier2 --> tools2["politiclaw_get_bill_details<br/>politiclaw_rep_report<br/>politiclaw_check_upcoming_votes<br/>politiclaw_create_reminder<br/>politiclaw_mutes<br/>politiclaw_action_moments<br/>politiclaw_review_auto_ratings<br/>politiclaw_resolve_auto_rating"]
   tier3 --> tools3["politiclaw_record_stance_signal<br/>politiclaw_ingest_votes<br/>politiclaw_get_my_ballot"]
 
   tier1 -. "default entry points" .-> nav1[/"Guides + onboarding"/]
@@ -70,6 +70,8 @@ Examples:
 - `politiclaw_create_reminder`
 - `politiclaw_mutes`
 - `politiclaw_action_moments`
+- `politiclaw_review_auto_ratings` (only relevant once `auto_direction_mode` is on)
+- `politiclaw_resolve_auto_rating` (companion to the review tool)
 
 ## Tier 3, internal / operator-facing
 

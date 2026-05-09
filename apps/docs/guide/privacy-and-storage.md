@@ -40,6 +40,23 @@ External network calls only happen when a tool needs a provider-backed answer. T
 
 The candidate-bio web-search adapter shape exists, but the production transport is not wired today. The generated source coverage page marks that status explicitly.
 
+## Host LLM calls (auto-direction only)
+
+When you opt into the [Auto-Rated Direction](./auto-rated-direction) feature (`auto_direction_mode` ≠ `off`), `politiclaw_score_bill` makes one LLM call per `(bill, stance)` pair to classify whether the bill advances or obstructs each declared stance. The call goes through OpenClaw's host LLM transport — whichever provider OpenClaw is configured with (Anthropic, OpenAI, lmstudio, etc.). PolitiClaw does not bring its own SDK or API key.
+
+What gets sent on each classification call:
+
+- The bill's title, policy area, subjects, and summary text (already public — drawn from `api.congress.gov`).
+- The declared stance's slug, polarity (`support` / `oppose`), weight, and free-text fields (`note` and `sourceText`) when present. These are your own words about why the issue matters to you.
+
+What does **not** get sent:
+
+- Your address, ZIP, district, or any rep identifiers.
+- Any other bill, signal, or score from your local database.
+- Any data from other declared stances on the same call (each `(bill, stance)` pair is classified in isolation).
+
+Results are cached locally in `bill_direction` keyed by `(bill_id, bill_update_date, stance_snapshot_hash, stance_slug)`, so the same classification doesn't re-call the LLM until the bill is amended or you edit the stance. The default mode is `off`; if no LLM provider is configured at all, the feature degrades silently — no calls are made and rep scoring keeps working from your explicit signals.
+
 ## Storage Source Of Truth
 
 Use the generated storage schema page for the exact current database layout:

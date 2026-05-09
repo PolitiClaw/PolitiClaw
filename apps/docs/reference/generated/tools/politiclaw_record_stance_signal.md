@@ -13,7 +13,7 @@ Record a single agree/disagree/skip signal from the user on a specific bill. Rep
 | Name | Required | Type | Description |
 | --- | --- | --- | --- |
 | `direction` | yes | `"agree" \| "disagree" \| "skip"` |  |
-| `source` | yes | `"onboarding" \| "monitoring" \| "dashboard"` |  |
+| `source` | yes | `"onboarding" \| "monitoring" \| "dashboard" \| "review"` |  |
 | `billId` | yes | `string` | Bill id this signal applies to. |
 | `weight` | no | `number` | Signal strength (&gt; 0); defaults to 1.0. |
 
@@ -56,6 +56,10 @@ Record a single agree/disagree/skip signal from the user on a specific bill. Rep
         },
         {
           "const": "dashboard",
+          "type": "string"
+        },
+        {
+          "const": "review",
           "type": "string"
         }
       ]

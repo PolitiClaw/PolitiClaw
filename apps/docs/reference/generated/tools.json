@@ -419,7 +419,7 @@
       {
         "name": "source",
         "required": true,
-        "type": "\"onboarding\" | \"monitoring\" | \"dashboard\"",
+        "type": "\"onboarding\" | \"monitoring\" | \"dashboard\" | \"review\"",
         "description": ""
       },
       {
@@ -471,6 +471,10 @@
             },
             {
               "const": "dashboard",
+              "type": "string"
+            },
+            {
+              "const": "review",
               "type": "string"
             }
           ]
@@ -785,6 +789,139 @@
         "refresh": {
           "description": "When true, bypass the bill-detail cache and re-fetch.",
           "type": "boolean"
+        }
+      }
+    }
+  },
+  {
+    "name": "politiclaw_review_auto_ratings",
+    "label": "Review AI-rated bills that need your judgment",
+    "groupId": "bills",
+    "groupLabel": "Bills and votes",
+    "sourcePath": "packages/politiclaw-plugin/src/tools/review.ts",
+    "description": "List bills the LLM directional classifier flagged as borderline, mixed, or unclassifiable for the current stance snapshot. These are bills relevant to your declared stances where the AI's call wasn't strong enough to count automatically toward rep scoring. Use politiclaw_resolve_auto_rating to promote, override, or skip individual rows.",
+    "parameters": [
+      {
+        "name": "tier",
+        "required": false,
+        "type": "\"borderline\" | \"mixed\" | \"unclassifiable\" | \"all\"",
+        "description": ""
+      },
+      {
+        "name": "stanceSlug",
+        "required": false,
+        "type": "string",
+        "description": "Filter to a single declared stance (issue slug). Omit to include all your stances."
+      },
+      {
+        "name": "limit",
+        "required": false,
+        "type": "integer",
+        "description": ""
+      }
+    ],
+    "rawSchema": {
+      "type": "object",
+      "properties": {
+        "tier": {
+          "anyOf": [
+            {
+              "const": "borderline",
+              "type": "string"
+            },
+            {
+              "const": "mixed",
+              "type": "string"
+            },
+            {
+              "const": "unclassifiable",
+              "type": "string"
+            },
+            {
+              "const": "all",
+              "type": "string"
+            }
+          ]
+        },
+        "stanceSlug": {
+          "description": "Filter to a single declared stance (issue slug). Omit to include all your stances.",
+          "type": "string"
+        },
+        "limit": {
+          "minimum": 1,
+          "maximum": 200,
+          "default": 25,
+          "type": "integer"
+        }
+      }
+    }
+  },
+  {
+    "name": "politiclaw_resolve_auto_rating",
+    "label": "Resolve an AI-rated bill (promote / override / skip)",
+    "groupId": "bills",
+    "groupLabel": "Bills and votes",
+    "sourcePath": "packages/politiclaw-plugin/src/tools/review.ts",
+    "description": "Apply human judgment to a bill the AI classifier surfaced for review. promote: accept the AI's call (advances → agree, obstructs → disagree); errors on mixed/unclear. override: record your own agree/disagree on the bill (requires direction). skip: record a 'skip' signal so the bill is excluded from rep scoring.",
+    "parameters": [
+      {
+        "name": "billId",
+        "required": true,
+        "type": "string",
+        "description": "Bill id to resolve."
+      },
+      {
+        "name": "action",
+        "required": true,
+        "type": "\"promote\" | \"override\" | \"skip\"",
+        "description": ""
+      },
+      {
+        "name": "direction",
+        "required": false,
+        "type": "\"agree\" | \"disagree\"",
+        "description": ""
+      }
+    ],
+    "rawSchema": {
+      "type": "object",
+      "required": [
+        "billId",
+        "action"
+      ],
+      "properties": {
+        "billId": {
+          "minLength": 1,
+          "description": "Bill id to resolve.",
+          "type": "string"
+        },
+        "action": {
+          "anyOf": [
+            {
+              "const": "promote",
+              "type": "string"
+            },
+            {
+              "const": "override",
+              "type": "string"
+            },
+            {
+              "const": "skip",
+              "type": "string"
+            }
+          ]
+        },
+        "direction": {
+          "anyOf": [
+            {
+              "const": "agree",
+              "type": "string"
+            },
+            {
+              "const": "disagree",
+              "type": "string"
+            }
+          ]
         }
       }
     }

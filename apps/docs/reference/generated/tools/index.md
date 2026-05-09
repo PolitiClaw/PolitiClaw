@@ -1,6 +1,6 @@
 # Generated Tool Reference
 
-This section is generated from the registered runtime tool objects. Current count: 19.
+This section is generated from the registered runtime tool objects. Current count: 21.
 
 ## Configuration and preferences
 
@@ -25,6 +25,8 @@ Search federal bills, inspect bill details, score bill alignment, and ingest Hou
 - [`politiclaw_search_bills`](./politiclaw_search_bills.md) — Search recent federal bills
 - [`politiclaw_get_bill_details`](./politiclaw_get_bill_details.md) — Fetch a single federal bill
 - [`politiclaw_score_bill`](./politiclaw_score_bill.md) — Score a bill against your declared stances
+- [`politiclaw_review_auto_ratings`](./politiclaw_review_auto_ratings.md) — Review AI-rated bills that need your judgment
+- [`politiclaw_resolve_auto_rating`](./politiclaw_resolve_auto_rating.md) — Resolve an AI-rated bill (promote / override / skip)
 - [`politiclaw_ingest_votes`](./politiclaw_ingest_votes.md) — Ingest recent congressional roll-call votes
 
 ## Ballot and election prep

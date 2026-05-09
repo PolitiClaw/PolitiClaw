@@ -129,4 +129,16 @@ export const TOOL_AUDIT_ENTRIES: readonly ToolAuditEntry[] = [
     docsAction: "follow-up-or-advanced-docs",
     rationale: "Single tool for listing open offer packages and dismissing them with per-offer feedback (useful / not_now / stop) so users can tune action suggestions without muting entire targets.",
   },
+  {
+    name: "politiclaw_review_auto_ratings",
+    tier: "advanced",
+    docsAction: "follow-up-or-advanced-docs",
+    rationale: "Surfaces bills the LLM directional classifier flagged as borderline, mixed, or unclassifiable so users can apply judgment where the AI's confidence wasn't high enough to count automatically. Only relevant once auto_direction_mode is set on.",
+  },
+  {
+    name: "politiclaw_resolve_auto_rating",
+    tier: "advanced",
+    docsAction: "follow-up-or-advanced-docs",
+    rationale: "Companion to politiclaw_review_auto_ratings: promote (accept the AI call), override (record your own direction), or skip (exclude from rep scoring). Records signals with source='review' for audit attribution.",
+  },
 ] as const;

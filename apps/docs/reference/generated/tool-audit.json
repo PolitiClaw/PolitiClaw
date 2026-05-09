@@ -90,6 +90,26 @@
     "sourcePath": "packages/politiclaw-plugin/src/tools/scoring.ts"
   },
   {
+    "name": "politiclaw_review_auto_ratings",
+    "tier": "advanced",
+    "docsAction": "follow-up-or-advanced-docs",
+    "rationale": "Surfaces bills the LLM directional classifier flagged as borderline, mixed, or unclassifiable so users can apply judgment where the AI's confidence wasn't high enough to count automatically. Only relevant once auto_direction_mode is set on.",
+    "label": "Review AI-rated bills that need your judgment",
+    "groupId": "bills",
+    "groupLabel": "Bills and votes",
+    "sourcePath": "packages/politiclaw-plugin/src/tools/review.ts"
+  },
+  {
+    "name": "politiclaw_resolve_auto_rating",
+    "tier": "advanced",
+    "docsAction": "follow-up-or-advanced-docs",
+    "rationale": "Companion to politiclaw_review_auto_ratings: promote (accept the AI call), override (record your own direction), or skip (exclude from rep scoring). Records signals with source='review' for audit attribution.",
+    "label": "Resolve an AI-rated bill (promote / override / skip)",
+    "groupId": "bills",
+    "groupLabel": "Bills and votes",
+    "sourcePath": "packages/politiclaw-plugin/src/tools/review.ts"
+  },
+  {
     "name": "politiclaw_ingest_votes",
     "tier": "internal",
     "docsAction": "generated-reference-only",

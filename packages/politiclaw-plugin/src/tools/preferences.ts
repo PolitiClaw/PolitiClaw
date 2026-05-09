@@ -14,6 +14,7 @@ const RecordStanceSignalParams = Type.Object({
     Type.Literal("onboarding"),
     Type.Literal("monitoring"),
     Type.Literal("dashboard"),
+    Type.Literal("review"),
   ]),
   billId: Type.String({ description: "Bill id this signal applies to." }),
   weight: Type.Optional(

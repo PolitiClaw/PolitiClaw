@@ -14,6 +14,7 @@ import { issueStancesTools } from "../tools/issueStances.js";
 import { monitoringTools } from "../tools/monitoring.js";
 import { muteTools } from "../tools/mutes.js";
 import { recordStanceSignalTools } from "../tools/preferences.js";
+import { reviewTools } from "../tools/review.js";
 import { reminderTools } from "../tools/reminder.js";
 import { repReportTools } from "../tools/repReport.js";
 import { repScoringTools } from "../tools/repScoring.js";
@@ -162,6 +163,12 @@ export const POLITICLAW_TOOL_GROUPS: readonly DocsToolGroup[] = [
         "Bills and votes",
         "packages/politiclaw-plugin/src/tools/scoring.ts",
         scoringToolFactoryPairs,
+      ),
+      ...makeEntries(
+        "bills",
+        "Bills and votes",
+        "packages/politiclaw-plugin/src/tools/review.ts",
+        reviewTools,
       ),
       ...makeEntries(
         "bills",

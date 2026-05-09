@@ -103,6 +103,11 @@ const StanceSourceSchema = Type.Union([
   Type.Literal("onboarding"),
   Type.Literal("monitoring"),
   Type.Literal("dashboard"),
+  // 'review' is written when the user resolves an AI-rated bill via the
+  // review tool — distinguishable from 'dashboard' so audit/analytics can
+  // tell signals from human-in-the-loop AI review apart from spontaneous
+  // dashboard edits.
+  Type.Literal("review"),
 ]);
 
 /**

@@ -11,6 +11,10 @@
     "url": "git+https://github.com/PolitiClaw/PolitiClaw.git",
     "directory": "packages/politiclaw-plugin"
   },
+  "homepage": "https://politiclaw.com",
+  "bugs": {
+    "url": "https://github.com/PolitiClaw/PolitiClaw/issues"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -63,7 +67,7 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.4.15"
+    "openclaw": ">=2026.4.21"
   },
   "dependencies": {
     "@sinclair/typebox": "^0.34.49",

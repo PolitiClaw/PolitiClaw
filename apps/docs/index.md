@@ -77,7 +77,7 @@ import { withBase } from "vitepress";
 <div class="pc-callout civic">
   <span class="label">honest scope</span>
   <div class="body">
-    Outreach is <strong>draft-only</strong> — PolitiClaw never sends mail, posts on your behalf, or routes your message through a political platform, so accountability stays in your hands instead of a vendor's. Coverage today is federal: bills and House roll-call votes through api.congress.gov, Senate roll-call votes through voteview.com, ballots through Google Civic. State legislation and local races are not yet wired; the docs distinguish wired providers from optional upgrades, transport-pending adapters, and schema-only placeholders. For the goal-indexed scope boundaries, see <a href="/reference/source-coverage#what-is-not-covered-today">current coverage</a>.
+    Outreach is <strong>draft-only</strong> — PolitiClaw never sends mail, posts on your behalf, or routes your message through a political platform, so accountability stays in your hands instead of a vendor's. Coverage today is federal: bills and House roll-call votes through api.congress.gov, Senate roll-call votes through voteview.com, ballots through Google Civic. State legislation and local races are not yet wired and are tracked as roadmap entries on the plugin README; the docs distinguish wired providers from optional upgrades and transport-pending adapters. For the goal-indexed scope boundaries, see <a href="/reference/source-coverage#what-is-not-covered-today">current coverage</a>.
   </div>
 </div>
 </section>
@@ -266,7 +266,7 @@ graph TB
   <a class="pc-card" href="/guide/configuration">
     <div class="idx">11 · config</div>
     <div class="ttl">configuration</div>
-    <div class="desc">Live keys (<code>apiDataGov</code>, <code>googleCivic</code>, <code>geocodio</code>) separated from schema-only placeholders.</div>
+    <div class="desc">The three wired keys (<code>apiDataGov</code>, <code>googleCivic</code>, <code>geocodio</code>) and the gateway-restart contract.</div>
     <span class="arrow">→</span>
   </a>
   <a class="pc-card" href="/reference/tools">

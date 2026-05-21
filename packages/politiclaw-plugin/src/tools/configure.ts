@@ -100,14 +100,6 @@ export type ConfigureResumeSummary = {
 
 const OPTIONAL_API_KEY_NAMES = [
   "geocodio",
-  "openStates",
-  "legiscan",
-  "openSecrets",
-  "followTheMoney",
-  "voteSmart",
-  "democracyWorks",
-  "cicero",
-  "ballotReady",
   "googleCivic",
 ] as const;
 
@@ -217,14 +209,6 @@ const ConfigureParams = Type.Object({
     Type.Object(
       {
         geocodio: Type.Optional(Type.String()),
-        openStates: Type.Optional(Type.String()),
-        legiscan: Type.Optional(Type.String()),
-        openSecrets: Type.Optional(Type.String()),
-        followTheMoney: Type.Optional(Type.String()),
-        voteSmart: Type.Optional(Type.String()),
-        democracyWorks: Type.Optional(Type.String()),
-        cicero: Type.Optional(Type.String()),
-        ballotReady: Type.Optional(Type.String()),
         googleCivic: Type.Optional(Type.String()),
       },
       {
@@ -473,14 +457,6 @@ function renderApiKeyPrompt(): string {
     "If you happen to also have any of these optional upgrade keys, send them in the same message and I'll save everything in one shot (the gateway restarts once per save):",
     "",
     "  - `geocodio` — reps-by-address via API (free tier, alternative to local shapefile path)",
-    "  - `openStates` — state bills + votes with member positions",
-    "  - `legiscan` — alternative state-bills source (free tier)",
-    "  - `openSecrets` — federal campaign-finance derived analytics",
-    "  - `followTheMoney` — state-level campaign finance",
-    "  - `voteSmart` — structured candidate bios",
-    "  - `democracyWorks` — ballot logistics upgrade (partner-gated)",
-    "  - `cicero` — local municipal/county/school-board reps (paid)",
-    "  - `ballotReady` — fuller down-ballot coverage (commercial)",
     "  - `googleCivic` — required for politiclaw_get_my_ballot",
     "",
     "Or skip for now — setup is saved either way. The monitoring contract will flag the federal jobs as inactive until apiDataGov is in place. Reply with anything to see the final contract.",

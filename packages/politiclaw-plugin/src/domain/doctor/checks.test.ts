@@ -106,8 +106,6 @@ describe("runDoctor", () => {
           apiDataGov: "key",
           geocodio: "key",
           googleCivic: "key",
-          openStates: "key",
-          voteSmart: "key",
         },
       },
       cronAdapter: adapter,

@@ -25,9 +25,8 @@ export type FinanceResolverOptions = {
  * path in this module that accepts such input.
  *
  * This resolver currently covers federal candidates via FEC OpenFEC (shares
- * the `apiDataGov` key with api.congress.gov). State finance
- * (FollowTheMoney) and industry rollups (OpenSecrets) are optional follow-up
- * integrations.
+ * the `apiDataGov` key with api.congress.gov). State finance and industry
+ * rollups are not in scope today.
  */
 export type FinanceResolver = {
   searchCandidates(

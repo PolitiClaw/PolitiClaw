@@ -20,28 +20,6 @@ const SetApiKeysParams = Type.Object({
   geocodio: ApiKeyField(
     "OPTIONAL. Geocodio key — reps-by-address via API. Free tier 2,500 lookups/day.",
   ),
-  openStates: ApiKeyField(
-    "OPTIONAL. Open States key — state bills and votes with member positions.",
-  ),
-  legiscan: ApiKeyField(
-    "OPTIONAL. LegiScan key — alternative state-bills source. Free tier 30k queries/month.",
-  ),
-  openSecrets: ApiKeyField(
-    "OPTIONAL. OpenSecrets key — federal campaign-finance derived analytics. Non-commercial use only.",
-  ),
-  followTheMoney: ApiKeyField(
-    "OPTIONAL. FollowTheMoney key — state-level campaign finance.",
-  ),
-  voteSmart: ApiKeyField("OPTIONAL. Vote Smart key — structured candidate bios."),
-  democracyWorks: ApiKeyField(
-    "OPTIONAL. Democracy Works key — ballot logistics upgrade. Partner-gated.",
-  ),
-  cicero: ApiKeyField(
-    "OPTIONAL (paid). Cicero key — local municipal/county/school-board representatives.",
-  ),
-  ballotReady: ApiKeyField(
-    "OPTIONAL (commercial). BallotReady key — fuller down-ballot coverage.",
-  ),
   googleCivic: ApiKeyField(
     "OPTIONAL. Google Civic key — required for politiclaw_get_my_ballot. Create in Google Cloud console with the Civic Information API enabled.",
   ),

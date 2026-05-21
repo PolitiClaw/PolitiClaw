@@ -208,8 +208,6 @@ export const API_KEY_FLAGS: readonly ApiKeyFlag[] = [
   },
   { key: "geocodio", label: "Geocodio", required: false, unlocks: "faster reps-by-address" },
   { key: "googleCivic", label: "Google Civic", required: false, unlocks: "ballot logistics" },
-  { key: "openStates", label: "Open States", required: false, unlocks: "state bills" },
-  { key: "voteSmart", label: "Vote Smart", required: false, unlocks: "structured candidate bios" },
 ];
 
 function checkApiKeys(config: PluginConfigSnapshot): DoctorCheck {

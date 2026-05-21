@@ -207,30 +207,6 @@ One front-door tool that walks the user through PolitiClaw setup end-to-end: add
         "geocodio": {
           "type": "string"
         },
-        "openStates": {
-          "type": "string"
-        },
-        "legiscan": {
-          "type": "string"
-        },
-        "openSecrets": {
-          "type": "string"
-        },
-        "followTheMoney": {
-          "type": "string"
-        },
-        "voteSmart": {
-          "type": "string"
-        },
-        "democracyWorks": {
-          "type": "string"
-        },
-        "cicero": {
-          "type": "string"
-        },
-        "ballotReady": {
-          "type": "string"
-        },
         "googleCivic": {
           "type": "string"
         }

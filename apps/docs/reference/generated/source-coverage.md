@@ -6,7 +6,6 @@ This page is generated from the explicit source coverage catalog.
 
 - `implemented`: wired into the current runtime with no extra integration work required.
 - `optional_upgrade`: wired today, but only active when the user provides a key.
-- `schema_only`: declared in the config schema, but not wired into runtime logic yet.
 - `transport_pending`: the adapter shape exists, but the production transport is not wired.
 
 | Provider | Status | Config Key | Required | Summary |
@@ -17,14 +16,6 @@ This page is generated from the explicit source coverage catalog.
 | Voteview (voteview.com) | `implemented` | n/a | no | Zero-key tier-2 source for Senate roll-call votes. api.congress.gov has no /senate-vote endpoint, so this fills the gap. |
 | Google Civic voterInfoQuery | `optional_upgrade` | `apiKeys.googleCivic` | no | Key-gated ballot and election-logistics provider — the only ballot source the plugin wires today. |
 | Candidate and measure bio web search | `transport_pending` | n/a | no | The guarded adapter shape exists, but the production transport is not wired, so live calls return unavailable. |
-| Open States | `schema_only` | `apiKeys.openStates` | no | Declared in the plugin config schema but not wired into the current runtime. |
-| LegiScan | `schema_only` | `apiKeys.legiscan` | no | Declared in the plugin config schema but not wired into the current runtime. |
-| OpenSecrets | `schema_only` | `apiKeys.openSecrets` | no | Declared in the plugin config schema but not wired into the current runtime. |
-| FollowTheMoney | `schema_only` | `apiKeys.followTheMoney` | no | Declared in the plugin config schema but not wired into the current runtime. |
-| Vote Smart | `schema_only` | `apiKeys.voteSmart` | no | Declared in the plugin config schema but not wired into the current runtime. |
-| Democracy Works | `schema_only` | `apiKeys.democracyWorks` | no | Declared in the plugin config schema but not wired into the current runtime. |
-| Cicero | `schema_only` | `apiKeys.cicero` | no | Declared in the plugin config schema but not wired into the current runtime. |
-| BallotReady | `schema_only` | `apiKeys.ballotReady` | no | Declared in the plugin config schema but not wired into the current runtime. |
 
 ## Provider Details
 
@@ -72,7 +63,7 @@ This page is generated from the explicit source coverage catalog.
 - Required: no
 - Config key: `apiKeys.googleCivic`
 - Summary: Key-gated ballot and election-logistics provider — the only ballot source the plugin wires today.
-- Notes: Required for every ballot tool. Per-state SoS adapters were scoped out in v1 after an audit found none of the six candidate states publishes a public address-to-ballot JSON feed; revisit when BallotReady or Democracy Works provides self-serve keys. Judicial retention detail and ballot-measure plain-language enrichment are not wired.
+- Notes: Required for every ballot tool. Per-state SoS adapters were scoped out in v1 after an audit found none of the six candidate states publishes a public address-to-ballot JSON feed. Judicial retention detail and ballot-measure plain-language enrichment are not wired.
 - Tools: `politiclaw_get_my_ballot`, `politiclaw_election_brief`
 - Runtime files: `packages/politiclaw-plugin/src/sources/ballot/index.ts`, `packages/politiclaw-plugin/src/sources/ballot/googleCivic.ts`
 
@@ -84,75 +75,3 @@ This page is generated from the explicit source coverage catalog.
 - Notes: Tests can inject a fetcher today. Production use still depends on the host skill layer for narrative lookup.
 - Tools: `politiclaw_research_finance`, `politiclaw_election_brief`
 - Runtime files: `packages/politiclaw-plugin/src/sources/webSearch/index.ts`, `packages/politiclaw-plugin/src/sources/webSearch/bios.ts`
-
-### Open States
-
-- Status: `schema_only`
-- Required: no
-- Config key: `apiKeys.openStates`
-- Summary: Declared in the plugin config schema but not wired into the current runtime.
-- Notes: State legislative coverage is out of scope for the wired runtime today.
-- Runtime files: `packages/politiclaw-plugin/openclaw.plugin.json`, `packages/politiclaw-plugin/src/storage/context.ts`
-
-### LegiScan
-
-- Status: `schema_only`
-- Required: no
-- Config key: `apiKeys.legiscan`
-- Summary: Declared in the plugin config schema but not wired into the current runtime.
-- Notes: State legislative coverage is out of scope for the wired runtime today.
-- Runtime files: `packages/politiclaw-plugin/openclaw.plugin.json`, `packages/politiclaw-plugin/src/storage/context.ts`
-
-### OpenSecrets
-
-- Status: `schema_only`
-- Required: no
-- Config key: `apiKeys.openSecrets`
-- Summary: Declared in the plugin config schema but not wired into the current runtime.
-- Notes: The candidate research tool intentionally stops at FEC totals today.
-- Runtime files: `packages/politiclaw-plugin/openclaw.plugin.json`, `packages/politiclaw-plugin/src/storage/context.ts`, `packages/politiclaw-plugin/src/tools/researchFinance.ts`
-
-### FollowTheMoney
-
-- Status: `schema_only`
-- Required: no
-- Config key: `apiKeys.followTheMoney`
-- Summary: Declared in the plugin config schema but not wired into the current runtime.
-- Notes: No state-finance adapter currently reads this key.
-- Runtime files: `packages/politiclaw-plugin/openclaw.plugin.json`, `packages/politiclaw-plugin/src/storage/context.ts`
-
-### Vote Smart
-
-- Status: `schema_only`
-- Required: no
-- Config key: `apiKeys.voteSmart`
-- Summary: Declared in the plugin config schema but not wired into the current runtime.
-- Notes: The runtime still routes candidate-bio enrichment through the guarded web-search layer.
-- Runtime files: `packages/politiclaw-plugin/openclaw.plugin.json`, `packages/politiclaw-plugin/src/storage/context.ts`
-
-### Democracy Works
-
-- Status: `schema_only`
-- Required: no
-- Config key: `apiKeys.democracyWorks`
-- Summary: Declared in the plugin config schema but not wired into the current runtime.
-- Notes: Ballot logistics currently come from state adapters or Google Civic.
-- Runtime files: `packages/politiclaw-plugin/openclaw.plugin.json`, `packages/politiclaw-plugin/src/storage/context.ts`
-
-### Cicero
-
-- Status: `schema_only`
-- Required: no
-- Config key: `apiKeys.cicero`
-- Summary: Declared in the plugin config schema but not wired into the current runtime.
-- Notes: Municipal, county, and state-legislative representative coverage is not implemented today.
-- Runtime files: `packages/politiclaw-plugin/openclaw.plugin.json`, `packages/politiclaw-plugin/src/storage/context.ts`
-
-### BallotReady
-
-- Status: `schema_only`
-- Required: no
-- Config key: `apiKeys.ballotReady`
-- Summary: Declared in the plugin config schema but not wired into the current runtime.
-- Notes: Curated down-ballot contest enrichment beyond Google Civic is not wired.
-- Runtime files: `packages/politiclaw-plugin/openclaw.plugin.json`, `packages/politiclaw-plugin/src/storage/context.ts`

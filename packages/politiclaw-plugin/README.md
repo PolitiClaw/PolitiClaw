@@ -6,7 +6,13 @@ Political data stays in a plugin-private SQLite database under the gateway's sta
 
 ## Install
 
-Install the plugin into a running OpenClaw gateway:
+Install the plugin into a running OpenClaw gateway from ClawHub:
+
+```bash
+openclaw plugins install clawhub:@politiclaw/politiclaw
+```
+
+Or install the package directly from npm:
 
 ```bash
 openclaw plugins install @politiclaw/politiclaw

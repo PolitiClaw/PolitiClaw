@@ -3,10 +3,10 @@
 ```mermaid
 flowchart LR
   start([Start]) --> path{"Install path"}
-  path -->|"User (npm)"| npmInstall["openclaw plugins install<br/>@politiclaw/politiclaw"]
+  path -->|"User (ClawHub)"| userInstall["openclaw plugins install<br/>clawhub:@politiclaw/politiclaw"]
   path -->|"Contributor (--link)"| checks["npm run build<br/>npm run typecheck<br/>npm run test"]
   checks --> linkInstall["openclaw plugins install --link<br/>(local checkout)"]
-  npmInstall --> reload["Reload gateway"]
+  userInstall --> reload["Reload gateway"]
   linkInstall --> reload
   reload --> doctor["/politiclaw-doctor"]
   doctor --> setup["/politiclaw-setup"]
@@ -16,7 +16,13 @@ flowchart LR
 
 ## Install
 
-Install the plugin into a running OpenClaw gateway:
+Install the plugin into a running OpenClaw gateway from ClawHub:
+
+```bash
+openclaw plugins install clawhub:@politiclaw/politiclaw
+```
+
+Or install the package directly from npm:
 
 ```bash
 openclaw plugins install @politiclaw/politiclaw

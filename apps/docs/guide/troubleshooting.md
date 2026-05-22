@@ -6,7 +6,7 @@ When the runtime looks wrong, begin with `/politiclaw-doctor`. It checks storage
 
 ## Plugin install fails from a local checkout
 
-End users should install the published package — `openclaw plugins install @politiclaw/politiclaw`. If you are working in this workspace and want a local-source install, the `--link` flag is required so the gateway reads from your checkout:
+End users should install from ClawHub — `openclaw plugins install clawhub:@politiclaw/politiclaw` (or the npm package directly, `openclaw plugins install @politiclaw/politiclaw`). If you are working in this workspace and want a local-source install, the `--link` flag is required so the gateway reads from your checkout:
 
 ```bash
 openclaw plugins install ./packages/politiclaw-plugin --link

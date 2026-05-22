@@ -157,9 +157,10 @@ graph TB
 <div class="pc-step">
   <div class="num"><span class="n">01</span>install</div>
   <div>
-    <div class="pc-step-title">install the plugin from npm</div>
+    <div class="pc-step-title">install the plugin from ClawHub</div>
     <p>Install into a running OpenClaw gateway, then reload the gateway (or restart the OpenClaw app) so the new tools register.</p>
-<pre><span class="k">openclaw</span> plugins install @politiclaw/politiclaw</pre>
+<pre><span class="k">openclaw</span> plugins install clawhub:@politiclaw/politiclaw</pre>
+    <p>Prefer npm? <code>openclaw plugins install @politiclaw/politiclaw</code> works too.</p>
   </div>
 </div>
 

@@ -4,7 +4,13 @@ PolitiClaw is a local-first OpenClaw plugin for legislation, representatives, ba
 
 ## Install
 
-To use PolitiClaw as an OpenClaw plugin, install it into a running gateway:
+To use PolitiClaw as an OpenClaw plugin, install it into a running gateway from ClawHub:
+
+```bash
+openclaw plugins install clawhub:@politiclaw/politiclaw
+```
+
+Or install the package directly from npm:
 
 ```bash
 openclaw plugins install @politiclaw/politiclaw

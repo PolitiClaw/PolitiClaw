@@ -21,7 +21,7 @@ It lives in this monorepo as an OpenClaw plugin plus a VitePress docs app. The d
 
 The shortest path from install to a real answer:
 
-1. Install the plugin — `openclaw plugins install @politiclaw/politiclaw` for the npm path, or follow the local-checkout path in [Installation and Verification](./installation-and-verification) if you are working in this workspace.
+1. Install the plugin — `openclaw plugins install clawhub:@politiclaw/politiclaw` from ClawHub (or `openclaw plugins install @politiclaw/politiclaw` from npm), or follow the local-checkout path in [Installation and Verification](./installation-and-verification) if you are working in this workspace.
 2. Run `/politiclaw-setup` and copy its prompt into your agent. `politiclaw_configure` is an agent tool, not a shell command.
 3. Run `/politiclaw-doctor` to catch missing configuration or storage problems early.
 4. If `politiclaw_configure` returns an issue-setup handoff, follow it to save at least one stance.

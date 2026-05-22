@@ -75,8 +75,6 @@ describe("politiclaw_doctor tool", () => {
         apiDataGov: "k",
         geocodio: "k",
         googleCivic: "k",
-        openStates: "k",
-        voteSmart: "k",
       },
     });
     setGatewayCronAdapterForTests({

@@ -33,7 +33,7 @@ read_when:
 
 - Keep FEC dollar figures intact — never round away or paraphrase them into ranges; the raw numbers are the whole point.
 - When a row shows "no data" for a numeric field, say so honestly. Do not backfill with LLM search.
-- Mention that industry rollups / top donors are intentionally absent in v1 — recommend the user add an OpenSecrets key if they want that context.
+- Mention that industry rollups / top donors are intentionally absent — the plugin reports FEC filings only, and a richer enrichment layer is not wired today.
 - When a bio is attached, name the tier (1, 2, or 5) and keep the verify-against-official-source disclaimer in your summary. The narrative is a paraphrase of cited sources, not primary text — never restate it as a direct quote.
 - When the bio line reads "unavailable — candidate-bio adapter has no live web-search transport wired yet," the finance summary is still the authoritative answer; point the user at the candidate's official site or `politiclaw_score_representative` for a sitting member's record rather than backfilling a narrative yourself.
 - This mode does not return voting records or position statements, bio attached or not. Point at `politiclaw_score_representative` whenever the user wants a vote record.

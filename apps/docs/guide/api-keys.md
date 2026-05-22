@@ -1,6 +1,6 @@
 # API Keys
 
-This page is the single source on which provider keys PolitiClaw uses, what each unlocks, and how to set them. For the runtime status table (which keys are wired today versus declared in schema only), the authoritative source is [Generated Source Coverage](../reference/generated/source-coverage).
+This page is the single source on which provider keys PolitiClaw uses, what each unlocks, and how to set them. The config schema declares only the wired keys listed below; for the per-provider runtime status (with source paths and tier), the authoritative source is [Generated Source Coverage](../reference/generated/source-coverage).
 
 ```mermaid
 graph TB
@@ -37,7 +37,7 @@ Three keys cover the wired runtime today.
 
 Senate roll-call votes ingest through voteview.com (zero-key), and the local shapefile path covers reps-by-address without `geocodio`. Neither needs configuration beyond running [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure) once.
 
-For the wider set of provider keys declared in the config schema but not yet wired into runtime, see [Generated Source Coverage](../reference/generated/source-coverage). Treat anything not marked `implemented` or `optional_upgrade` as not supported today.
+For planned providers that are not yet wired (state bills, state finance), see the **Roadmap** section of the plugin README. Unknown legacy key strings may still validate so older configs keep loading, but the runtime ignores them and the key-saving tools do not write roadmap keys.
 
 ## How to obtain each key
 
@@ -77,4 +77,4 @@ After saving, run `/politiclaw-doctor` to confirm the keys are in place and the 
 
 - If a bill, vote, or finance tool returns a missing-key error, see [Troubleshooting → Bill, Vote, Or Finance Tools Are Unavailable](./troubleshooting#bill-vote-or-finance-tools-are-unavailable).
 - If a ballot tool reports Google Civic missing, see [Troubleshooting → Ballot Tools Say Google Civic Is Missing](./troubleshooting#ballot-tools-say-google-civic-is-missing).
-- For the runtime status of any key (`implemented`, `optional_upgrade`, `schema_only`, `transport_pending`), trust [Generated Source Coverage](../reference/generated/source-coverage) over prose.
+- For the runtime status of any key (`implemented`, `optional_upgrade`, `transport_pending`), trust [Generated Source Coverage](../reference/generated/source-coverage) over prose.

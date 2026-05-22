@@ -55,9 +55,9 @@ Ballot and election logistics come from Google Civic's `voterInfoQuery`, gated o
 
 ## Per-provider matrix
 
-When you need the exact provider status (`implemented`, `optional_upgrade`, `transport_pending`, `schema_only`), config keys, and runtime file paths, use the generated pages:
+When you need the exact provider status (`implemented`, `optional_upgrade`, `transport_pending`), config keys, and runtime file paths, use the generated pages:
 
 - [Generated Source Coverage](./generated/source-coverage)
 - [Generated Source Coverage JSON](./generated/source-coverage.json)
 
-PolitiClaw currently ships a broader config schema than the runtime implementation. The generated matrix is the source of truth for which providers are actually wired.
+The schema only declares named keys for providers that are actually wired. For providers planned but not yet wired (state bills, state finance), see the **Roadmap** section of the plugin README. Unknown legacy key strings may still validate so older configs keep loading, but they are ignored by runtime adapters.

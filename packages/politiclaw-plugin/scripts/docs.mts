@@ -6,7 +6,6 @@ import yaml from "js-yaml";
 import { POLITICLAW_CRON_TEMPLATES } from "../src/cron/templates.ts";
 import {
   DOCS_BASELINE,
-  SCHEMA_ONLY_PROVIDER_LABELS,
   SOURCE_COVERAGE_CATALOG,
 } from "../src/docs/sourceCoverage.ts";
 import {
@@ -518,7 +517,6 @@ function renderSourceCoveragePage(): string {
     "",
     "- `implemented`: wired into the current runtime with no extra integration work required.",
     "- `optional_upgrade`: wired today, but only active when the user provides a key.",
-    "- `schema_only`: declared in the config schema, but not wired into runtime logic yet.",
     "- `transport_pending`: the adapter shape exists, but the production transport is not wired.",
     "",
     "| Provider | Status | Config Key | Required | Summary |",
@@ -776,17 +774,14 @@ function collectPublishedDocsPolicyIssues(): PublishedDocPolicyIssue[] {
       });
     }
 
-    if (!markdownFile.startsWith(generatedDocsPrefix)) {
-      for (const label of SCHEMA_ONLY_PROVIDER_LABELS) {
-        const pattern = new RegExp(`\\b${escapeRegExp(label)}\\b`, "i");
-        if (pattern.test(content)) {
-          issues.push({
-            file: relativePath,
-            message: `mentions schema-only integration '${label}' outside the generated source coverage pages`,
-          });
-        }
-      }
+    if (!markdownFile.startsWith(generatedDocsPrefix) && mentionsStaleSchemaOnlyFraming(content)) {
+      issues.push({
+        file: relativePath,
+        message:
+          "uses stale schema-only provider framing; describe unwired providers as roadmap/not wired instead",
+      });
     }
+
   }
 
   return issues;
@@ -818,6 +813,12 @@ function mentionsHiddenDocs(content: string): boolean {
   // leading character class so `https://docs.<host>` URLs don't trip the
   // rule — only repo-relative `/docs` references do.
   return /`\/docs`|\]\(\/docs(?:\/|\))|\]\(docs(?:\/|\))|[^\w/]\/docs(?:\/|\b)/.test(content);
+}
+
+function mentionsStaleSchemaOnlyFraming(content: string): boolean {
+  return /\bschema-only placeholders?\b/i.test(content) ||
+    /\bdeclared in (?:the )?config schema(?: only)?\b/i.test(content) ||
+    /\bdeclared in schema only\b/i.test(content);
 }
 
 function collectTierMislabelIssues(): PublishedDocPolicyIssue[] {
@@ -996,10 +997,6 @@ function escapeTableCell(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/\n/g, " ");
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

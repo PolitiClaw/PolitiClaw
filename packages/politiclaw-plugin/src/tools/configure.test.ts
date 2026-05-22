@@ -801,7 +801,7 @@ describe("politiclaw_configure", () => {
         "call-1",
         {
           apiDataGov: "a",
-          optionalApiKeys: { geocodio: "g", openStates: "o" },
+          optionalApiKeys: { geocodio: "g", googleCivic: "o" },
         },
         undefined,
         undefined,
@@ -811,7 +811,7 @@ describe("politiclaw_configure", () => {
       expect(calls[0]).toEqual({
         apiDataGov: "a",
         geocodio: "g",
-        openStates: "o",
+        googleCivic: "o",
       });
     });
 
@@ -828,7 +828,7 @@ describe("politiclaw_configure", () => {
         "call-1",
         {
           apiDataGov: "   ",
-          optionalApiKeys: { geocodio: "g", openStates: "" },
+          optionalApiKeys: { geocodio: "g", googleCivic: "" },
         },
         undefined,
         undefined,
@@ -1039,7 +1039,6 @@ describe("politiclaw_configure", () => {
 
       expect(text).toContain("Paste the key back into chat");
       expect(text).toContain("geocodio");
-      expect(text).toContain("openStates");
       expect(text).toContain("googleCivic");
       // Old "edit ~/.openclaw/openclaw.json by hand" instruction is gone.
       expect(text).not.toContain("OpenClaw config under");

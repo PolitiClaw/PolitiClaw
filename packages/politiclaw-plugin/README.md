@@ -38,23 +38,20 @@ If anything in this path looks wrong, run `/politiclaw-status`, `/politiclaw-doc
 
 You can still edit `~/.openclaw/openclaw.json` by hand under `plugins.entries.politiclaw.config.apiKeys.*` if you prefer; both paths land in the same file.
 
-**One key is required; the rest are optional upgrades.**
+**One named key is required; the other named keys are optional upgrades.**
 
-| Key | Required? | What it unlocks |
-| --- | --- | --- |
-| `apiDataGov` | **Required** | Federal bills, House roll-call votes with member positions, committee schedules, and FEC campaign-finance data. One `api.data.gov` key covers both `api.congress.gov` and OpenFEC. Senate roll-call votes ingest separately through voteview.com (zero-key, no signup). Free, instant signup at [api.data.gov/signup](https://api.data.gov/signup/). |
-| `geocodio` | Optional | Reps-by-address via API. Without it, the plugin uses a zero-key local shapefile pipeline — Geocodio trades disk footprint for API simplicity. |
-| `openStates` | Optional | State bills and votes with individual member positions. Without it, state bill lookup is narrative-only via LLM search; state vote positions and state change-detection are not available. |
-| `legiscan` | Optional | Alternate state bills source. Free tier covers 30,000 queries/month and can substitute for `openStates`. |
-| `openSecrets` | Optional | Federal campaign-finance analytics (industry rollups, revolving-door context). Non-commercial use only. Dollar amounts never fall back to LLM search; only narrative context does. |
-| `followTheMoney` | Optional | State-level campaign finance. Without it, state finance is not covered. |
-| `voteSmart` | Optional | Structured candidate bios for ballot explanations. Default bios come from LLM search tagged as low-confidence. |
-| `democracyWorks` | Optional | Ballot logistics (dates, deadlines, polling places). Partner-gated — requires an application. Default uses Google Civic `voterInfoQuery`. |
-| `cicero` | Optional (paid) | Local municipal, county, and school-board reps. This is the only local source; without it, local reps are explicitly out of scope. |
-| `ballotReady` | Optional (commercial) | Fuller down-ballot coverage. Default scope is federal, statewide, and six state secretary-of-state feeds (CA, WA, CO, OH, FL, MI). |
-| `googleCivic` | Optional but required for `politiclaw_get_my_ballot` | Google Cloud API key with the Civic Information API enabled. Distinct from `api.data.gov`. |
+The plugin's config schema declares three wired keys — `apiDataGov`, `geocodio`, and `googleCivic`. The runtime reads only those keys. Unknown legacy key strings may still validate so older configs keep loading, but `politiclaw_configure` and `politiclaw_set_api_keys` will not save roadmap keys and no current adapter reads them. The roadmap rows below signal where the plugin is headed (state coverage) without declaring those providers as supported.
 
-To validate that your keys are wired up correctly, run `/politiclaw-doctor` — it checks every key the plugin recognizes and reports which tools each missing key gates.
+| Key | Status | Required? | What it unlocks |
+| --- | --- | --- | --- |
+| `apiDataGov` | Active | **Required** | Federal bills, House roll-call votes with member positions, committee schedules, and FEC campaign-finance data. One `api.data.gov` key covers both `api.congress.gov` and OpenFEC. Senate roll-call votes ingest separately through voteview.com (zero-key, no signup). Free, instant signup at [api.data.gov/signup](https://api.data.gov/signup/). |
+| `geocodio` | Active | Optional | Reps-by-address via API. Without it, the plugin uses a zero-key local shapefile pipeline — Geocodio trades disk footprint for API simplicity. |
+| `googleCivic` | Active | Optional but required for `politiclaw_get_my_ballot` | Google Cloud API key with the Civic Information API enabled. Distinct from `api.data.gov`. |
+| `openStates` | Roadmap | — | Planned: state bills and votes with individual member positions. Until wired, state bill lookup is narrative-only via LLM search; state vote positions and state change-detection are not available. |
+| `legiscan` | Roadmap | — | Planned: alternate state bills source. Free tier covers 30,000 queries/month and would substitute for `openStates`. |
+| `followTheMoney` | Roadmap | — | Planned: state-level campaign finance. State finance is not covered until this is wired. |
+
+To validate that your active keys are wired up correctly, run `/politiclaw-doctor` — it checks every key the plugin actually accepts and reports which tools each missing key gates.
 
 ## Override recipes
 

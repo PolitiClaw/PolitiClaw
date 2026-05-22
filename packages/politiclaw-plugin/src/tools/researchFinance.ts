@@ -179,7 +179,7 @@ export function renderCandidateSummary(
   }
 
   lines.push(
-    "Industry rollups, top donors, and independent expenditures require an OpenSecrets key (optional) — this v1 slice surfaces FEC totals only.",
+    "Industry rollups, top donors, and independent expenditures are not in this slice — FEC OpenFEC totals only.",
   );
 
   if (bioResult) {
@@ -301,7 +301,7 @@ export function renderResearchChallengersOutput(result: CompareChallengersResult
     lines.push("");
   }
   lines.push(
-    "Finance numbers are FEC filings only. Industry breakdowns, top donors, and independent expenditures require an OpenSecrets key (optional upgrade).",
+    "Finance numbers are FEC filings only. Industry breakdowns, top donors, and independent expenditures are not surfaced today.",
   );
   lines.push(
     "Voting records are not in this output. Pair with `politiclaw_score_representative` for incumbents' records.",
@@ -337,7 +337,7 @@ export const researchFinanceTool: AnyAgentTool = {
     "Pass mode='challengers' to compare each stored rep's filed challengers side-by-side (uses " +
     "politiclaw_get_my_reps results; supports optional `repId` and `cycle` filters). " +
     "Dollar amounts come only from FEC — industry rollups, donor identities, and independent " +
-    "expenditures are out of scope until an OpenSecrets key lands. The bio is tier-5 by default " +
+    "expenditures are out of scope today. The bio is tier-5 by default " +
     "and only reaches tier 1/2 when every citation is a primary-government or neutral civic-infrastructure " +
     "domain. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov (same key as api.congress.gov).",
   parameters: ResearchFinanceParams,

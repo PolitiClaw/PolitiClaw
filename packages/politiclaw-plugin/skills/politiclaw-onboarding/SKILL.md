@@ -196,8 +196,8 @@ lightly — the key points are:
    `plugins.entries.politiclaw.config.apiKeys.apiDataGov` and the gateway
    restarts itself to pick it up.
 3. If the user happens to mention any optional upgrade keys in the same
-   message (Geocodio, Open States, OpenSecrets, etc.), pass them in
-   `optionalApiKeys` on the same call so the gateway only restarts once.
+   message (`geocodio`, `googleCivic`), pass them in `optionalApiKeys`
+   on the same call so the gateway only restarts once.
 4. After the restart, the user reconnects and can re-run
    `politiclaw_configure` to see the contract with the new keys live.
 

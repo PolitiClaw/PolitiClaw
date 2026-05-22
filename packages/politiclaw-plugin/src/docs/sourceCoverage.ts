@@ -1,7 +1,6 @@
 export type SourceCoverageStatus =
   | "implemented"
   | "optional_upgrade"
-  | "schema_only"
   | "transport_pending";
 
 export type SourceCoverageEntry = {
@@ -115,7 +114,7 @@ export const SOURCE_COVERAGE_CATALOG: readonly SourceCoverageEntry[] = [
     summary:
       "Key-gated ballot and election-logistics provider — the only ballot source the plugin wires today.",
     notes:
-      "Required for every ballot tool. Per-state SoS adapters were scoped out in v1 after an audit found none of the six candidate states publishes a public address-to-ballot JSON feed; revisit when BallotReady or Democracy Works provides self-serve keys. Judicial retention detail and ballot-measure plain-language enrichment are not wired.",
+      "Required for every ballot tool. Per-state SoS adapters were scoped out in v1 after an audit found none of the six candidate states publishes a public address-to-ballot JSON feed. Judicial retention detail and ballot-measure plain-language enrichment are not wired.",
     sourcePaths: [
       "packages/politiclaw-plugin/src/sources/ballot/index.ts",
       "packages/politiclaw-plugin/src/sources/ballot/googleCivic.ts",
@@ -143,141 +142,4 @@ export const SOURCE_COVERAGE_CATALOG: readonly SourceCoverageEntry[] = [
       "politiclaw_election_brief",
     ],
   },
-  {
-    id: "openStates",
-    label: "Open States",
-    status: "schema_only",
-    configKey: "openStates",
-    required: false,
-    summary:
-      "Declared in the plugin config schema but not wired into the current runtime.",
-    notes:
-      "State legislative coverage is out of scope for the wired runtime today.",
-    sourcePaths: [
-      "packages/politiclaw-plugin/openclaw.plugin.json",
-      "packages/politiclaw-plugin/src/storage/context.ts",
-    ],
-    unlockedByTools: [],
-  },
-  {
-    id: "legiscan",
-    label: "LegiScan",
-    status: "schema_only",
-    configKey: "legiscan",
-    required: false,
-    summary:
-      "Declared in the plugin config schema but not wired into the current runtime.",
-    notes:
-      "State legislative coverage is out of scope for the wired runtime today.",
-    sourcePaths: [
-      "packages/politiclaw-plugin/openclaw.plugin.json",
-      "packages/politiclaw-plugin/src/storage/context.ts",
-    ],
-    unlockedByTools: [],
-  },
-  {
-    id: "openSecrets",
-    label: "OpenSecrets",
-    status: "schema_only",
-    configKey: "openSecrets",
-    required: false,
-    summary:
-      "Declared in the plugin config schema but not wired into the current runtime.",
-    notes:
-      "The candidate research tool intentionally stops at FEC totals today.",
-    sourcePaths: [
-      "packages/politiclaw-plugin/openclaw.plugin.json",
-      "packages/politiclaw-plugin/src/storage/context.ts",
-      "packages/politiclaw-plugin/src/tools/researchFinance.ts",
-    ],
-    unlockedByTools: [],
-  },
-  {
-    id: "followTheMoney",
-    label: "FollowTheMoney",
-    status: "schema_only",
-    configKey: "followTheMoney",
-    required: false,
-    summary:
-      "Declared in the plugin config schema but not wired into the current runtime.",
-    notes:
-      "No state-finance adapter currently reads this key.",
-    sourcePaths: [
-      "packages/politiclaw-plugin/openclaw.plugin.json",
-      "packages/politiclaw-plugin/src/storage/context.ts",
-    ],
-    unlockedByTools: [],
-  },
-  {
-    id: "voteSmart",
-    label: "Vote Smart",
-    status: "schema_only",
-    configKey: "voteSmart",
-    required: false,
-    summary:
-      "Declared in the plugin config schema but not wired into the current runtime.",
-    notes:
-      "The runtime still routes candidate-bio enrichment through the guarded web-search layer.",
-    sourcePaths: [
-      "packages/politiclaw-plugin/openclaw.plugin.json",
-      "packages/politiclaw-plugin/src/storage/context.ts",
-    ],
-    unlockedByTools: [],
-  },
-  {
-    id: "democracyWorks",
-    label: "Democracy Works",
-    status: "schema_only",
-    configKey: "democracyWorks",
-    required: false,
-    summary:
-      "Declared in the plugin config schema but not wired into the current runtime.",
-    notes:
-      "Ballot logistics currently come from state adapters or Google Civic.",
-    sourcePaths: [
-      "packages/politiclaw-plugin/openclaw.plugin.json",
-      "packages/politiclaw-plugin/src/storage/context.ts",
-    ],
-    unlockedByTools: [],
-  },
-  {
-    id: "cicero",
-    label: "Cicero",
-    status: "schema_only",
-    configKey: "cicero",
-    required: false,
-    summary:
-      "Declared in the plugin config schema but not wired into the current runtime.",
-    notes:
-      "Municipal, county, and state-legislative representative coverage is not implemented today.",
-    sourcePaths: [
-      "packages/politiclaw-plugin/openclaw.plugin.json",
-      "packages/politiclaw-plugin/src/storage/context.ts",
-    ],
-    unlockedByTools: [],
-  },
-  {
-    id: "ballotReady",
-    label: "BallotReady",
-    status: "schema_only",
-    configKey: "ballotReady",
-    required: false,
-    summary:
-      "Declared in the plugin config schema but not wired into the current runtime.",
-    notes:
-      "Curated down-ballot contest enrichment beyond Google Civic is not wired.",
-    sourcePaths: [
-      "packages/politiclaw-plugin/openclaw.plugin.json",
-      "packages/politiclaw-plugin/src/storage/context.ts",
-    ],
-    unlockedByTools: [],
-  },
 ];
-
-export const SCHEMA_ONLY_PROVIDER_IDS: readonly string[] = SOURCE_COVERAGE_CATALOG.filter(
-  (entry) => entry.status === "schema_only",
-).map((entry) => entry.id);
-
-export const SCHEMA_ONLY_PROVIDER_LABELS: readonly string[] = SOURCE_COVERAGE_CATALOG.filter(
-  (entry) => entry.status === "schema_only",
-).flatMap((entry) => (entry.configKey ? [entry.label, entry.configKey] : [entry.label]));

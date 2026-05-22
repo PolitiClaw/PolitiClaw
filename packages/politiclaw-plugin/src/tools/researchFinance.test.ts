@@ -116,7 +116,7 @@ describe("renderCandidateSummary", () => {
       { adapterId: "fec", tier: 1 },
     );
     expect(text).toContain("No FEC financial totals");
-    expect(text).toContain("OpenSecrets");
+    expect(text).toContain("Industry rollups");
   });
 });
 
@@ -218,7 +218,7 @@ describe("renderResearchChallengersOutput", () => {
     expect(text).toContain("$1,500,000");
     expect(text).toContain("challenger — CHALLENGER, BEN");
     expect(text).toContain("no FEC totals available");
-    expect(text).toContain("OpenSecrets");
+    expect(text).toContain("Industry breakdowns");
     expect(text).toContain("informational, not independent journalism");
   });
 

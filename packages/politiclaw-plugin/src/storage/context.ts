@@ -16,14 +16,6 @@ export type PluginConfigSnapshot = {
   apiKeys?: {
     apiDataGov?: string;
     geocodio?: string;
-    openStates?: string;
-    legiscan?: string;
-    openSecrets?: string;
-    followTheMoney?: string;
-    voteSmart?: string;
-    democracyWorks?: string;
-    cicero?: string;
-    ballotReady?: string;
     googleCivic?: string;
   };
   sources?: {

@@ -121,7 +121,7 @@ describe("politiclaw_set_api_keys", () => {
       {
         apiDataGov: "data-gov",
         geocodio: "geo",
-        openStates: "os",
+        googleCivic: "gc",
       },
       undefined,
       undefined,
@@ -136,7 +136,7 @@ describe("politiclaw_set_api_keys", () => {
               apiKeys: {
                 apiDataGov: "data-gov",
                 geocodio: "geo",
-                openStates: "os",
+                googleCivic: "gc",
               },
             },
           },
@@ -155,7 +155,7 @@ describe("politiclaw_set_api_keys", () => {
       {
         apiDataGov: "  trimmed-key  ",
         geocodio: "   ",
-        openStates: "",
+        googleCivic: "",
       },
       undefined,
       undefined,
@@ -176,7 +176,7 @@ describe("politiclaw_set_api_keys", () => {
       },
     });
     expect(details.savedKeys).toEqual(["apiDataGov"]);
-    expect(details.skippedKeys).toEqual(["geocodio", "openStates"]);
+    expect(details.skippedKeys).toEqual(["geocodio", "googleCivic"]);
   });
 
   it("returns nothing-to-do without calling the gateway when no keys are supplied", async () => {

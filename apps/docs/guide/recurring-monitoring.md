@@ -66,7 +66,7 @@ If you want to suppress a specific topic without changing cadence, use [`politic
 
 Deliberate limits so the blind spots don't hide:
 
-- **State and local bills.** Federal bill and roll-call sources are wired (House via api.congress.gov, Senate via voteview.com); state-level providers are declared in the config schema but not wired into runtime today. See [Generated Source Coverage](../reference/generated/source-coverage) for the full matrix.
+- **State and local bills.** Federal bill and roll-call sources are wired (House via api.congress.gov, Senate via voteview.com); state-level providers are roadmap entries and not wired into runtime today. See [Generated Source Coverage](../reference/generated/source-coverage) for the full matrix.
 - **Finance-driven alerts.** FEC campaign-finance lookups are available on demand via the candidate research tool, but no cron template currently fires finance-delta alerts.
 - **Outgoing transport.** PolitiClaw posts to your own session; it does not send email, push notifications, or messages to third parties. Outreach ends at a draft you send yourself.
 - **Reactive follow-up.** If a rep responds to a letter, PolitiClaw won't notice. The loop is monitoring → draft; it doesn't close around the reply.

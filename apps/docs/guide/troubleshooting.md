@@ -61,6 +61,6 @@ The docs checker currently fails for three main reasons:
 
 - **Generated reference artifacts are stale.** Most common after adding, removing, or renaming a tool, cron template, skill, source-coverage entry, or migration. Fix: `npm run docs:generate`, then re-run the check.
 - **A hand-written page mentions a hidden planning path.** Triggered when a published page contains a path or identifier reserved for unpublished design notes. Fix: remove or replace the reference with a link to a generated page or a published guide.
-- **A hand-written page presents a declared-only integration as if it were live.** Triggered when a published page describes a provider that the source coverage catalog marks as `schema_only` or `transport_pending`. Fix: rewrite the claim to match the catalog, or wait until the integration moves to `implemented` or `optional_upgrade`.
+- **A hand-written page presents a transport-pending integration as if it were live.** Triggered when a published page describes a provider that the source coverage catalog marks as `transport_pending`. Fix: rewrite the claim to match the catalog, or wait until the integration moves to `implemented` or `optional_upgrade`.
 
 `npm run docs:check` reports the exact file path for each failure.

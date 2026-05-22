@@ -6,7 +6,7 @@
 
 ## Description
 
-Federal campaign-finance research from FEC OpenFEC (tier 1). Pass mode='candidate' with `candidateId` (e.g. H8CA12345) for a full per-cycle totals summary with an attached LLM-search bio; pass `name` for a fuzzy search returning up to 5 FEC matches (no bio on the search path — re-run by `candidateId` to pull one). Pass mode='challengers' to compare each stored rep's filed challengers side-by-side (uses politiclaw_get_my_reps results; supports optional `repId` and `cycle` filters). Dollar amounts come only from FEC — industry rollups, donor identities, and independent expenditures are out of scope until an OpenSecrets key lands. The bio is tier-5 by default and only reaches tier 1/2 when every citation is a primary-government or neutral civic-infrastructure domain. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov (same key as api.congress.gov).
+Federal campaign-finance research from FEC OpenFEC (tier 1). Pass mode='candidate' with `candidateId` (e.g. H8CA12345) for a full per-cycle totals summary with an attached LLM-search bio; pass `name` for a fuzzy search returning up to 5 FEC matches (no bio on the search path — re-run by `candidateId` to pull one). Pass mode='challengers' to compare each stored rep's filed challengers side-by-side (uses politiclaw_get_my_reps results; supports optional `repId` and `cycle` filters). Dollar amounts come only from FEC — industry rollups, donor identities, and independent expenditures are out of scope today. The bio is tier-5 by default and only reaches tier 1/2 when every citation is a primary-government or neutral civic-infrastructure domain. Requires plugins.entries.politiclaw.config.apiKeys.apiDataGov (same key as api.congress.gov).
 
 ## Parameters
 

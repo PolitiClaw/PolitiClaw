@@ -1,8 +1,8 @@
 /**
  * Adapter-agnostic campaign-finance shapes.
  *
- * Dollar amounts are **tier-1 authoritative only** (FEC OpenFEC for federal,
- * FollowTheMoney for state when configured). LLM search is never an
+ * Dollar amounts are **tier-1 authoritative only** (FEC OpenFEC for federal;
+ * state-level finance is not currently wired). LLM search is never an
  * acceptable source for any numeric field in this module — enforced
  * structurally at the resolver boundary (see `src/sources/finance/index.ts`).
  */

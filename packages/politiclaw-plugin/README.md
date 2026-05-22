@@ -38,9 +38,9 @@ If anything in this path looks wrong, run `/politiclaw-status`, `/politiclaw-doc
 
 You can still edit `~/.openclaw/openclaw.json` by hand under `plugins.entries.politiclaw.config.apiKeys.*` if you prefer; both paths land in the same file.
 
-**One key is required; the rest are optional upgrades.**
+**One named key is required; the other named keys are optional upgrades.**
 
-The plugin's config schema currently accepts three keys — `apiDataGov`, `geocodio`, and `googleCivic`. The roadmap rows below are documented integration points whose adapters are not yet wired into the runtime. Passing a roadmap key to `politiclaw_configure` or `politiclaw_set_api_keys` will be rejected by the gateway's config validation; they are listed here to signal where the plugin is headed (state coverage) without silently broadening the schema before the runtime catches up.
+The plugin's config schema declares three wired keys — `apiDataGov`, `geocodio`, and `googleCivic`. The runtime reads only those keys. Unknown legacy key strings may still validate so older configs keep loading, but `politiclaw_configure` and `politiclaw_set_api_keys` will not save roadmap keys and no current adapter reads them. The roadmap rows below signal where the plugin is headed (state coverage) without declaring those providers as supported.
 
 | Key | Status | Required? | What it unlocks |
 | --- | --- | --- | --- |

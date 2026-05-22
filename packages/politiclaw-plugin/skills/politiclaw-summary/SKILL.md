@@ -120,8 +120,8 @@ week, with the actionable fix. Examples:
 
 - "Missed: FEC campaign-finance updates (paste your `apiDataGov` key into
   chat to light up)."
-- "Missed: state bills (optional `openStates` or `legiscan` key not set —
-  paste either into chat to light up)."
+- "Missed: state bills (state-level bill adapters are not wired today; track
+  the roadmap before treating this as actionable)."
 
 If everything ran clean, skip this section.
 

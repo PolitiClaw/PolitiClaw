@@ -60,8 +60,11 @@
     "properties": {
       "apiKeys": {
         "type": "object",
-        "additionalProperties": false,
-        "description": "One key required (apiDataGov); the others listed here are wired optional upgrades. The required key powers federal bills, House roll-call votes, committee schedules, and FEC finance data. Senate roll-call votes ingest separately through voteview.com (zero-key, no signup). Additional providers are documented in the README as roadmap entries and are intentionally not declared here until their adapters are wired.",
+        "additionalProperties": {
+          "type": "string",
+          "description": "Ignored legacy or unknown provider key. Retained so configs from older PolitiClaw releases keep validating; the runtime reads only the named wired keys."
+        },
+        "description": "One key required (apiDataGov); the others listed here are wired optional upgrades. The required key powers federal bills, House roll-call votes, committee schedules, and FEC finance data. Senate roll-call votes ingest separately through voteview.com (zero-key, no signup). Additional providers are documented in the README as roadmap entries and are intentionally not declared as named keys until their adapters are wired; unknown legacy key strings validate for upgrade compatibility but are ignored by the runtime.",
         "properties": {
           "apiDataGov": {
             "type": "string",

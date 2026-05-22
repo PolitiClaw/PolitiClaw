@@ -1,6 +1,6 @@
 # API Keys
 
-This page is the single source on which provider keys PolitiClaw uses, what each unlocks, and how to set them. The config schema accepts only the wired keys listed below; for the per-provider runtime status (with source paths and tier), the authoritative source is [Generated Source Coverage](../reference/generated/source-coverage).
+This page is the single source on which provider keys PolitiClaw uses, what each unlocks, and how to set them. The config schema declares only the wired keys listed below; for the per-provider runtime status (with source paths and tier), the authoritative source is [Generated Source Coverage](../reference/generated/source-coverage).
 
 ```mermaid
 graph TB
@@ -37,7 +37,7 @@ Three keys cover the wired runtime today.
 
 Senate roll-call votes ingest through voteview.com (zero-key), and the local shapefile path covers reps-by-address without `geocodio`. Neither needs configuration beyond running [`politiclaw_configure`](../reference/generated/tools/politiclaw_configure) once.
 
-For planned providers that are not yet wired (state bills, state finance), see the **Roadmap** section of the plugin README. The schema rejects keys for those providers, so you cannot "preload" them.
+For planned providers that are not yet wired (state bills, state finance), see the **Roadmap** section of the plugin README. Unknown legacy key strings may still validate so older configs keep loading, but the runtime ignores them and the key-saving tools do not write roadmap keys.
 
 ## How to obtain each key
 

@@ -774,6 +774,14 @@ function collectPublishedDocsPolicyIssues(): PublishedDocPolicyIssue[] {
       });
     }
 
+    if (!markdownFile.startsWith(generatedDocsPrefix) && mentionsStaleSchemaOnlyFraming(content)) {
+      issues.push({
+        file: relativePath,
+        message:
+          "uses stale schema-only provider framing; describe unwired providers as roadmap/not wired instead",
+      });
+    }
+
   }
 
   return issues;
@@ -805,6 +813,12 @@ function mentionsHiddenDocs(content: string): boolean {
   // leading character class so `https://docs.<host>` URLs don't trip the
   // rule — only repo-relative `/docs` references do.
   return /`\/docs`|\]\(\/docs(?:\/|\))|\]\(docs(?:\/|\))|[^\w/]\/docs(?:\/|\b)/.test(content);
+}
+
+function mentionsStaleSchemaOnlyFraming(content: string): boolean {
+  return /\bschema-only placeholders?\b/i.test(content) ||
+    /\bdeclared in (?:the )?config schema(?: only)?\b/i.test(content) ||
+    /\bdeclared in schema only\b/i.test(content);
 }
 
 function collectTierMislabelIssues(): PublishedDocPolicyIssue[] {
@@ -983,10 +997,6 @@ function escapeTableCell(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/\n/g, " ");
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

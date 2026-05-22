@@ -1,6 +1,6 @@
 # Configuration
 
-PolitiClaw's config schema accepts exactly the keys its runtime actually uses. For the keys themselves — what each unlocks, how to obtain them, how to set them, and what the gateway-restart implication is — see [API Keys](./api-keys).
+PolitiClaw's config schema declares exactly the named keys its runtime actually uses. For the keys themselves — what each unlocks, how to obtain them, how to set them, and what the gateway-restart implication is — see [API Keys](./api-keys).
 
 ```mermaid
 graph LR
@@ -13,7 +13,7 @@ graph LR
   live -. "implemented / optional_upgrade" .-> truth
 ```
 
-Additional providers (state bills, state finance) are tracked on the plugin README as roadmap entries; the schema rejects keys for providers that have no wired adapter, so there is no "set this and hope" surface.
+Additional providers (state bills, state finance) are tracked on the plugin README as roadmap entries. Unknown legacy key strings may still validate for upgrade compatibility, but the runtime ignores them and the key-saving tools do not write them, so there is no "set this and hope" surface.
 
 ## Wired Keys
 

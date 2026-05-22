@@ -143,4 +143,3 @@ export const SOURCE_COVERAGE_CATALOG: readonly SourceCoverageEntry[] = [
     ],
   },
 ];
-

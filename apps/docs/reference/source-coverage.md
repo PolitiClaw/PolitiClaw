@@ -60,4 +60,4 @@ When you need the exact provider status (`implemented`, `optional_upgrade`, `tra
 - [Generated Source Coverage](./generated/source-coverage)
 - [Generated Source Coverage JSON](./generated/source-coverage.json)
 
-The schema only declares keys for providers that are actually wired. For providers planned but not yet wired (state bills, state finance), see the **Roadmap** section of the plugin README.
+The schema only declares named keys for providers that are actually wired. For providers planned but not yet wired (state bills, state finance), see the **Roadmap** section of the plugin README. Unknown legacy key strings may still validate so older configs keep loading, but they are ignored by runtime adapters.

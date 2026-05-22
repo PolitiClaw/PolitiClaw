@@ -71,7 +71,7 @@ import { withBase } from "vitepress";
 </p>
 
 <p>
-  Everything structured lives in plugin-owned storage on your machine. Outbound network calls happen only when a tool needs a provider-backed answer, and the <a href="/reference/source-coverage">source coverage page</a> is explicit about which providers are wired today versus declared in schema only.
+  Everything structured lives in plugin-owned storage on your machine. Outbound network calls happen only when a tool needs a provider-backed answer, and the <a href="/reference/source-coverage">source coverage page</a> is explicit about which providers are wired today versus not yet implemented.
 </p>
 
 <div class="pc-callout civic">

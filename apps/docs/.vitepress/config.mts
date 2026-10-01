@@ -23,6 +23,7 @@ export default withMermaid(defineConfig({
         text: "Guide",
         items: [
           { text: "Getting Started", link: "/guide/getting-started" },
+          { text: "Glossary", link: "/guide/glossary" },
           { text: "See How My Reps Align", link: "/guide/see-how-my-reps-align" },
           { text: "Entry Points by Goal", link: "/guide/entry-points-by-goal" },
           { text: "Understand My Ballot", link: "/guide/understand-my-ballot" },

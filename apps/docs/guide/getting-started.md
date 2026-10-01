@@ -2,7 +2,7 @@
 
 PolitiClaw is a local-first civic copilot that holds your representatives accountable to the values you declare. Once you've told it the stances you care about, it watches federal legislation and federal roll-call votes (House and Senate) for you and flags when your reps' actions align — or don't — with those stances. Outreach is draft-only; PolitiClaw never speaks on your behalf.
 
-It lives in this monorepo as an OpenClaw plugin plus a VitePress docs app. The docs site is meant to be read in two passes:
+It lives in this monorepo as an OpenClaw plugin plus a VitePress docs app. When a word such as vote, action, or letter seems to mean two things, the [Glossary](./glossary) says which one these pages use. The docs are meant to be read in two passes:
 
 - Start with the guide for setup, verification, configuration, privacy, monitoring, and troubleshooting.
 - Use the reference section for exact runtime facts such as tool schemas, config status, cron templates, skills, and storage layout.

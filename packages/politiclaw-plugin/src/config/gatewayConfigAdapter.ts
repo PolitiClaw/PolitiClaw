@@ -11,7 +11,7 @@
  * `resetGatewayConfigAdapterForTests()`.
  */
 
-import { callGatewayTool } from "openclaw/plugin-sdk/agent-harness";
+import { loadCallGatewayTool } from "../gateway/callGatewayTool.js";
 
 export type ConfigSnapshot = {
   /** Stable content hash used as the baseHash for optimistic-concurrency writes. */
@@ -85,6 +85,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 const realGatewayConfigAdapter: GatewayConfigAdapter = {
   async getSnapshot() {
+    const callGatewayTool = await loadCallGatewayTool();
     const response = await callGatewayTool<RawConfigGetResponse>(
       "config.get",
       {},
@@ -103,6 +104,7 @@ const realGatewayConfigAdapter: GatewayConfigAdapter = {
     };
   },
   async patch(input) {
+    const callGatewayTool = await loadCallGatewayTool();
     const response = await callGatewayTool<RawConfigPatchResponse>(
       "config.patch",
       {},

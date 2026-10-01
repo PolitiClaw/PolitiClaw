@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `CHANGELOG.md` and `SECURITY.md` at the repository root.
 - `packages/politiclaw-plugin/CLAWSCAN_NOTE.md` — source-of-truth disclosure note for ClawHub publishes.
 
+### Fixed
+- Plugin activation on OpenClaw 2026.9.6 and later. `callGatewayTool` moved from `openclaw/plugin-sdk/agent-harness` to `openclaw/plugin-sdk/agent-harness-runtime`; a static import of the old name aborted install with `does not provide an export named 'callGatewayTool'`. Hosts that still export it from the original module keep working.
+
 ### Changed
 - `peerDependencies.openclaw` raised from `>=2026.4.15` to `>=2026.4.21` to match the declared `openclaw.compat.pluginApi`.
 

@@ -12,7 +12,7 @@
  * code always goes through the callGatewayTool-backed implementation.
  */
 
-import { callGatewayTool } from "openclaw/plugin-sdk/agent-harness";
+import { loadCallGatewayTool } from "../gateway/callGatewayTool.js";
 
 export type CronJobSchedule =
   | { kind: "every"; everyMs: number; anchorMs?: number }
@@ -83,6 +83,7 @@ type CronListPageResponse = {
 
 const realGatewayCronAdapter: GatewayCronAdapter = {
   async list(opts) {
+    const callGatewayTool = await loadCallGatewayTool();
     const response = await callGatewayTool<CronListPageResponse>(
       "cron.list",
       {},
@@ -91,9 +92,11 @@ const realGatewayCronAdapter: GatewayCronAdapter = {
     return Array.isArray(response?.jobs) ? response.jobs : [];
   },
   async add(job) {
+    const callGatewayTool = await loadCallGatewayTool();
     return callGatewayTool<GatewayCronJob>("cron.add", {}, job);
   },
   async update(id, patch) {
+    const callGatewayTool = await loadCallGatewayTool();
     return callGatewayTool<GatewayCronJob>("cron.update", {}, { id, patch });
   },
 };

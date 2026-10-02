@@ -1,4 +1,7 @@
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import {
+  definePluginEntry,
+  type OpenClawPluginDefinition,
+} from "openclaw/plugin-sdk/plugin-entry";
 
 import { REGISTERED_POLITICLAW_COMMANDS } from "./commands/index.js";
 import { getGatewayCronAdapter } from "./cron/gatewayAdapter.js";
@@ -9,7 +12,7 @@ import {
 import { createDashboardRoute } from "./http/routes.js";
 import { configureStorage, getStorage, type PluginConfigSnapshot } from "./storage/context.js";
 
-export default definePluginEntry({
+const pluginEntry: OpenClawPluginDefinition = definePluginEntry({
   id: "politiclaw",
   name: "PolitiClaw",
   description:
@@ -68,3 +71,5 @@ export default definePluginEntry({
     );
   },
 });
+
+export default pluginEntry;

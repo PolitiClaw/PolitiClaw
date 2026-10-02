@@ -22,7 +22,7 @@ import { withBase } from "vitepress";
 
   <div class="pc-tagline">
     <span class="quote">Holds your representatives accountable to the values you declare.</span>
-    Generated reference where accuracy matters. Short guides where judgment matters.
+    Guides for the common tasks. Reference pages generated from the live plugin when you need exact schemas.
   </div>
 
   <p class="pc-lede">
@@ -46,13 +46,13 @@ import { withBase } from "vitepress";
   <a class="pc-card" href="/guide/see-how-my-reps-align">
     <div class="idx">01 · task</div>
     <div class="ttl">see how my reps align</div>
-    <div class="desc">The accountability spine — measure your federal delegation against the stances you declared, with cited votes and honest coverage gaps.</div>
+    <div class="desc">Check how your House and Senate reps voted against the stances you saved — with citations, and clear gaps when data is thin.</div>
     <span class="arrow">→</span>
   </a>
   <a class="pc-card" href="/guide/getting-started">
     <div class="idx">02 · start</div>
     <div class="ttl">getting started</div>
-    <div class="desc">Read the two-pass layout of the site and the shortest path from a fresh install to a real answer.</div>
+    <div class="desc">Install, sanity-check, then get your first real answer in a few steps.</div>
     <span class="arrow">→</span>
   </a>
   <a class="pc-card" href="/guide/track-bills-and-votes">
@@ -67,7 +67,7 @@ import { withBase } from "vitepress";
 <h2 class="pc-h2">what is politiclaw?</h2>
 
 <p>
-  PolitiClaw is a <strong>local-first civic copilot</strong> that holds your representatives accountable to the values you declare. It learns the stances you care about, watches federal legislation and federal roll-call votes (House and Senate) on your behalf, and flags when your reps' actions align — or don't — with those stances. Ballot prep, candidate finance research, and draft-only outreach all build on the same stance-driven loop. Your queries never touch a third-party political platform.
+  In practice: save the stances you care about, then use ballot prep, candidate finance research, and draft-only outreach against that same stance list. Drafts stay on your machine until you send them — PolitiClaw never posts or mails for you.
 </p>
 
 <p>
@@ -77,7 +77,9 @@ import { withBase } from "vitepress";
 <div class="pc-callout civic">
   <span class="label">honest scope</span>
   <div class="body">
-    Outreach is <strong>draft-only</strong> — PolitiClaw never sends mail, posts on your behalf, or routes your message through a political platform, so accountability stays in your hands instead of a vendor's. Coverage today is federal: bills and House roll-call votes through api.congress.gov, Senate roll-call votes through voteview.com, ballots through Google Civic. State legislation and local races are not yet wired and are tracked as roadmap entries on the plugin README; the docs distinguish wired providers from optional upgrades and transport-pending adapters. For the goal-indexed scope boundaries, see <a href="/reference/source-coverage#what-is-not-covered-today">current coverage</a>.
+    <p>Outreach is <strong>draft-only</strong> — PolitiClaw never sends mail, posts on your behalf, or routes your message through a political platform, so accountability stays in your hands instead of a vendor's.</p>
+    <p>Coverage today is federal: bills and House roll-call votes through api.congress.gov, Senate roll-call votes through voteview.com, ballots through Google Civic.</p>
+    <p>State legislation and local races are not yet wired and are tracked as roadmap entries on the plugin README; the docs distinguish wired providers from optional upgrades and transport-pending adapters. For the goal-indexed scope boundaries, see <a href="/reference/source-coverage#what-is-not-covered-today">current coverage</a>.</p>
   </div>
 </div>
 </section>
@@ -86,14 +88,14 @@ import { withBase } from "vitepress";
 <h2 class="pc-h2">how it works</h2>
 
 <p>
-  The plugin registers three things with your OpenClaw gateway: a pool of <strong>provider adapters</strong> (api.data.gov for federal bills, House votes, and FEC finance; voteview.com for Senate votes; Google Civic for ballots; Geocodio as an optional rep-lookup upgrade), a <strong>tool bundle</strong> the agent can call (<code>politiclaw_doctor</code>, <code>politiclaw_configure</code>, <code>politiclaw_issue_stances</code>, <code>politiclaw_get_my_reps</code>, <code>politiclaw_election_brief</code>, …), and a set of <strong>cron templates</strong> the gateway schedules for monitoring.
+  The plugin registers tools and slash commands with your OpenClaw gateway (plus a local dashboard route). Under the hood, those tools talk to <strong>provider adapters</strong> (api.congress.gov for federal bills, House votes, and committee schedules — key from api.data.gov; voteview.com for Senate votes; Google Civic for ballots; optional Geocodio for reps-by-address; FEC OpenFEC via the same api.data.gov key). The agent can call tools like <code>politiclaw_doctor</code>, <code>politiclaw_configure</code>, <code>politiclaw_issue_stances</code>, <code>politiclaw_get_my_reps</code>, <code>politiclaw_election_brief</code>, and more. <strong>Cron templates</strong> install when you finish setup/<code>politiclaw_configure</code>, and the gateway runs them on your chosen cadence.
 </p>
 
 ```mermaid
 graph TB
   user([your message]) --> gateway
   gateway[openclaw gateway<br/>router · sessions] <--> politiclaw[politiclaw<br/>tools + cron]
-  politiclaw --> providers[providers<br/>api.data.gov · voteview<br/>google civic · geocodio · fec]
+  politiclaw --> providers[providers<br/>api.congress.gov · voteview<br/>FEC · google civic · geocodio]
   politiclaw --> storage[local storage<br/>sqlite + shapefiles]
   gateway --> response([agent response +<br/>generated references])
 ```
@@ -114,7 +116,7 @@ graph TB
   <div class="pc-card">
     <div class="idx">01</div>
     <div class="ttl">representative accountability</div>
-    <div class="desc">Per-rep and per-issue alignment scoring against your declared stances, driven by deterministic matching of House and Senate roll-call votes to the bills you have signal on. Confidence floor preserves "insufficient data" honesty; state/local accountability is not claimed.</div>
+    <div class="desc">Per-rep and per-issue alignment scoring against your declared stances. It matches their roll-call votes to bills you've already weighed in on — no guessed positions. If there aren't enough matching votes, it says so instead of inventing a score. State/local accountability is not claimed.</div>
   </div>
   <div class="pc-card">
     <div class="idx">02</div>
@@ -139,12 +141,12 @@ graph TB
   <div class="pc-card">
     <div class="idx">06</div>
     <div class="ttl">candidate finance research</div>
-    <div class="desc">FEC OpenFEC lookups through the same <code>api.data.gov</code> key, scoped for candidate and committee research.</div>
+    <div class="desc">FEC OpenFEC lookups through the same <code>api.data.gov</code> key — look up a federal candidate, or compare filed challengers for your stored reps.</div>
   </div>
   <div class="pc-card">
     <div class="idx">07</div>
     <div class="ttl">draft-only outreach</div>
-    <div class="desc">Drafts letters, public comments, and testimony grounded in the bill text and your own saved stance — you send them yourself.</div>
+    <div class="desc">Drafts letters and short call scripts grounded in the bill text and your saved stance — you send or dial yourself. There is no send path.</div>
   </div>
 </div>
 </section>
@@ -219,7 +221,7 @@ graph TB
   <a class="pc-card" href="/guide/see-how-my-reps-align">
     <div class="idx">01 · task</div>
     <div class="ttl">see how my reps align</div>
-    <div class="desc">The accountability spine — find your delegation, score each rep against your declared stances, and read the per-issue breakdown with cited votes.</div>
+    <div class="desc">Check how your House and Senate reps voted against the stances you saved — with citations, and clear gaps when data is thin.</div>
     <span class="arrow">→</span>
   </a>
   <a class="pc-card" href="/guide/understand-my-ballot">
@@ -237,41 +239,41 @@ graph TB
   <a class="pc-card" href="/guide/draft-outreach">
     <div class="idx">04 · task</div>
     <div class="ttl">draft outreach</div>
-    <div class="desc">Turn accountability findings, bill research, or ballot prep into a draft the user can send themselves.</div>
+    <div class="desc">Turn accountability findings, bill research, or ballot prep into a draft you send yourself.</div>
     <span class="arrow">→</span>
   </a>
   <a class="pc-card" href="/guide/recurring-monitoring">
-    <div class="idx">07 · experience</div>
+    <div class="idx">05 · experience</div>
     <div class="ttl">recurring monitoring</div>
     <div class="desc">What the recurring monitoring jobs actually produce — when they speak, when they stay silent, what each one watches.</div>
     <span class="arrow">→</span>
   </a>
   <a class="pc-card" href="/guide/rep-accountability">
-    <div class="idx">08 · experience</div>
+    <div class="idx">06 · experience</div>
     <div class="ttl">how accountability works</div>
     <div class="desc">The loop from declared stances through scored reps to a draft letter you send yourself. Includes the dissenting-view rule.</div>
     <span class="arrow">→</span>
   </a>
   <a class="pc-card" href="/guide/example-alerts">
-    <div class="idx">09 · experience</div>
+    <div class="idx">07 · experience</div>
     <div class="ttl">example alerts</div>
     <div class="desc">What a well-formed rep-vote hit, weekly digest, and quiet-window silence look like — and what a bad alert would look like.</div>
     <span class="arrow">→</span>
   </a>
   <a class="pc-card" href="/guide/monitoring">
-    <div class="idx">10 · task</div>
+    <div class="idx">08 · task</div>
     <div class="ttl">manage monitoring</div>
     <div class="desc">Use cadence as the main control for the weekly digest and the monthly rep accountability report.</div>
     <span class="arrow">→</span>
   </a>
   <a class="pc-card" href="/guide/configuration">
-    <div class="idx">11 · config</div>
+    <div class="idx">09 · config</div>
     <div class="ttl">configuration</div>
     <div class="desc">The three wired keys (<code>apiDataGov</code>, <code>googleCivic</code>, <code>geocodio</code>) and the gateway-restart contract.</div>
     <span class="arrow">→</span>
   </a>
   <a class="pc-card" href="/reference/tools">
-    <div class="idx">12 · reference</div>
+    <div class="idx">10 · reference</div>
     <div class="ttl">runtime reference</div>
     <div class="desc">Drop to the generated reference when you need exact tool schemas, config keys, or source coverage facts.</div>
     <span class="arrow">→</span>

@@ -12,6 +12,7 @@ import {
 import { createDashboardRoute } from "./http/routes.js";
 import { configureStorage, getStorage, type PluginConfigSnapshot } from "./storage/context.js";
 
+// Declaration emit cannot name definePluginEntry's inferred return type (TS2883).
 const pluginEntry: OpenClawPluginDefinition = definePluginEntry({
   id: "politiclaw",
   name: "PolitiClaw",

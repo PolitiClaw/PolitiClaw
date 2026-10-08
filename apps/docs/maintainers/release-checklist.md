@@ -15,6 +15,21 @@ plus a human-gated GitHub Release.
    `npm run release:check`, confirms the version is not already published, and
    publishes with npm provenance.
 
+ClawHub reads the published archive, not this checklist. The catalog image is
+`packages/politiclaw-plugin/assets/icon.png`, and the browse category is the
+single `categories` entry in `openclaw.plugin.json`. Topics are not in the
+package; pass them on publish (at most five; do not use reserved labels such
+as `official` or `openclaw`):
+
+```bash
+clawhub package publish ./packages/politiclaw-plugin --family code-plugin --dry-run
+clawhub package publish ./packages/politiclaw-plugin --family code-plugin \
+  --topics "congress,legislation,representatives,ballots,elections"
+```
+
+The package CLI `--categories` flag is ignored for plugins. Change the category
+in `openclaw.plugin.json` instead.
+
 One-time setup:
 
 - Configure npm Trusted Publishing for `@politiclaw/politiclaw` with provider

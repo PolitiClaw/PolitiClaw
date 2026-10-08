@@ -2,6 +2,16 @@
   "name": "@politiclaw/politiclaw",
   "version": "0.0.16",
   "description": "Local-first OpenClaw plugin: a civic copilot that holds your representatives accountable to the values you declare — watches federal legislation and elections for you, flags when your reps' actions align or don't, and drafts letters you send yourself.",
+  "keywords": [
+    "civic",
+    "congress",
+    "legislation",
+    "representatives",
+    "ballots",
+    "elections",
+    "accountability",
+    "openclaw"
+  ],
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -28,6 +38,7 @@
     "!dist/**/*.test.js.map",
     "!dist/**/__fixtures__/**",
     "skills",
+    "assets",
     "openclaw.plugin.json",
     "README.md"
   ],
@@ -45,6 +56,9 @@
       "pluginSdkVersion": "2026.4.21"
     },
     "install": {
+      "clawhubSpec": "clawhub:@politiclaw/politiclaw",
+      "npmSpec": "@politiclaw/politiclaw",
+      "defaultChoice": "clawhub",
       "minHostVersion": ">=2026.4.21"
     }
   },

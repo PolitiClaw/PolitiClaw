@@ -23,6 +23,6 @@
     "release:check": "npm run docs:check && npm run typecheck && npm test && npm run build && npm run smoke:runtime --workspace @politiclaw/politiclaw && npm run pack:check --workspace @politiclaw/politiclaw"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24.22.1 <25 || >=26.12.1"
   }
 }

@@ -4,7 +4,7 @@ Thanks for taking the time to contribute. PolitiClaw is a local-first OpenClaw p
 
 ## Prerequisites
 
-- Node `>=20` at the workspace root (`>=22.5.0` for the plugin package). The plugin test suite uses Vitest 5, which needs Node `^22.12.0`, `^24`, or `>=26`. CI runs on Node 24.
+- Node `>=24.22.1 <25` or `>=26.12.1` at the workspace root (`>=22.5.0` for the plugin package). The installed OpenClaw peer enforces that floor. CI runs on Node 24.22.1 or newer within the 24.x line.
 - npm (the workspace uses `package-lock.json` and `npm ci` in CI).
 - A working OpenClaw gateway if you want to exercise the plugin end-to-end. See [`packages/politiclaw-plugin/README.md`](packages/politiclaw-plugin/README.md).
 

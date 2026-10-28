@@ -82,7 +82,10 @@ async function defaultLoadSdkModule(specifier: string): Promise<SdkModuleShape> 
     return import("openclaw/plugin-sdk/agent-harness-runtime");
   }
   if (specifier === legacySubpath) {
-    return import("openclaw/plugin-sdk/agent-harness");
+    // OpenClaw 2026.10.8 types this module without callGatewayTool. Older hosts
+    // still export the function from here, so probe the loaded module at runtime.
+    const legacyModule: unknown = await import("openclaw/plugin-sdk/agent-harness");
+    return legacyModule as SdkModuleShape;
   }
   throw new Error(`Unexpected OpenClaw plugin SDK subpath: ${specifier}`);
 }

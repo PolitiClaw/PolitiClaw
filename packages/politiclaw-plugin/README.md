@@ -1,6 +1,6 @@
 # PolitiClaw Plugin
 
-A local-first OpenClaw plugin that turns your agent into a civic copilot that **holds your representatives accountable to the values you declare.** It learns the stances you care about, watches federal legislation and elections on your behalf, flags when your reps' votes and actions align — or don't — with those stances, and drafts letters you send yourself. All on your own machine; no send path, no prescriptive voting recommendations, no stance it invented for you.
+A local-first OpenClaw plugin: a civic copilot that holds your representatives accountable to the stances you declare. It watches federal legislation and elections, flags when your reps' votes and actions align or don't, and drafts letters you send yourself. It does not send those letters, recommend a vote, or invent a stance.
 
 Political data stays in a plugin-private SQLite database under the gateway's state directory. It does not write to shared agent memory.
 
@@ -22,92 +22,105 @@ Reload the gateway (or restart the OpenClaw app) to pick up the new tools.
 
 Working on the plugin from a local checkout instead? See [Development](#development).
 
-## First-run checklist — 10 minutes to your first alert
+## First-run checklist
 
-Use slash commands for quick checks and ask your agent to call tools for setup. `politiclaw_configure` is an agent tool, not a shell command, so it is invoked through the agent rather than typed into a terminal.
+Slash commands are for you. Tools are for the agent. Ask the agent to call `politiclaw_configure`; typing that name into a terminal does nothing.
 
-1. **Find the next setup step.** Run `/politiclaw-setup`. It returns a copyable prompt for the agent, starting with “Call the agent tool `politiclaw_configure` with my street address…”.
+1. **Start setup.** Run `/politiclaw-setup`. It prints the next step and a prompt to hand to the agent. On a fresh install that prompt is: `Ask your agent: Call the agent tool politiclaw_configure with my street address.`
 
-2. **Declare the stances you want to measure your reps against.** Use the `issueStances` input on `politiclaw_configure` during setup, or add/edit one later with `politiclaw_issue_stances` (action `set`, `list`, or `delete`). Each stance can also carry a short `note` for the specific concern inside the issue bucket and `sourceText` for your original phrasing; letters, call scripts, rep reports, and the monitoring contract use that nuance. These stances are the baseline PolitiClaw uses for every accountability score — no score exists without them.
+2. **Walk the setup questions.** The agent collects, in order: street address, issue stances, monitoring mode, and accountability. Alignment scores exist only for stances you declared. Put the specific concern in `note`. Letters, call scripts, rep reports, and the monitoring contract use that text. Add or change a stance later with `politiclaw_issue_stances` (`set`, `list`, or `delete`).
 
-3. **Continue setup whenever something changes.** Ask your agent to call `politiclaw_configure` to refresh reps, change monitoring cadence, save keys, or update the saved address.
+3. **Save the required key** when setup asks for it. See [API keys](#api-keys). Saving a key restarts the gateway. Reconnect, run `/politiclaw-setup`, and continue. Earlier answers are already saved.
 
-4. **Wait for the first alert.** The weekly summary cron fires once a week; election-proximity alerts fire more often as an election in your state approaches. If you want a preview of what the next weekly digest will pull from, call `politiclaw_check_upcoming_votes` with a 7-day window — that is the main input the weekly summary composes from. There is no "run the weekly summary now" tool; the digest is cron-driven and assembled via the `politiclaw-summary` skill.
+4. **Expect alerts on the schedule you picked**, not immediately. The default mode is **Action only**.
 
-If anything in this path looks wrong, run `/politiclaw-status`, `/politiclaw-doctor`, or `/politiclaw-version` — see [Troubleshooting](#troubleshooting).
+Call `politiclaw_configure` again later to refresh reps, change mode, save a key, or update the address.
+
+If a step looks wrong, run `/politiclaw-status`, `/politiclaw-doctor`, or `/politiclaw-version`. See [Troubleshooting](#troubleshooting).
+
+### What each monitoring mode runs
+
+| Mode | What runs |
+| --- | --- |
+| Action only (default) | 6-hour bill watch, 12-hour hearings, election alert |
+| Weekly digest | Those watches, 7-day summary, 30-day rep report |
+| Full copilot | Weekly digest, plus the election alert |
+| Quiet watch | 6-hour bill watch and 12-hour hearings |
+| Paused | No scheduled jobs |
+
+The bill watch runs every 6 hours and the hearing watch every 12 hours. Both stay silent when nothing material changed. The weekly summary runs every 7 days, and the rep report runs about every 30 days. The election alert posts when the next election is 30, 14, 7, or 1 day away. It reads that date from `googleCivic`; without the key, the job reports the missing key instead of guessing a date. To look ahead yourself, ask the agent to call `politiclaw_check_upcoming_votes`.
 
 ## API keys
 
-**The fastest path: paste the key into chat.** Ask your agent to call `politiclaw_configure`. When the api.data.gov key is missing, the agent walks you through signup and asks you to paste the key (and any optional upgrade keys you have) back into chat. The plugin writes them through the OpenClaw gateway's `config.patch` method (validated, audited, optimistic concurrency). The gateway then restarts itself once to pick up the new values — reconnect after the restart, run `/politiclaw-setup`, and continue from the saved checkpoint.
+Paste keys into chat and ask the agent to call `politiclaw_configure`. The same call can save a key later without repeating setup: pass `apiDataGov`, or pass `geocodio` / `googleCivic` in `optionalApiKeys`. Either way the plugin writes `plugins.entries.politiclaw.config.apiKeys` in `~/.openclaw/openclaw.json` and the gateway restarts. You can edit that file by hand instead.
 
-`politiclaw_configure` also handles one-off updates after onboarding: passing `apiDataGov` (or any `optionalApiKeys`) saves them straight to `plugins.entries.politiclaw.config.apiKeys.*` without re-running the full setup flow.
+`apiDataGov` is required. The other two keys are optional.
 
-You can still edit `~/.openclaw/openclaw.json` by hand under `plugins.entries.politiclaw.config.apiKeys.*` if you prefer; both paths land in the same file.
+| Key | Need | Unlocks |
+| --- | --- | --- |
+| `apiDataGov` | Required | Federal bills, House votes, committees, FEC |
+| `geocodio` | Optional | Faster reps-by-address |
+| `googleCivic` | Ballot tools | Ballot contents and election dates |
 
-**One named key is required; the other named keys are optional upgrades.**
+`apiDataGov` is one free key for Congress and OpenFEC. [Sign up](https://api.data.gov/signup/). Senate roll-call votes come from voteview.com and need no key. Without `geocodio`, reps lookup uses a local shapefile cache. `googleCivic` is a Google Civic Information API key, separate from api.data.gov, and it is what `politiclaw_get_my_ballot` and `politiclaw_election_brief` read.
 
-The plugin's config schema declares three wired keys — `apiDataGov`, `geocodio`, and `googleCivic`. The runtime reads only those keys. Unknown legacy key strings may still validate so older configs keep loading, but `politiclaw_configure` and `politiclaw_set_api_keys` will not save roadmap keys and no current adapter reads them. The roadmap rows below signal where the plugin is headed (state coverage) without declaring those providers as supported.
+Run `/politiclaw-doctor` after saving. It reports which of these keys are set and what a missing key blocks.
 
-| Key | Status | Required? | What it unlocks |
-| --- | --- | --- | --- |
-| `apiDataGov` | Active | **Required** | Federal bills, House roll-call votes with member positions, committee schedules, and FEC campaign-finance data. One `api.data.gov` key covers both `api.congress.gov` and OpenFEC. Senate roll-call votes ingest separately through voteview.com (zero-key, no signup). Free, instant signup at [api.data.gov/signup](https://api.data.gov/signup/). |
-| `geocodio` | Active | Optional | Reps-by-address via API. Without it, the plugin uses a zero-key local shapefile pipeline — Geocodio trades disk footprint for API simplicity. |
-| `googleCivic` | Active | Optional but required for `politiclaw_get_my_ballot` | Google Cloud API key with the Civic Information API enabled. Distinct from `api.data.gov`. |
-| `openStates` | Roadmap | — | Planned: state bills and votes with individual member positions. Until wired, state bill lookup is narrative-only via LLM search; state vote positions and state change-detection are not available. |
-| `legiscan` | Roadmap | — | Planned: alternate state bills source. Free tier covers 30,000 queries/month and would substitute for `openStates`. |
-| `followTheMoney` | Roadmap | — | Planned: state-level campaign finance. State finance is not covered until this is wired. |
+### Roadmap
 
-To validate that your active keys are wired up correctly, run `/politiclaw-doctor` — it checks every key the plugin actually accepts and reports which tools each missing key gates.
+State bills, state vote positions, and state campaign finance are not available yet. These names are not wired keys: `openStates` (state bills and member votes), `legiscan` (an alternate state-bill source), and `followTheMoney` (state campaign finance). The runtime ignores them. `politiclaw_configure` and `politiclaw_set_api_keys` will not save them. An unknown extra string under `apiKeys` can still validate so an older config file keeps loading.
 
 ## Override recipes
 
-Agent behavior for PolitiClaw is driven by plain-markdown skills under `skills/`. You can edit these in place to retune the plugin's voice, guardrails, or ordering without rebuilding the plugin — the gateway re-reads them on reload.
+Skills are plain markdown. They set the plugin's voice, guardrails, and section order. To change one, copy it to `~/.agents/skills/<name>/SKILL.md` (or `~/.openclaw/skills/<name>/SKILL.md`) and edit the copy. Reload the gateway. A skill override does not need `npm run build`.
+
+On a `--link` install you can edit `skills/<name>/SKILL.md` in the checkout instead. That lasts until a published package replaces the link.
 
 Current skills:
 
-- `politiclaw-onboarding` — first-run flow that helps `politiclaw_configure` collect issue stances in a conversational or quiz-style handoff.
-- `politiclaw-monitoring` — how the agent interprets change-detection results, alignment scores, and election-proximity alerts.
-- `politiclaw-ballot` — how the agent explains ballot items without prescribing a vote.
-- `politiclaw-outreach` — how the agent drafts letters (user-authored, never auto-sent).
+- `politiclaw-onboarding` — drives `politiclaw_configure` through address, stances, monitoring mode, and accountability.
+- `politiclaw-monitoring` — how the agent reads change-detection results, alignment scores, and election alerts.
+- `politiclaw-ballot` — how the agent explains ballot items, without prescribing a vote.
+- `politiclaw-outreach` — how the agent drafts letters. You send them; the plugin never does.
 - `politiclaw-summary` — format and scope of the weekly digest.
 
-Typical edits: tightening or relaxing the anti-prescription guardrails, adding project-specific stance vocabulary, or changing the default tone of drafted letters. Changes to skills do not require `npm run build`.
+`/politiclaw-doctor` reports overrides in `~/.agents/skills` and `~/.openclaw/skills`. Workspace copies are invisible to that check.
 
 ## Dashboard
 
-The plugin registers a local-only dashboard at `/politiclaw` on the gateway's HTTP surface. It shows your preferences, reps and alignment scores, installed monitoring jobs, upcoming election, recent alerts, recent drafted letters, and recent bill-linked roll-call votes — all driven by the plugin's private SQLite DB.
+The plugin serves a local dashboard at `/politiclaw` on the gateway. It shows preferences, reps and alignment scores, monitoring jobs, the next election, recent alerts, drafted letters, and recent bill-linked roll-call votes, all from the plugin's private database.
 
-The dashboard is also editable:
+You can also edit from the page:
 
-- **Preferences form** — save address, ZIP, state, district, or monitoring cadence without going through the agent.
-- **Pause all / Resume all** — bulk-toggle every PolitiClaw cron job on the gateway.
-- **Quick-vote buttons** — record agree/disagree/skip signals on recent bill-linked votes. Each click is stored as a stance signal that nudges your rep alignment scores.
-- **Request re-draft** — flag a past letter for re-drafting. The next agent session picks up the flag and drafts a fresh version; the browser does not invoke tools directly.
+- **Preferences** — save address, ZIP, state, district, or monitoring mode without the agent.
+- **Pause all / Resume all** — pause or resume every PolitiClaw cron job.
+- **Quick vote** — record agree, disagree, or skip on a recent bill-linked vote. Agree and disagree are stored as stance signals and used the next time alignment is scored. Skip is stored and left out of the score.
+- **Request re-draft** — flag a past letter. The next agent session drafts a new version. The page does not call tools itself.
 
-Because the dashboard is registered with `auth: "plugin"`, the gateway adds no auth layer. POST requests are protected by a double-submit CSRF token (`pc_csrf` cookie paired with an `X-PolitiClaw-CSRF` header) and bodies are bounded to 256 KB. Exposure is intended to be local-only; operators who expose the gateway off-host must front the dashboard themselves.
+The route is registered with `auth: "plugin"`, so the gateway adds no login of its own. POST requests need a double-submit CSRF token (`pc_csrf` cookie plus an `X-PolitiClaw-CSRF` header), and bodies are limited to 256 KB. Keep the gateway on your own machine. If you expose it beyond localhost, put your own auth in front of this page.
 
 ## Troubleshooting
 
-Run `/politiclaw-doctor` first. It checks, in one pass:
+Run `/politiclaw-doctor` first. It only reads state. Each check is `ok`, `warn`, or `fail`, and a non-ok check includes a hint. In one pass it checks:
 
-- Schema migrations are up to date.
-- The SQLite database passes integrity checks.
-- Preferences are populated (address, zip, state).
-- Every recognized API key is classified as required / optional / missing, with the gated tools listed.
-- The reps cache has been populated and isn't stale.
-- Every monitoring cron job the plugin expects to own is installed.
+- Schema migrations.
+- SQLite integrity.
+- Preferences, including state and ZIP.
+- Monitoring mode and accountability.
+- `apiDataGov`, `geocodio`, and `googleCivic`, and what a missing key blocks.
+- Whether the reps cache has any rows.
+- Which PolitiClaw cron jobs are installed or paused.
+- Skill overrides in `~/.agents/skills` and `~/.openclaw/skills`.
 
-Each check returns `ok`, `warn`, or `fail` with an actionable hint for every non-ok result. The tool is read-only — it never mutates state.
-
-Cross-machine caveat: the doctor runs inside the OpenClaw gateway process. If your gateway runs on a different host than where you installed the plugin source, gateway-side errors (missing cron adapter, unreadable state directory) will surface as `fail` in the report and have to be fixed on the gateway host.
+The doctor runs inside the gateway process. If the gateway is on another machine, fix a missing cron adapter or an unreadable state directory on that host.
 
 ### Plugin installed but tool unavailable
 
-If the package installed but your agent cannot call `politiclaw_configure`, restart the OpenClaw gateway, verify PolitiClaw is enabled in the plugin registry, then run `/politiclaw-version`. If `/politiclaw-version` works but the tool is still unavailable, run `/politiclaw-doctor` for a storage/package diagnostic.
+If the package installed but the agent cannot call `politiclaw_configure`, restart the gateway, confirm PolitiClaw is enabled, then run `/politiclaw-version`. If the version command works and the tool still does not, run `/politiclaw-doctor`.
 
 ### Gateway restarted during key save
 
-Key saves intentionally restart the gateway. Reconnect to OpenClaw, run `/politiclaw-setup`, and ask the agent to continue with the prompt it prints. Setup resumes from saved plugin state; you do not need to repeat earlier answers.
+A key save restarts the gateway on purpose. Reconnect, run `/politiclaw-setup`, and give the agent the prompt it prints. Setup continues from saved state.
 
 ## Development
 
